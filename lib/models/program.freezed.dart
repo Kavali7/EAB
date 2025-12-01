@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Program {
 
- String get id; ProgramType get type; DateTime get date; String get location; String? get description; List<String> get participantIds;
+ String get id; ProgramType get type; DateTime get date; String get location; String? get description; String? get observations; List<String> get participantIds;
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ProgramCopyWith<Program> get copyWith => _$ProgramCopyWithImpl<Program>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.participantIds, participantIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Program&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&(identical(other.observations, observations) || other.observations == observations)&&const DeepCollectionEquality().equals(other.participantIds, participantIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,date,location,description,const DeepCollectionEquality().hash(participantIds));
+int get hashCode => Object.hash(runtimeType,id,type,date,location,description,observations,const DeepCollectionEquality().hash(participantIds));
 
 @override
 String toString() {
-  return 'Program(id: $id, type: $type, date: $date, location: $location, description: $description, participantIds: $participantIds)';
+  return 'Program(id: $id, type: $type, date: $date, location: $location, description: $description, observations: $observations, participantIds: $participantIds)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ProgramCopyWith<$Res>  {
   factory $ProgramCopyWith(Program value, $Res Function(Program) _then) = _$ProgramCopyWithImpl;
 @useResult
 $Res call({
- String id, ProgramType type, DateTime date, String location, String? description, List<String> participantIds
+ String id, ProgramType type, DateTime date, String location, String? description, String? observations, List<String> participantIds
 });
 
 
@@ -65,13 +65,14 @@ class _$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? date = null,Object? location = null,Object? description = freezed,Object? participantIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? date = null,Object? location = null,Object? description = freezed,Object? observations = freezed,Object? participantIds = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProgramType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,observations: freezed == observations ? _self.observations : observations // ignore: cast_nullable_to_non_nullable
 as String?,participantIds: null == participantIds ? _self.participantIds : participantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  List<String> participantIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  String? observations,  List<String> participantIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.participantIds);case _:
+return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.observations,_that.participantIds);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.type,_that.date,_that.location,_that.description,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  List<String> participantIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  String? observations,  List<String> participantIds)  $default,) {final _that = this;
 switch (_that) {
 case _Program():
-return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.participantIds);case _:
+return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.observations,_that.participantIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.type,_that.date,_that.location,_that.description,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  List<String> participantIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  ProgramType type,  DateTime date,  String location,  String? description,  String? observations,  List<String> participantIds)?  $default,) {final _that = this;
 switch (_that) {
 case _Program() when $default != null:
-return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.participantIds);case _:
+return $default(_that.id,_that.type,_that.date,_that.location,_that.description,_that.observations,_that.participantIds);case _:
   return null;
 
 }
@@ -214,7 +215,7 @@ return $default(_that.id,_that.type,_that.date,_that.location,_that.description,
 @JsonSerializable()
 
 class _Program implements Program {
-  const _Program({required this.id, required this.type, required this.date, required this.location, this.description, final  List<String> participantIds = const []}): _participantIds = participantIds;
+  const _Program({required this.id, required this.type, required this.date, required this.location, this.description, this.observations, final  List<String> participantIds = const []}): _participantIds = participantIds;
   factory _Program.fromJson(Map<String, dynamic> json) => _$ProgramFromJson(json);
 
 @override final  String id;
@@ -222,6 +223,7 @@ class _Program implements Program {
 @override final  DateTime date;
 @override final  String location;
 @override final  String? description;
+@override final  String? observations;
  final  List<String> _participantIds;
 @override@JsonKey() List<String> get participantIds {
   if (_participantIds is EqualUnmodifiableListView) return _participantIds;
@@ -243,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._participantIds, _participantIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Program&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&(identical(other.observations, observations) || other.observations == observations)&&const DeepCollectionEquality().equals(other._participantIds, _participantIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,type,date,location,description,const DeepCollectionEquality().hash(_participantIds));
+int get hashCode => Object.hash(runtimeType,id,type,date,location,description,observations,const DeepCollectionEquality().hash(_participantIds));
 
 @override
 String toString() {
-  return 'Program(id: $id, type: $type, date: $date, location: $location, description: $description, participantIds: $participantIds)';
+  return 'Program(id: $id, type: $type, date: $date, location: $location, description: $description, observations: $observations, participantIds: $participantIds)';
 }
 
 
@@ -263,7 +265,7 @@ abstract mixin class _$ProgramCopyWith<$Res> implements $ProgramCopyWith<$Res> {
   factory _$ProgramCopyWith(_Program value, $Res Function(_Program) _then) = __$ProgramCopyWithImpl;
 @override @useResult
 $Res call({
- String id, ProgramType type, DateTime date, String location, String? description, List<String> participantIds
+ String id, ProgramType type, DateTime date, String location, String? description, String? observations, List<String> participantIds
 });
 
 
@@ -280,13 +282,14 @@ class __$ProgramCopyWithImpl<$Res>
 
 /// Create a copy of Program
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? date = null,Object? location = null,Object? description = freezed,Object? participantIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? date = null,Object? location = null,Object? description = freezed,Object? observations = freezed,Object? participantIds = null,}) {
   return _then(_Program(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProgramType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,location: null == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,observations: freezed == observations ? _self.observations : observations // ignore: cast_nullable_to_non_nullable
 as String?,participantIds: null == participantIds ? _self._participantIds : participantIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));

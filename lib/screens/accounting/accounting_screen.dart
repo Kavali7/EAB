@@ -41,8 +41,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           (e.description ?? '').toLowerCase().contains(_query.toLowerCase()) ||
           e.category.toLowerCase().contains(_query.toLowerCase());
       return matchesType && matchesCategory && matchesQuery;
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
     final totalIncome = filtered
         .where((e) => e.type == AccountingType.income)
@@ -101,14 +100,20 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     ),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(_dateRange == null
-                          ? 'Periode'
-                          : '${dateFormatter.format(_dateRange!.start)} - ${dateFormatter.format(_dateRange!.end)}'),
+                      label: Text(
+                        _dateRange == null
+                            ? 'Periode'
+                            : '${dateFormatter.format(_dateRange!.start)} - ${dateFormatter.format(_dateRange!.end)}',
+                      ),
                       onPressed: () async {
                         final picked = await showDateRangePicker(
                           context: context,
-                          firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
-                          lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 365 * 5),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365 * 2),
+                          ),
                           initialDateRange: _dateRange,
                         );
                         if (picked != null) {
@@ -357,10 +362,18 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                                     (item) => DataRow(
                                       cells: [
                                         DataCell(
-                                            Text(accountingTypeLabels[item.type]!)),
+                                          Text(
+                                            accountingTypeLabels[item.type]!,
+                                          ),
+                                        ),
                                         DataCell(Text(item.category)),
-                                        DataCell(Text(
-                                            currencyFormatter.format(item.total))),
+                                        DataCell(
+                                          Text(
+                                            currencyFormatter.format(
+                                              item.total,
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   )

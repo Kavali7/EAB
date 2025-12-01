@@ -24,7 +24,9 @@ class DashboardScreen extends ConsumerWidget {
     final programs = programsAsync.value ?? [];
     final entries = entriesAsync.value ?? [];
     final isLoading =
-        membersAsync.isLoading && programsAsync.isLoading && entriesAsync.isLoading;
+        membersAsync.isLoading &&
+        programsAsync.isLoading &&
+        entriesAsync.isLoading;
 
     final totalIncome = entries
         .where((e) => e.type == AccountingType.income)
@@ -39,7 +41,9 @@ class DashboardScreen extends ConsumerWidget {
         .where(
           (m) =>
               m.baptismDate != null &&
-              m.baptismDate!.isAfter(DateTime.now().subtract(const Duration(days: 90))),
+              m.baptismDate!.isAfter(
+                DateTime.now().subtract(const Duration(days: 90)),
+              ),
         )
         .length;
 
@@ -197,8 +201,9 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
                           SizedBox(
-                            width:
-                                isWide ? constraints.maxWidth * 0.4 - 16 : constraints.maxWidth,
+                            width: isWide
+                                ? constraints.maxWidth * 0.4 - 16
+                                : constraints.maxWidth,
                             child: Card(
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
@@ -222,7 +227,9 @@ class DashboardScreen extends ConsumerWidget {
                                                 (e) => PieChartSectionData(
                                                   value: e.value.toDouble(),
                                                   title: e.key,
-                                                  color: _colorForMarital(e.key),
+                                                  color: _colorForMarital(
+                                                    e.key,
+                                                  ),
                                                 ),
                                               )
                                               .toList(),

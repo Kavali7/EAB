@@ -28,23 +28,25 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final members = membersAsync.value ?? [];
     final filtered = members.where((m) {
       final matchesQuery =
-          _query.isEmpty || m.fullName.toLowerCase().contains(_query.toLowerCase());
+          _query.isEmpty ||
+          m.fullName.toLowerCase().contains(_query.toLowerCase());
       final matchesGender = _genderFilter == null || m.gender == _genderFilter;
       final matchesMarital =
           _maritalFilter == null || m.maritalStatus == _maritalFilter;
       final matchesYear =
-          _baptismYearFilter == null || m.baptismDate?.year == _baptismYearFilter;
+          _baptismYearFilter == null ||
+          m.baptismDate?.year == _baptismYearFilter;
       return matchesQuery && matchesGender && matchesMarital && matchesYear;
     }).toList();
     final baptismYears = {
       for (final m in members)
-        if (m.baptismDate != null) m.baptismDate!.year
-    }.toList()
-      ..sort((a, b) => b.compareTo(a));
+        if (m.baptismDate != null) m.baptismDate!.year,
+    }.toList()..sort((a, b) => b.compareTo(a));
     final maleCount = members.where((m) => m.gender == Gender.male).length;
     final femaleCount = members.where((m) => m.gender == Gender.female).length;
-    final marriedCount =
-        members.where((m) => m.maritalStatus == MaritalStatus.married).length;
+    final marriedCount = members
+        .where((m) => m.maritalStatus == MaritalStatus.married)
+        .length;
 
     return AppShell(
       title: 'Fideles',
@@ -143,18 +145,22 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               SizedBox(
                 width: 200,
                 child: DropdownButtonFormField<int?>(
-                  decoration: const InputDecoration(labelText: 'Annee de bapteme'),
+                  decoration: const InputDecoration(
+                    labelText: 'Annee de bapteme',
+                  ),
                   initialValue: _baptismYearFilter,
                   items: [
-                    const DropdownMenuItem<int?>(value: null, child: Text('Toutes')),
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('Toutes'),
+                    ),
                     ...baptismYears.map(
-                      (y) => DropdownMenuItem<int?>(
-                        value: y,
-                        child: Text('$y'),
-                      ),
+                      (y) =>
+                          DropdownMenuItem<int?>(value: y, child: Text('$y')),
                     ),
                   ],
-                  onChanged: (value) => setState(() => _baptismYearFilter = value),
+                  onChanged: (value) =>
+                      setState(() => _baptismYearFilter = value),
                 ),
               ),
             ],
@@ -246,7 +252,9 @@ class _MembersDataSource extends DataTableSource {
         DataCell(Text(dateFormatter.format(m.birthDate))),
         DataCell(Text(maritalStatusLabels[m.maritalStatus]!)),
         DataCell(
-          Text(m.baptismDate != null ? dateFormatter.format(m.baptismDate!) : '-'),
+          Text(
+            m.baptismDate != null ? dateFormatter.format(m.baptismDate!) : '-',
+          ),
         ),
         DataCell(
           Row(

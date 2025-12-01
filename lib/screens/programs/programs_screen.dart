@@ -109,7 +109,9 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                                     Row(
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.visibility_outlined),
+                                          icon: const Icon(
+                                            Icons.visibility_outlined,
+                                          ),
                                           onPressed: () => _showDetails(p),
                                         ),
                                         IconButton(
@@ -175,8 +177,9 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
 
   Future<void> _showDetails(Program program) async {
     final members = ref.read(membersProvider).value ?? [];
-    final participants =
-        members.where((m) => program.participantIds.contains(m.id)).toList();
+    final participants = members
+        .where((m) => program.participantIds.contains(m.id))
+        .toList();
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -208,10 +211,15 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: participants.map((m) => Chip(label: Text(m.fullName))).toList(),
+                children: participants
+                    .map((m) => Chip(label: Text(m.fullName)))
+                    .toList(),
               ),
               const SizedBox(height: 8),
-              Text('Observations', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Observations',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 4),
               Text(program.observations ?? 'Aucune note'),
             ],
