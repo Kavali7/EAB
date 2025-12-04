@@ -7,6 +7,10 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/famille.dart';
 import '../../models/member.dart';
+import '../../models/region_eglise.dart';
+import '../../models/district_eglise.dart';
+import '../../models/assemblee_locale.dart';
+import '../../providers/church_structure_providers.dart';
 import '../../providers/families_provider.dart';
 import '../../providers/members_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -56,6 +60,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   bool _onlyChildren = false;
   bool _onlyOfficers = false;
   VulnerabiliteFidele? _vulnerabiliteFilter;
+  String? _idRegionFilter;
+  String? _idDistrictFilter;
+  String? _idAssembleeLocaleFilter;
 
   bool _isChild(Member m) {
     final birth = m.dateNaissance ?? m.birthDate;
@@ -72,8 +79,23 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
     final familiesAsync = ref.watch(familiesProvider);
+    final regionsAsync = ref.watch(regionsProvider);
+    final districtsAsync = ref.watch(districtsProvider);
+    final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
+    final regions = regionsAsync.value ?? [];
+    final districts = districtsAsync.value ?? [];
+    final assemblees = assembleesAsync.value ?? [];
+    final districtById = {for (final d in districts) d.id: d};
+    final regionById = {for (final r in regions) r.id: r};
+    final assembleeById = {for (final a in assemblees) a.id: a};
+    final filteredDistricts = _idRegionFilter == null
+        ? districts
+        : districts.where((d) => d.idRegion == _idRegionFilter).toList();
+    final filteredAssemblees = _idDistrictFilter == null
+        ? assemblees
+        : assemblees.where((a) => a.idDistrict == _idDistrictFilter).toList();
     final familyById = {for (final f in families) f.id: f};
 
     final filtered = members.where((m) {
@@ -91,6 +113,23 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       final matchesVulnerabilite = _vulnerabiliteFilter == null
           ? true
           : m.vulnerabilites.contains(_vulnerabiliteFilter);
+      final assemblee = m.idAssembleeLocale != null
+          ? assembleeById[m.idAssembleeLocale!]
+          : null;
+      final district = assemblee != null ? districtById[assemblee.idDistrict] : null;
+      final regionId = district?.idRegion;
+      final matchesStructure = () {
+        if (_idAssembleeLocaleFilter != null) {
+          return m.idAssembleeLocale == _idAssembleeLocaleFilter;
+        }
+        if (_idDistrictFilter != null) {
+          return assemblee != null && assemblee.idDistrict == _idDistrictFilter;
+        }
+        if (_idRegionFilter != null) {
+          return regionId == _idRegionFilter;
+        }
+        return true;
+      }();
       return matchesQuery &&
           matchesGender &&
           matchesMarital &&
@@ -99,7 +138,8 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
           matchesStatut &&
           matchesChildren &&
           matchesOfficer &&
-          matchesVulnerabilite;
+          matchesVulnerabilite &&
+          matchesStructure;
     }).toList();
 
     final baptismYears = {
@@ -321,6 +361,82 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               ),
               SizedBox(
                 width: 200,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Region'),
+                  initialValue: _idRegionFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Toutes les regions'),
+                    ),
+                    ...regions.map(
+                      (r) => DropdownMenuItem<String?>(
+                        value: r.id,
+                        child: Text(r.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: regionsAsync.isLoading
+                      ? null
+                      : (value) => setState(() {
+                            _idRegionFilter = value;
+                            _idDistrictFilter = null;
+                            _idAssembleeLocaleFilter = null;
+                          }),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'District'),
+                  initialValue: _idDistrictFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Tous les districts'),
+                    ),
+                    ...filteredDistricts.map(
+                      (d) => DropdownMenuItem<String?>(
+                        value: d.id,
+                        child: Text(d.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: districtsAsync.isLoading
+                      ? null
+                      : (value) => setState(() {
+                            _idDistrictFilter = value;
+                            _idAssembleeLocaleFilter = null;
+                          }),
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Assemblee locale'),
+                  initialValue: _idAssembleeLocaleFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Toutes les assemblees'),
+                    ),
+                    ...filteredAssemblees.map(
+                      (a) => DropdownMenuItem<String?>(
+                        value: a.id,
+                        child: Text(a.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: assembleesAsync.isLoading
+                      ? null
+                      : (value) => setState(() => _idAssembleeLocaleFilter = value),
+                ),
+              ),
+              SizedBox(
+                width: 200,
                 child: CheckboxListTile(
                   value: _onlyChildren,
                   onChanged: (v) => setState(() => _onlyChildren = v ?? false),
@@ -373,6 +489,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                                   DataColumn(label: Text('Role')),
                                   DataColumn(label: Text('Statut')),
                                   DataColumn(label: Text('Famille')),
+                                  DataColumn(label: Text('Assemblee')),
                                   DataColumn(label: Text('Vulnerable')),
                                   DataColumn(label: Text('Bapteme')),
                                   DataColumn(label: Text('Actions')),
@@ -380,6 +497,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                                 source: _MembersDataSource(
                                   members: filtered,
                                   familyById: familyById,
+                                  assembleeById: assembleeById,
+                                  districtById: districtById,
+                                  regionById: regionById,
                                   onEdit: (m) =>
                                       _openForm(context, member: m, families: families),
                                   onDelete: _confirmDelete,
@@ -433,12 +553,18 @@ class _MembersDataSource extends DataTableSource {
   _MembersDataSource({
     required this.members,
     required this.familyById,
+    required this.assembleeById,
+    required this.districtById,
+    required this.regionById,
     required this.onEdit,
     required this.onDelete,
   });
 
   final List<Member> members;
   final Map<String, Famille> familyById;
+  final Map<String, AssembleeLocale> assembleeById;
+  final Map<String, DistrictEglise> districtById;
+  final Map<String, RegionEglise> regionById;
   final void Function(Member) onEdit;
   final Future<void> Function(Member) onDelete;
 
@@ -455,12 +581,33 @@ class _MembersDataSource extends DataTableSource {
     return m.vulnerabilites.map((v) => vulnerabiliteLabels[v] ?? v.name).join(', ');
   }
 
+  String _assemblee(Member m) {
+    if (m.idAssembleeLocale == null) return '--';
+    final assemblee = assembleeById[m.idAssembleeLocale!];
+    return assemblee?.nom ?? '--';
+  }
+
+  String? _assembleeTooltip(Member m) {
+    if (m.idAssembleeLocale == null) return null;
+    final assemblee = assembleeById[m.idAssembleeLocale!];
+    if (assemblee == null) return null;
+    final district = districtById[assemblee.idDistrict];
+    final region = district != null ? regionById[district.idRegion] : null;
+    final parts = <String>[];
+    if (district != null) parts.add('District: ${district.nom}');
+    if (region != null) parts.add('Region: ${region.nom}');
+    if (parts.isEmpty) return null;
+    return parts.join('\n');
+  }
+
   @override
   DataRow? getRow(int index) {
     if (index >= members.length) return null;
     final m = members[index];
     final familyName = _family(m);
     final vulnTooltip = _vulnerabiliteTooltip(m);
+    final assembleeName = _assemblee(m);
+    final assembleeTooltip = _assembleeTooltip(m);
     return DataRow.byIndex(
       index: index,
       cells: [
@@ -471,6 +618,11 @@ class _MembersDataSource extends DataTableSource {
         DataCell(Text(_role(m))),
         DataCell(Text(_statut(m))),
         DataCell(Text(familyName ?? '—')),
+        DataCell(
+          assembleeTooltip == null
+              ? Text(assembleeName)
+              : Tooltip(message: assembleeTooltip, child: Text(assembleeName)),
+        ),
         DataCell(
           vulnTooltip == null
               ? const Text('—')

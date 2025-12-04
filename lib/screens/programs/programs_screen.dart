@@ -4,6 +4,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/constants.dart';
 import '../../models/program.dart';
+import '../../models/region_eglise.dart';
+import '../../models/district_eglise.dart';
+import '../../models/assemblee_locale.dart';
+import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
 import '../../widgets/app_shell.dart';
@@ -30,11 +34,29 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
   TypeVisite? _typeVisiteFilter;
   DateTime? _dateDebut;
   DateTime? _dateFin;
+  String? _idRegionFilter;
+  String? _idDistrictFilter;
+  String? _idAssembleeLocaleFilter;
 
   @override
   Widget build(BuildContext context) {
     final programsAsync = ref.watch(programsProvider);
+    final regionsAsync = ref.watch(regionsProvider);
+    final districtsAsync = ref.watch(districtsProvider);
+    final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final programs = programsAsync.value ?? [];
+    final regions = regionsAsync.value ?? [];
+    final districts = districtsAsync.value ?? [];
+    final assemblees = assembleesAsync.value ?? [];
+    final regionById = {for (final r in regions) r.id: r};
+    final districtById = {for (final d in districts) d.id: d};
+    final assembleeById = {for (final a in assemblees) a.id: a};
+    final filteredDistricts = _idRegionFilter == null
+        ? districts
+        : districts.where((d) => d.idRegion == _idRegionFilter).toList();
+    final filteredAssemblees = _idDistrictFilter == null
+        ? assemblees
+        : assemblees.where((a) => a.idDistrict == _idDistrictFilter).toList();
     final filtered = programs.where((p) {
       final matchesQuery =
           _query.isEmpty ||
@@ -50,11 +72,28 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       final matchesDateDebut =
           _dateDebut == null || !p.date.isBefore(_dateDebut!);
       final matchesDateFin = _dateFin == null || !p.date.isAfter(_dateFin!);
+      final assemblee =
+          p.idAssembleeLocale != null ? assembleeById[p.idAssembleeLocale!] : null;
+      final district = assemblee != null ? districtById[assemblee.idDistrict] : null;
+      final regionId = district?.idRegion;
+      final matchesStructure = () {
+        if (_idAssembleeLocaleFilter != null) {
+          return p.idAssembleeLocale == _idAssembleeLocaleFilter;
+        }
+        if (_idDistrictFilter != null) {
+          return assemblee != null && assemblee.idDistrict == _idDistrictFilter;
+        }
+        if (_idRegionFilter != null) {
+          return regionId == _idRegionFilter;
+        }
+        return true;
+      }();
       return matchesQuery &&
           matchesType &&
           matchesTypeVisite &&
           matchesDateDebut &&
-          matchesDateFin;
+          matchesDateFin &&
+          matchesStructure;
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
@@ -108,6 +147,82 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                       _typeVisiteFilter = null;
                     }
                   }),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Region'),
+                  initialValue: _idRegionFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Toutes les regions'),
+                    ),
+                    ...regions.map(
+                      (r) => DropdownMenuItem<String?>(
+                        value: r.id,
+                        child: Text(r.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: regionsAsync.isLoading
+                      ? null
+                      : (value) => setState(() {
+                            _idRegionFilter = value;
+                            _idDistrictFilter = null;
+                            _idAssembleeLocaleFilter = null;
+                          }),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'District'),
+                  initialValue: _idDistrictFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Tous les districts'),
+                    ),
+                    ...filteredDistricts.map(
+                      (d) => DropdownMenuItem<String?>(
+                        value: d.id,
+                        child: Text(d.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: districtsAsync.isLoading
+                      ? null
+                      : (value) => setState(() {
+                            _idDistrictFilter = value;
+                            _idAssembleeLocaleFilter = null;
+                          }),
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Assemblee locale'),
+                  initialValue: _idAssembleeLocaleFilter,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Toutes les assemblees'),
+                    ),
+                    ...filteredAssemblees.map(
+                      (a) => DropdownMenuItem<String?>(
+                        value: a.id,
+                        child: Text(a.nom),
+                      ),
+                    ),
+                  ],
+                  onChanged: assembleesAsync.isLoading
+                      ? null
+                      : (value) => setState(() => _idAssembleeLocaleFilter = value),
                 ),
               ),
               if (_typeFilter == TypeProgramme.visite)
@@ -165,6 +280,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                             DataColumn(label: Text('Type')),
                             DataColumn(label: Text('Date')),
                             DataColumn(label: Text('Lieu')),
+                            DataColumn(label: Text('Assemblee')),
                             DataColumn(label: Text('Participants')),
                             DataColumn(label: Text('Conversions')),
                             DataColumn(label: Text('Ecole du dimanche')),
@@ -178,6 +294,12 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                                     DataCell(Text(typeProgrammeLabels[p.type]!)),
                                     DataCell(Text(dateFormatter.format(p.date))),
                                     DataCell(Text(p.location)),
+                                    DataCell(_buildAssembleeCell(
+                                      p,
+                                      assembleeById,
+                                      districtById,
+                                      regionById,
+                                    )),
                                     DataCell(Text(_formatParticipants(p))),
                                     DataCell(_buildConversionsCell(p)),
                                     DataCell(_buildEcoleCell(p)),
@@ -235,6 +357,25 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       return '--';
     }
     return 'H: ${program.nombreHommes ?? 0}, F: ${program.nombreFemmes ?? 0}, G: ${program.nombreGarcons ?? 0}, Fi: ${program.nombreFilles ?? 0}';
+  }
+
+  Widget _buildAssembleeCell(
+    Program program,
+    Map<String, AssembleeLocale> assembleeById,
+    Map<String, DistrictEglise> districtById,
+    Map<String, RegionEglise> regionById,
+  ) {
+    if (program.idAssembleeLocale == null) return const Text('--');
+    final assemblee = assembleeById[program.idAssembleeLocale!];
+    if (assemblee == null) return const Text('--');
+    final district = districtById[assemblee.idDistrict];
+    final region = district != null ? regionById[district.idRegion] : null;
+    final tooltipParts = <String>[];
+    if (district != null) tooltipParts.add('District: ${district.nom}');
+    if (region != null) tooltipParts.add('Region: ${region.nom}');
+    final child = Text(assemblee.nom);
+    if (tooltipParts.isEmpty) return child;
+    return Tooltip(message: tooltipParts.join('\n'), child: child);
   }
 
   Widget _buildConversionsCell(Program program) {
