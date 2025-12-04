@@ -67,10 +67,15 @@ abstract class Member with _$Member {
     @Default(RoleFidele.membre) RoleFidele role,
     @Default(<VulnerabiliteFidele>{}) Set<VulnerabiliteFidele> vulnerabilites,
     String? idFamille,
+    String? idAssembleeLocale,
   }) = _Member;
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   bool get estOfficier => role != RoleFidele.membre;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool get aUneAssembleeLocale =>
+      idAssembleeLocale != null && idAssembleeLocale!.isNotEmpty;
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
 }

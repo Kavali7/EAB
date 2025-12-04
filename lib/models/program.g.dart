@@ -11,6 +11,7 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   type: $enumDecode(_$TypeProgrammeEnumMap, json['type']),
   date: DateTime.parse(json['date'] as String),
   location: json['location'] as String,
+  idAssembleeLocale: json['idAssembleeLocale'] as String?,
   description: json['description'] as String?,
   observations: json['observations'] as String?,
   participantIds:
@@ -40,6 +41,7 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'type': _$TypeProgrammeEnumMap[instance.type]!,
   'date': instance.date.toIso8601String(),
   'location': instance.location,
+  'idAssembleeLocale': instance.idAssembleeLocale,
   'description': instance.description,
   'observations': instance.observations,
   'participantIds': instance.participantIds,

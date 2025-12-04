@@ -14,11 +14,14 @@ enum TypeVisite {
 
 @freezed
 abstract class Program with _$Program {
+  const Program._();
+
   const factory Program({
     required String id,
     required TypeProgramme type,
     required DateTime date,
     required String location,
+    String? idAssembleeLocale,
     String? description,
     String? observations,
     @Default([]) List<String> participantIds,
@@ -37,6 +40,10 @@ abstract class Program with _$Program {
     String? derniereLeconEcoleDuDimanche,
     String? compteRenduVisite,
   }) = _Program;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool get aUneAssembleeLocale =>
+      idAssembleeLocale != null && idAssembleeLocale!.isNotEmpty;
 
   factory Program.fromJson(Map<String, dynamic> json) =>
       _$ProgramFromJson(json);

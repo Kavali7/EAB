@@ -9,6 +9,14 @@ import '../../providers/programs_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 
+const typeVisiteLabels = {
+  TypeVisite.fidele: 'Fidele',
+  TypeVisite.autorite: 'Autorite',
+  TypeVisite.partenaire: 'Partenaire',
+  TypeVisite.autreAssemblee: 'Autre assemblee',
+  TypeVisite.autre: 'Autre',
+};
+
 class ProgramsScreen extends ConsumerStatefulWidget {
   const ProgramsScreen({super.key});
 
@@ -19,6 +27,9 @@ class ProgramsScreen extends ConsumerStatefulWidget {
 class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
   String _query = '';
   TypeProgramme? _typeFilter;
+  TypeVisite? _typeVisiteFilter;
+  DateTime? _dateDebut;
+  DateTime? _dateFin;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +43,20 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
           ) ||
           p.location.toLowerCase().contains(_query.toLowerCase());
       final matchesType = _typeFilter == null || p.type == _typeFilter;
-      return matchesQuery && matchesType;
-    }).toList();
+      final matchesTypeVisite = _typeVisiteFilter == null
+          ? true
+          : (p.type == TypeProgramme.visite &&
+              p.typeVisite == _typeVisiteFilter);
+      final matchesDateDebut =
+          _dateDebut == null || !p.date.isBefore(_dateDebut!);
+      final matchesDateFin = _dateFin == null || !p.date.isAfter(_dateFin!);
+      return matchesQuery &&
+          matchesType &&
+          matchesTypeVisite &&
+          matchesDateDebut &&
+          matchesDateFin;
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     return AppShell(
       title: 'Programmes',
@@ -61,10 +84,11 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                 ),
               ),
               SizedBox(
-                width: 220,
+                width: 240,
                 child: DropdownButtonFormField<TypeProgramme?>(
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Type'),
+                  decoration:
+                      const InputDecoration(labelText: 'Type de programme'),
                   initialValue: _typeFilter,
                   items: [
                     const DropdownMenuItem<TypeProgramme?>(
@@ -78,7 +102,52 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                       ),
                     ),
                   ],
-                  onChanged: (value) => setState(() => _typeFilter = value),
+                  onChanged: (value) => setState(() {
+                    _typeFilter = value;
+                    if (_typeFilter != TypeProgramme.visite) {
+                      _typeVisiteFilter = null;
+                    }
+                  }),
+                ),
+              ),
+              if (_typeFilter == TypeProgramme.visite)
+                SizedBox(
+                  width: 200,
+                  child: DropdownButtonFormField<TypeVisite?>(
+                    isExpanded: true,
+                    decoration:
+                        const InputDecoration(labelText: 'Type de visite'),
+                    initialValue: _typeVisiteFilter,
+                    items: [
+                      const DropdownMenuItem<TypeVisite?>(
+                        value: null,
+                        child: Text('Tous'),
+                      ),
+                      ...TypeVisite.values.map(
+                        (t) => DropdownMenuItem<TypeVisite?>(
+                          value: t,
+                          child: Text(typeVisiteLabels[t]!),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _typeVisiteFilter = value),
+                  ),
+                ),
+              SizedBox(
+                width: 180,
+                child: _DateFilterField(
+                  label: 'Du',
+                  value: _dateDebut,
+                  onSelected: (d) => setState(() => _dateDebut = d),
+                ),
+              ),
+              SizedBox(
+                width: 180,
+                child: _DateFilterField(
+                  label: 'Au',
+                  value: _dateFin,
+                  onSelected: (d) => setState(() => _dateFin = d),
                 ),
               ),
             ],
@@ -97,6 +166,9 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                             DataColumn(label: Text('Date')),
                             DataColumn(label: Text('Lieu')),
                             DataColumn(label: Text('Participants')),
+                            DataColumn(label: Text('Conversions')),
+                            DataColumn(label: Text('Ecole du dimanche')),
+                            DataColumn(label: Text('Visite')),
                             DataColumn(label: Text('Actions')),
                           ],
                           rows: filtered
@@ -106,7 +178,10 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                                     DataCell(Text(typeProgrammeLabels[p.type]!)),
                                     DataCell(Text(dateFormatter.format(p.date))),
                                     DataCell(Text(p.location)),
-                                    DataCell(Text('${p.participantIds.length}')),
+                                    DataCell(Text(_formatParticipants(p))),
+                                    DataCell(_buildConversionsCell(p)),
+                                    DataCell(_buildEcoleCell(p)),
+                                    DataCell(_buildVisiteCell(p)),
                                     DataCell(
                                       Row(
                                         children: [
@@ -140,6 +215,75 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                     ),
                   ),
           ),
+        ],
+      ),
+    );
+  }
+
+  bool _isEvangelisation(Program program) =>
+      program.type == TypeProgramme.evangelisationMasse ||
+      program.type == TypeProgramme.evangelisationPorteAPorte;
+
+  String _formatParticipants(Program program) {
+    final values = [
+      program.nombreHommes,
+      program.nombreFemmes,
+      program.nombreGarcons,
+      program.nombreFilles,
+    ];
+    if (values.every((v) => v == null)) {
+      return '--';
+    }
+    return 'H: ${program.nombreHommes ?? 0}, F: ${program.nombreFemmes ?? 0}, G: ${program.nombreGarcons ?? 0}, Fi: ${program.nombreFilles ?? 0}';
+  }
+
+  Widget _buildConversionsCell(Program program) {
+    final text = _formatConversionsText(program);
+    return text == '--' ? const Text('--') : Text(text);
+  }
+
+  String _formatConversionsText(Program program) {
+    if (!_isEvangelisation(program)) return '--';
+    final values = [
+      program.conversionsHommes,
+      program.conversionsFemmes,
+      program.conversionsGarcons,
+      program.conversionsFilles,
+    ];
+    if (values.every((v) => v == null)) return '--';
+    return 'H: ${program.conversionsHommes ?? 0}, F: ${program.conversionsFemmes ?? 0}, G: ${program.conversionsGarcons ?? 0}, Fi: ${program.conversionsFilles ?? 0}';
+  }
+
+  Widget _buildEcoleCell(Program program) {
+    if (program.type != TypeProgramme.ecoleDuDimanche) {
+      return const Text('--');
+    }
+    final content =
+        'Classes: ${program.nombreClassesEcoleDuDimanche ?? 0}, Moniteurs: ${program.nombreMoniteursHommes ?? 0} H / ${program.nombreMonitricesFemmes ?? 0} F';
+    final lesson = program.derniereLeconEcoleDuDimanche;
+    if (lesson == null || lesson.isEmpty) {
+      return Text(content);
+    }
+    return Tooltip(
+      message: lesson,
+      child: Text(content),
+    );
+  }
+
+  Widget _buildVisiteCell(Program program) {
+    if (program.type != TypeProgramme.visite) return const Text('--');
+    final label = typeVisiteLabels[program.typeVisite] ?? 'Non precise';
+    final compte = program.compteRenduVisite;
+    final text = Text(label);
+    if (compte == null || compte.isEmpty) return text;
+    return Tooltip(
+      message: compte,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.sticky_note_2_outlined, size: 16),
+          const SizedBox(width: 4),
+          text,
         ],
       ),
     );
@@ -207,6 +351,47 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                 ),
               const SizedBox(height: 8),
               Text(
+                'Effectifs: ${_formatParticipants(program)}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              if (_isEvangelisation(program)) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Conversions: ${_formatConversionsText(program)}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+              if (program.type == TypeProgramme.ecoleDuDimanche) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Ecole du dimanche: Classes ${program.nombreClassesEcoleDuDimanche ?? 0}, Moniteurs ${program.nombreMoniteursHommes ?? 0} H / ${program.nombreMonitricesFemmes ?? 0} F',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                if (program.derniereLeconEcoleDuDimanche != null &&
+                    program.derniereLeconEcoleDuDimanche!.isNotEmpty)
+                  Text(
+                    'Derniere lecon: ${program.derniereLeconEcoleDuDimanche}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+              if (program.type == TypeProgramme.visite) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Type de visite: ${typeVisiteLabels[program.typeVisite] ?? 'Non precise'}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                if (program.compteRenduVisite != null &&
+                    program.compteRenduVisite!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      program.compteRenduVisite!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 8),
+              Text(
                 'Participants (${participants.length})',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
@@ -255,19 +440,57 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
   final _locationCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
   final _observationsCtrl = TextEditingController();
+  final _nombreHommesCtrl = TextEditingController();
+  final _nombreFemmesCtrl = TextEditingController();
+  final _nombreGarconsCtrl = TextEditingController();
+  final _nombreFillesCtrl = TextEditingController();
+  final _convHommesCtrl = TextEditingController();
+  final _convFemmesCtrl = TextEditingController();
+  final _convGarconsCtrl = TextEditingController();
+  final _convFillesCtrl = TextEditingController();
+  final _classesCtrl = TextEditingController();
+  final _moniteursHommesCtrl = TextEditingController();
+  final _monitricesFemmesCtrl = TextEditingController();
+  final _derniereLeconCtrl = TextEditingController();
+  final _compteRenduVisiteCtrl = TextEditingController();
+  TypeVisite? _typeVisite;
   final _selectedParticipants = <String>{};
+
+  bool get _isEvangelisationType =>
+      _type == TypeProgramme.evangelisationMasse ||
+      _type == TypeProgramme.evangelisationPorteAPorte;
+
+  bool get _isEcoleType => _type == TypeProgramme.ecoleDuDimanche;
+
+  bool get _isVisiteType => _type == TypeProgramme.visite;
 
   @override
   void initState() {
     super.initState();
     final p = widget.program;
+    _type = p?.type ?? TypeProgramme.culte;
+    _date = p?.date ?? DateTime.now();
     if (p != null) {
-      _type = p.type;
-      _date = p.date;
       _locationCtrl.text = p.location;
       _descriptionCtrl.text = p.description ?? '';
       _observationsCtrl.text = p.observations ?? '';
       _selectedParticipants.addAll(p.participantIds);
+      _nombreHommesCtrl.text = p.nombreHommes?.toString() ?? '';
+      _nombreFemmesCtrl.text = p.nombreFemmes?.toString() ?? '';
+      _nombreGarconsCtrl.text = p.nombreGarcons?.toString() ?? '';
+      _nombreFillesCtrl.text = p.nombreFilles?.toString() ?? '';
+      _convHommesCtrl.text = p.conversionsHommes?.toString() ?? '';
+      _convFemmesCtrl.text = p.conversionsFemmes?.toString() ?? '';
+      _convGarconsCtrl.text = p.conversionsGarcons?.toString() ?? '';
+      _convFillesCtrl.text = p.conversionsFilles?.toString() ?? '';
+      _classesCtrl.text = p.nombreClassesEcoleDuDimanche?.toString() ?? '';
+      _moniteursHommesCtrl.text =
+          p.nombreMoniteursHommes?.toString() ?? '';
+      _monitricesFemmesCtrl.text =
+          p.nombreMonitricesFemmes?.toString() ?? '';
+      _derniereLeconCtrl.text = p.derniereLeconEcoleDuDimanche ?? '';
+      _typeVisite = p.typeVisite;
+      _compteRenduVisiteCtrl.text = p.compteRenduVisite ?? '';
     }
   }
 
@@ -276,6 +499,19 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
     _locationCtrl.dispose();
     _descriptionCtrl.dispose();
     _observationsCtrl.dispose();
+    _nombreHommesCtrl.dispose();
+    _nombreFemmesCtrl.dispose();
+    _nombreGarconsCtrl.dispose();
+    _nombreFillesCtrl.dispose();
+    _convHommesCtrl.dispose();
+    _convFemmesCtrl.dispose();
+    _convGarconsCtrl.dispose();
+    _convFillesCtrl.dispose();
+    _classesCtrl.dispose();
+    _moniteursHommesCtrl.dispose();
+    _monitricesFemmesCtrl.dispose();
+    _derniereLeconCtrl.dispose();
+    _compteRenduVisiteCtrl.dispose();
     super.dispose();
   }
 
@@ -287,7 +523,7 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
     return AlertDialog(
       title: Text(isEditing ? 'Modifier le programme' : 'Nouveau programme'),
       content: SizedBox(
-        width: 520,
+        width: 620,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -296,7 +532,8 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
               children: [
                 DropdownButtonFormField<TypeProgramme>(
                   initialValue: _type,
-                  decoration: const InputDecoration(labelText: 'Type'),
+                  decoration:
+                      const InputDecoration(labelText: 'Type de programme'),
                   items: TypeProgramme.values
                       .map(
                         (t) => DropdownMenuItem(
@@ -305,7 +542,12 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
                         ),
                       )
                       .toList(),
-                  onChanged: (value) => setState(() => _type = value),
+                  onChanged: (value) => setState(() {
+                    _type = value;
+                    if (_type != TypeProgramme.visite) {
+                      _typeVisite = null;
+                    }
+                  }),
                   validator: (v) => v == null ? 'Requis' : null,
                 ),
                 const SizedBox(height: 12),
@@ -333,11 +575,181 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
                   decoration: const InputDecoration(labelText: 'Observations'),
                   maxLines: 3,
                 ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Participants (effectifs)',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 160,
+                      child: _buildIntField(
+                        label: 'Nombre d hommes',
+                        controller: _nombreHommesCtrl,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: _buildIntField(
+                        label: 'Nombre de femmes',
+                        controller: _nombreFemmesCtrl,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: _buildIntField(
+                        label: 'Nombre de garcons',
+                        controller: _nombreGarconsCtrl,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: _buildIntField(
+                        label: 'Nombre de filles',
+                        controller: _nombreFillesCtrl,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isEvangelisationType) ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Conversions',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: 160,
+                        child: _buildIntField(
+                          label: 'Conversions hommes',
+                          controller: _convHommesCtrl,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 160,
+                        child: _buildIntField(
+                          label: 'Conversions femmes',
+                          controller: _convFemmesCtrl,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 160,
+                        child: _buildIntField(
+                          label: 'Conversions garcons',
+                          controller: _convGarconsCtrl,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 160,
+                        child: _buildIntField(
+                          label: 'Conversions filles',
+                          controller: _convFillesCtrl,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (_isEcoleType) ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Ecole du dimanche',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: 180,
+                        child: _buildIntField(
+                          label: 'Nombre de classes',
+                          controller: _classesCtrl,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: _buildIntField(
+                          label: 'Moniteurs hommes',
+                          controller: _moniteursHommesCtrl,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: _buildIntField(
+                          label: 'Monitrices femmes',
+                          controller: _monitricesFemmesCtrl,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _derniereLeconCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Derniere lecon etudiee',
+                    ),
+                  ),
+                ],
+                if (_isVisiteType) ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Visite',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<TypeVisite>(
+                    initialValue: _typeVisite,
+                    decoration:
+                        const InputDecoration(labelText: 'Type de visite'),
+                    items: TypeVisite.values
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(typeVisiteLabels[t]!),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => setState(() => _typeVisite = value),
+                    validator: (v) {
+                      if (!_isVisiteType) return null;
+                      return v == null ? 'Requis' : null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _compteRenduVisiteCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Compte-rendu de la visite',
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Participants',
+                    'Participants identifies',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -386,9 +798,51 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
     );
   }
 
+  Widget _buildIntField({
+    required String label,
+    required TextEditingController controller,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(labelText: label),
+      validator: (v) {
+        final trimmed = v?.trim() ?? '';
+        if (trimmed.isEmpty) return null;
+        final parsed = int.tryParse(trimmed);
+        if (parsed == null) return 'Nombre invalide';
+        if (parsed < 0) return 'Doit etre >= 0';
+        return null;
+      },
+    );
+  }
+
+  int? _intFromCtrl(TextEditingController controller) {
+    final raw = controller.text.trim();
+    if (raw.isEmpty) return null;
+    return int.tryParse(raw);
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_date == null) return;
+    if (_type == null) {
+      _showMessage('Merci de choisir un type de programme');
+      return;
+    }
+    if (_date == null) {
+      _showMessage('Merci de choisir une date et une heure');
+      return;
+    }
+    if (_isVisiteType && _typeVisite == null) {
+      _showMessage('Merci de choisir un type de visite');
+      return;
+    }
     final notifier = ref.read(programsProvider.notifier);
     final id = widget.program?.id ?? const Uuid().v4();
     final program = Program(
@@ -403,6 +857,33 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
           ? null
           : _observationsCtrl.text.trim(),
       participantIds: _selectedParticipants.toList(),
+      nombreHommes: _intFromCtrl(_nombreHommesCtrl),
+      nombreFemmes: _intFromCtrl(_nombreFemmesCtrl),
+      nombreGarcons: _intFromCtrl(_nombreGarconsCtrl),
+      nombreFilles: _intFromCtrl(_nombreFillesCtrl),
+      conversionsHommes:
+          _isEvangelisationType ? _intFromCtrl(_convHommesCtrl) : null,
+      conversionsFemmes:
+          _isEvangelisationType ? _intFromCtrl(_convFemmesCtrl) : null,
+      conversionsGarcons:
+          _isEvangelisationType ? _intFromCtrl(_convGarconsCtrl) : null,
+      conversionsFilles:
+          _isEvangelisationType ? _intFromCtrl(_convFillesCtrl) : null,
+      nombreClassesEcoleDuDimanche:
+          _isEcoleType ? _intFromCtrl(_classesCtrl) : null,
+      nombreMoniteursHommes:
+          _isEcoleType ? _intFromCtrl(_moniteursHommesCtrl) : null,
+      nombreMonitricesFemmes:
+          _isEcoleType ? _intFromCtrl(_monitricesFemmesCtrl) : null,
+      derniereLeconEcoleDuDimanche: _isEcoleType &&
+              _derniereLeconCtrl.text.trim().isNotEmpty
+          ? _derniereLeconCtrl.text.trim()
+          : null,
+      typeVisite: _isVisiteType ? _typeVisite : null,
+      compteRenduVisite: _isVisiteType &&
+              _compteRenduVisiteCtrl.text.trim().isNotEmpty
+          ? _compteRenduVisiteCtrl.text.trim()
+          : null,
     );
     if (widget.program == null) {
       await notifier.addProgram(program);
@@ -459,6 +940,57 @@ class _DateField extends StatelessWidget {
           value != null
               ? '${dateFormatter.format(value!)} ${value!.hour.toString().padLeft(2, '0')}:${value!.minute.toString().padLeft(2, '0')}'
               : 'Choisir une date',
+        ),
+      ),
+    );
+  }
+}
+
+class _DateFilterField extends StatelessWidget {
+  const _DateFilterField({
+    required this.label,
+    required this.value,
+    required this.onSelected,
+  });
+
+  final String label;
+  final DateTime? value;
+  final void Function(DateTime?) onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime.now().subtract(const Duration(days: 365 * 2)),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+        );
+        if (pickedDate != null) {
+          onSelected(pickedDate);
+        }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: value == null
+              ? const Icon(Icons.event)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => onSelected(null),
+                    ),
+                    const Icon(Icons.event),
+                  ],
+                ),
+          suffixIconConstraints:
+              const BoxConstraints(minWidth: 80, minHeight: 48),
+        ),
+        child: Text(
+          value != null ? dateFormatter.format(value!) : 'Aucune date',
         ),
       ),
     );
