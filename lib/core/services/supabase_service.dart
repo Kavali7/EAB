@@ -1,6 +1,9 @@
 import '../../models/accounting_entry.dart';
 import '../../models/famille.dart';
 import '../../models/member.dart';
+import '../../models/region_eglise.dart';
+import '../../models/district_eglise.dart';
+import '../../models/assemblee_locale.dart';
 import '../../models/program.dart';
 import 'data_service.dart';
 
@@ -13,6 +16,16 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<List<Famille>> getFamilies() async => _notImplemented();
+
+  @override
+  Future<List<RegionEglise>> getRegions() async => _notImplemented();
+
+  @override
+  Future<List<DistrictEglise>> getDistricts() async => _notImplemented();
+
+  @override
+  Future<List<AssembleeLocale>> getAssembleesLocales() async =>
+      _notImplemented();
 
   @override
   Future<void> addAccountingEntry(AccountingEntry entry) async =>

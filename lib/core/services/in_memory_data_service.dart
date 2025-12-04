@@ -4,6 +4,9 @@ import '../../core/constants.dart';
 import '../../models/accounting_entry.dart';
 import '../../models/famille.dart';
 import '../../models/member.dart';
+import '../../models/region_eglise.dart';
+import '../../models/district_eglise.dart';
+import '../../models/assemblee_locale.dart';
 import '../../models/program.dart';
 import 'data_service.dart';
 
@@ -16,16 +19,167 @@ class InMemoryDataService implements DataService {
   final _programs = <Program>[];
   final _entries = <AccountingEntry>[];
   final _familles = <Famille>[];
+  final _regions = <RegionEglise>[];
+  final _districts = <DistrictEglise>[];
+  final _assembleesLocales = <AssembleeLocale>[];
   final _uuid = const Uuid();
 
   List<Famille> get familles => List<Famille>.unmodifiable(_familles);
+  List<RegionEglise> get regions => List<RegionEglise>.unmodifiable(_regions);
+  List<DistrictEglise> get districts =>
+      List<DistrictEglise>.unmodifiable(_districts);
+  List<AssembleeLocale> get assembleesLocales =>
+      List<AssembleeLocale>.unmodifiable(_assembleesLocales);
   @override
   Future<List<Famille>> getFamilies() async {
     return List<Famille>.unmodifiable(_familles);
   }
 
+  @override
+  Future<List<RegionEglise>> getRegions() async {
+    return List<RegionEglise>.unmodifiable(_regions);
+  }
+
+  @override
+  Future<List<DistrictEglise>> getDistricts() async {
+    return List<DistrictEglise>.unmodifiable(_districts);
+  }
+
+  @override
+  Future<List<AssembleeLocale>> getAssembleesLocales() async {
+    return List<AssembleeLocale>.unmodifiable(_assembleesLocales);
+  }
+
   void _seed() {
     if (_members.isNotEmpty) return;
+
+    _regions.addAll([
+      const RegionEglise(id: 'region_sud', nom: 'Region Sud', code: 'REG-SUD'),
+      const RegionEglise(
+        id: 'region_centre',
+        nom: 'Region Centre',
+        code: 'REG-CENTRE',
+      ),
+      const RegionEglise(id: 'region_nord', nom: 'Region Nord', code: 'REG-NORD'),
+    ]);
+
+    _districts.addAll([
+      const DistrictEglise(
+        id: 'district_cotonou',
+        nom: 'District de Cotonou',
+        code: 'DIS-COT',
+        idRegion: 'region_sud',
+      ),
+      const DistrictEglise(
+        id: 'district_calavi',
+        nom: 'District d Abomey-Calavi',
+        code: 'DIS-CAL',
+        idRegion: 'region_sud',
+      ),
+      const DistrictEglise(
+        id: 'district_ouidah',
+        nom: 'District de Ouidah',
+        code: 'DIS-OUI',
+        idRegion: 'region_sud',
+      ),
+      const DistrictEglise(
+        id: 'district_porto_novo',
+        nom: 'District de Porto-Novo',
+        code: 'DIS-PNO',
+        idRegion: 'region_centre',
+      ),
+      const DistrictEglise(
+        id: 'district_bohicon',
+        nom: 'District de Bohicon',
+        code: 'DIS-BOH',
+        idRegion: 'region_centre',
+      ),
+      const DistrictEglise(
+        id: 'district_parakou',
+        nom: 'District de Parakou',
+        code: 'DIS-PAR',
+        idRegion: 'region_nord',
+      ),
+      const DistrictEglise(
+        id: 'district_natitingou',
+        nom: 'District de Natitingou',
+        code: 'DIS-NAT',
+        idRegion: 'region_nord',
+      ),
+    ]);
+
+    _assembleesLocales.addAll([
+      const AssembleeLocale(
+        id: 'assemblee_cotonou_centre',
+        nom: 'Assemblee de Cotonou Centre',
+        code: 'ASS-COT-CENTRE',
+        idDistrict: 'district_cotonou',
+        ville: 'Cotonou',
+        quartier: 'Centre-ville',
+        telephone: '+229 01 00 00 01',
+        email: 'cotonou.centre@example.com',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_agla',
+        nom: 'Assemblee d Agla',
+        code: 'ASS-AGLA',
+        idDistrict: 'district_cotonou',
+        ville: 'Cotonou',
+        quartier: 'Agla',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_fidjrosse',
+        nom: 'Assemblee de Fidjrosse',
+        code: 'ASS-FIDJROSSE',
+        idDistrict: 'district_cotonou',
+        ville: 'Cotonou',
+        quartier: 'Fidjrosse',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_calavi_centre',
+        nom: 'Assemblee de Calavi Centre',
+        code: 'ASS-CAL-CENTRE',
+        idDistrict: 'district_calavi',
+        ville: 'Abomey-Calavi',
+        quartier: 'Centre',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_akassato',
+        nom: 'Assemblee d Akassato',
+        code: 'ASS-AKA',
+        idDistrict: 'district_calavi',
+        ville: 'Abomey-Calavi',
+        quartier: 'Akassato',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_porto_novo_koutongou',
+        nom: 'Assemblee de Porto-Novo Koutongou',
+        code: 'ASS-PNO-KOU',
+        idDistrict: 'district_porto_novo',
+        ville: 'Porto-Novo',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_ouidah_centre',
+        nom: 'Assemblee de Ouidah Centre',
+        code: 'ASS-OUI-CENTRE',
+        idDistrict: 'district_ouidah',
+        ville: 'Ouidah',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_parakou_centre',
+        nom: 'Assemblee de Parakou Centre',
+        code: 'ASS-PAR-CENTRE',
+        idDistrict: 'district_parakou',
+        ville: 'Parakou',
+      ),
+      const AssembleeLocale(
+        id: 'assemblee_natitingou_centre',
+        nom: 'Assemblee de Natitingou Centre',
+        code: 'ASS-NAT-CENTRE',
+        idDistrict: 'district_natitingou',
+        ville: 'Natitingou',
+      ),
+    ]);
 
     _members.addAll([
       Member(
@@ -47,6 +201,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2010, 9, 1),
         role: RoleFidele.pasteur,
         idFamille: 'famille_adjibi',
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_002',
@@ -67,6 +222,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2010, 9, 1),
         role: RoleFidele.diaconesse,
         idFamille: 'famille_adjibi',
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_003',
@@ -88,6 +244,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.ancien,
         vulnerabilites: {VulnerabiliteFidele.troisiemeAge},
         idFamille: 'famille_hounkpe',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
       Member(
         id: 'fidele_004',
@@ -108,6 +265,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2005, 3, 10),
         role: RoleFidele.membre,
         idFamille: 'famille_hounkpe',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
       Member(
         id: 'fidele_005',
@@ -128,6 +286,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2008, 6, 1),
         role: RoleFidele.ancien,
         idFamille: 'famille_gbeto',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_006',
@@ -148,6 +307,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2008, 6, 1),
         role: RoleFidele.diaconesse,
         idFamille: 'famille_gbeto',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_007',
@@ -168,6 +328,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2013, 5, 12),
         role: RoleFidele.diacre,
         idFamille: 'famille_dossou',
+        idAssembleeLocale: 'assemblee_agla',
       ),
       Member(
         id: 'fidele_008',
@@ -188,6 +349,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2013, 5, 12),
         role: RoleFidele.membre,
         idFamille: 'famille_dossou',
+        idAssembleeLocale: 'assemblee_agla',
       ),
       Member(
         id: 'fidele_009',
@@ -209,6 +371,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.ancien,
         vulnerabilites: {VulnerabiliteFidele.troisiemeAge},
         idFamille: 'famille_akpo',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_010',
@@ -229,6 +392,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2015, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_adjibi',
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_011',
@@ -248,6 +412,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2017, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_adjibi',
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_012',
@@ -268,6 +433,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2015, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_hounkpe',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
       Member(
         id: 'fidele_013',
@@ -287,6 +453,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2012, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_hounkpe',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
       Member(
         id: 'fidele_014',
@@ -309,6 +476,7 @@ class InMemoryDataService implements DataService {
         motifSortie: 'Transfert vers une autre assemblee',
         role: RoleFidele.membre,
         idFamille: 'famille_gbeto',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_015',
@@ -328,6 +496,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2014, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_gbeto',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_016',
@@ -347,6 +516,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2015, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_dossou',
+        idAssembleeLocale: 'assemblee_agla',
       ),
       Member(
         id: 'fidele_017',
@@ -366,6 +536,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2017, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_dossou',
+        idAssembleeLocale: 'assemblee_agla',
       ),
       Member(
         id: 'fidele_018',
@@ -386,6 +557,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2002, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_akpo',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_019',
@@ -405,6 +577,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2012, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_akpo',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_020',
@@ -424,6 +597,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2015, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_akpo',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_021',
@@ -444,6 +618,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2016, 3, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_kassa',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_022',
@@ -464,6 +639,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2016, 3, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_kassa',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_023',
@@ -483,6 +659,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2022, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_kassa',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_024',
@@ -498,6 +675,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2022, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_kassa',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_025',
@@ -518,6 +696,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.diacre,
         vulnerabilites: {VulnerabiliteFidele.troisiemeAge},
         idFamille: 'famille_ahouansou',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_026',
@@ -538,6 +717,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.diaconesse,
         vulnerabilites: {VulnerabiliteFidele.troisiemeAge},
         idFamille: 'famille_ahouansou',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_027',
@@ -558,6 +738,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2012, 6, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_ahouansou',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_028',
@@ -577,6 +758,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2013, 6, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_ahouansou',
+        idAssembleeLocale: 'assemblee_ouidah_centre',
       ),
       Member(
         id: 'fidele_029',
@@ -598,6 +780,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.veuve},
         idFamille: 'famille_azon',
+        idAssembleeLocale: 'assemblee_fidjrosse',
       ),
       Member(
         id: 'fidele_030',
@@ -618,6 +801,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.orphelin},
         idFamille: 'famille_azon',
+        idAssembleeLocale: 'assemblee_fidjrosse',
       ),
       Member(
         id: 'fidele_031',
@@ -638,6 +822,7 @@ class InMemoryDataService implements DataService {
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.orphelin},
         idFamille: 'famille_azon',
+        idAssembleeLocale: 'assemblee_fidjrosse',
       ),
       Member(
         id: 'fidele_032',
@@ -657,6 +842,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2016, 6, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_alabi',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_033',
@@ -678,6 +864,7 @@ class InMemoryDataService implements DataService {
         motifSortie: 'Demenagement a une autre ville',
         role: RoleFidele.membre,
         idFamille: 'famille_alabi',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_034',
@@ -697,6 +884,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2018, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_alabi',
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_035',
@@ -716,6 +904,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2009, 1, 1),
         role: RoleFidele.diacre,
         idFamille: 'famille_mensah',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_036',
@@ -735,6 +924,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2009, 1, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_mensah',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_037',
@@ -754,6 +944,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2014, 9, 1),
         role: RoleFidele.membre,
         idFamille: 'famille_mensah',
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_038',
@@ -773,6 +964,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2018, 9, 1),
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.orphelin},
+        idAssembleeLocale: 'assemblee_fidjrosse',
       ),
       Member(
         id: 'fidele_039',
@@ -792,6 +984,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2019, 9, 1),
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.orphelin},
+        idAssembleeLocale: 'assemblee_agla',
       ),
       Member(
         id: 'fidele_040',
@@ -811,6 +1004,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2016, 9, 1),
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.orphelin},
+        idAssembleeLocale: 'assemblee_calavi_centre',
       ),
       Member(
         id: 'fidele_041',
@@ -833,6 +1027,7 @@ class InMemoryDataService implements DataService {
           VulnerabiliteFidele.veuf,
           VulnerabiliteFidele.troisiemeAge,
         },
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
       Member(
         id: 'fidele_042',
@@ -852,6 +1047,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2014, 9, 1),
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.handicape},
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_043',
@@ -873,6 +1069,7 @@ class InMemoryDataService implements DataService {
         motifSortie: 'Abandon de la foi',
         role: RoleFidele.membre,
         vulnerabilites: {VulnerabiliteFidele.handicape},
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
       ),
       Member(
         id: 'fidele_044',
@@ -892,6 +1089,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2004, 9, 1),
         dateDeces: DateTime(2023, 12, 1),
         role: RoleFidele.membre,
+        idAssembleeLocale: 'assemblee_akassato',
       ),
       Member(
         id: 'fidele_045',
@@ -911,6 +1109,7 @@ class InMemoryDataService implements DataService {
         dateEntree: DateTime(2004, 9, 1),
         dateDeces: DateTime(2022, 8, 20),
         role: RoleFidele.membre,
+        idAssembleeLocale: 'assemblee_akassato',
       ),
     ]);
 
@@ -991,6 +1190,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 3, 2),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - serie Foi et service',
         observations: 'Mettre en avant les groupes famille',
         participantIds: const [
@@ -1009,6 +1209,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.ecoleDuDimanche,
         date: DateTime(2025, 3, 2),
         location: 'Salle des enfants',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Ecole du dimanche - classes regroupees',
         observations: 'Chants appris pour Paques',
         participantIds: const [
@@ -1031,6 +1232,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.sainteCene,
         date: DateTime(2025, 3, 2),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Service de sainte cene',
         observations: 'Distribution en fin de culte',
         participantIds: const [
@@ -1048,6 +1250,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 3, 3),
         location: 'Porto-Novo - famille Adjibi',
+        idAssembleeLocale: 'assemblee_porto_novo_koutongou',
         description: 'Visite pastorale',
         typeVisite: TypeVisite.fidele,
         participantIds: const [
@@ -1066,6 +1269,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.reunionPriere,
         date: DateTime(2025, 3, 4),
         location: 'Temple central - salle de priere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Reunion de priere du mardi',
         observations: 'Intercession pour les malades',
         participantIds: const [
@@ -1083,6 +1287,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 3, 7),
         location: 'Mairie d Abomey-Calavi',
+        idAssembleeLocale: 'assemblee_calavi_centre',
         description: 'Visite aux autorites locales',
         typeVisite: TypeVisite.autorite,
         participantIds: const [
@@ -1102,6 +1307,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationPorteAPorte,
         date: DateTime(2025, 3, 8),
         location: 'Quartier Tokan',
+        idAssembleeLocale: 'assemblee_calavi_centre',
         description: 'Porte a porte en petits groupes',
         observations: 'Distribution de tracts et priere',
         participantIds: const [
@@ -1124,6 +1330,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 3, 9),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - temoignages',
         observations: 'Mise en avant des jeunes convertis',
         participantIds: const [
@@ -1142,6 +1349,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.mainsAssociation,
         date: DateTime(2025, 3, 9),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Mains d association de trois fideles',
         observations: 'Suivi pastoral programme',
         participantIds: const [
@@ -1159,6 +1367,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.reunionPriere,
         date: DateTime(2025, 3, 11),
         location: 'Temple central - salle de priere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Reunion de priere du mardi',
         observations: 'Focus sur la consolidation des nouveaux',
         participantIds: const [
@@ -1176,6 +1385,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.discipline,
         date: DateTime(2025, 3, 12),
         location: 'Salle des anciens',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Seance de discipline et accompagnement',
         observations: 'Plan de suivi sur 3 mois',
         participantIds: const [
@@ -1193,6 +1403,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationMasse,
         date: DateTime(2025, 3, 15),
         location: 'Marche de Calavi',
+        idAssembleeLocale: 'assemblee_calavi_centre',
         description: 'Campagne d evangelisation de masse',
         observations: 'Sono mobile et coordination logistique',
         participantIds: const [
@@ -1215,6 +1426,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 3, 16),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - serie Foi et service',
         observations: 'Appel a la formation des moniteurs',
         participantIds: const [
@@ -1233,6 +1445,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.ecoleDuDimanche,
         date: DateTime(2025, 3, 16),
         location: 'Salle des enfants',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Ecole du dimanche - ateliers',
         observations: 'Preparation d un sketch biblique',
         participantIds: const [
@@ -1255,6 +1468,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 3, 17),
         location: 'ONG Lumiere du Sud',
+        idAssembleeLocale: 'assemblee_agla',
         description: 'Visite partenaire',
         typeVisite: TypeVisite.partenaire,
         participantIds: const [
@@ -1274,6 +1488,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.reunionPriere,
         date: DateTime(2025, 3, 18),
         location: 'Temple central - salle de priere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Reunion de priere du mardi',
         observations: 'Priere pour les evangelisations a venir',
         participantIds: const [
@@ -1291,6 +1506,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.baptemes,
         date: DateTime(2025, 3, 22),
         location: 'Temple central - baptistere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Service de baptemes de printemps',
         observations: 'Certificats remis apres temoignages',
         participantIds: const [
@@ -1308,6 +1524,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 3, 23),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - preparation Paques',
         observations: 'Presentation du programme de Paques',
         participantIds: const [
@@ -1326,6 +1543,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 3, 24),
         location: 'Assemblee soeur de Godomey',
+        idAssembleeLocale: 'assemblee_calavi_centre',
         description: 'Visite fraternelle',
         typeVisite: TypeVisite.autreAssemblee,
         participantIds: const [
@@ -1346,6 +1564,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationPorteAPorte,
         date: DateTime(2025, 3, 29),
         location: 'Quartier Kindonou',
+        idAssembleeLocale: 'assemblee_agla',
         description: 'Sortie porte a porte',
         observations: 'Equipe divisee en trois parcours',
         participantIds: const [
@@ -1368,6 +1587,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 3, 30),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - louange et mission',
         observations: 'Collecte speciale pour mission rurale',
         participantIds: const [
@@ -1386,6 +1606,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.ecoleDuDimanche,
         date: DateTime(2025, 3, 30),
         location: 'Salle des enfants',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Ecole du dimanche - dimanche creatif',
         observations: 'Chant final repete avec la chorale jeunesse',
         participantIds: const [
@@ -1408,6 +1629,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 4, 2),
         location: 'Cotonou - chez soeur Victorine',
+        idAssembleeLocale: 'assemblee_fidjrosse',
         description: 'Visite a domicile',
         typeVisite: TypeVisite.fidele,
         participantIds: const [
@@ -1427,6 +1649,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 4, 6),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - debut mois d avril',
         observations: 'Mise en avant de la chorale mixte',
         participantIds: const [
@@ -1445,6 +1668,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.reunionPriere,
         date: DateTime(2025, 4, 8),
         location: 'Temple central - salle de priere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Reunion de priere du mardi',
         observations: 'Priere pour les examens des jeunes',
         participantIds: const [
@@ -1462,6 +1686,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationMasse,
         date: DateTime(2025, 4, 12),
         location: 'Place publique d Abomey-Calavi',
+        idAssembleeLocale: 'assemblee_calavi_centre',
         description: 'Campagne d evangelisation regionale',
         observations: 'Coordination avec les partenaires locaux',
         participantIds: const [
@@ -1484,6 +1709,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 4, 13),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - engagement communautaire',
         observations: 'Presentation des nouveaux moniteurs',
         participantIds: const [
@@ -1502,6 +1728,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.ecoleDuDimanche,
         date: DateTime(2025, 4, 13),
         location: 'Salle des enfants',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Ecole du dimanche - journee familles',
         observations: 'Repetition pour la fete des enfants',
         participantIds: const [
@@ -1524,6 +1751,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.mainsAssociation,
         date: DateTime(2025, 4, 13),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Mains d association et engagement',
         observations: 'Suivi des nouveaux engagees',
         participantIds: const [
@@ -1541,6 +1769,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.visite,
         date: DateTime(2025, 4, 16),
         location: 'Association Jeunes Solidaires',
+        idAssembleeLocale: 'assemblee_agla',
         description: 'Visite partenaire',
         typeVisite: TypeVisite.autre,
         participantIds: const [
@@ -1561,6 +1790,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.mariage,
         date: DateTime(2025, 4, 18),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_akassato',
         description: 'Mariage de la famille Kassa',
         observations: 'Cadeaux remis par les departements',
         participantIds: const [
@@ -1579,6 +1809,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationPorteAPorte,
         date: DateTime(2025, 4, 19),
         location: 'Quartier Vedoko',
+        idAssembleeLocale: 'assemblee_fidjrosse',
         description: 'Evangelisation porte a porte',
         observations: 'Equipe jeunesse mobilisee',
         participantIds: const [
@@ -1601,6 +1832,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.baptemes,
         date: DateTime(2025, 4, 20),
         location: 'Temple central - baptistere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Service de baptemes Paques',
         observations: 'Accompagnement par les moniteurs jeunesse',
         participantIds: const [
@@ -1618,6 +1850,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 4, 20),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte de Paques',
         observations: 'Celebration avec chorale enfants et jeunesse',
         participantIds: const [
@@ -1636,6 +1869,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.reunionPriere,
         date: DateTime(2025, 4, 22),
         location: 'Temple central - salle de priere',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Reunion de priere du mardi',
         observations: 'Priere pour les familles en deuil',
         participantIds: const [
@@ -1653,6 +1887,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.evangelisationMasse,
         date: DateTime(2025, 4, 26),
         location: 'Stade de quartier',
+        idAssembleeLocale: 'assemblee_agla',
         description: 'Grande soiree evangelisation',
         observations: 'Coordination avec l equipe securite',
         participantIds: const [
@@ -1675,6 +1910,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.culte,
         date: DateTime(2025, 4, 27),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Culte dominical - fin de mois',
         observations: 'Remerciements aux equipes evangelisation',
         participantIds: const [
@@ -1693,6 +1929,7 @@ class InMemoryDataService implements DataService {
         type: TypeProgramme.sainteCene,
         date: DateTime(2025, 4, 27),
         location: 'Temple central',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
         description: 'Service de sainte cene',
         observations: 'Moments de reconnaissance et benediction',
         participantIds: const [
