@@ -1,4 +1,5 @@
 import '../../models/accounting_entry.dart';
+import '../../models/famille.dart';
 import '../../models/member.dart';
 import '../../models/program.dart';
 import 'data_service.dart';
@@ -9,6 +10,9 @@ class SupabaseDataService implements DataService {
 
   Never _notImplemented() =>
       throw UnimplementedError('Supabase integration sera branchee plus tard.');
+
+  @override
+  Future<List<Famille>> getFamilies() async => _notImplemented();
 
   @override
   Future<void> addAccountingEntry(AccountingEntry entry) async =>

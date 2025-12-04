@@ -78,6 +78,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     SizedBox(
                       width: 200,
                       child: DropdownButtonFormField<AccountingType?>(
+                        isExpanded: true,
                         decoration: const InputDecoration(labelText: 'Type'),
                         initialValue: _typeFilter,
                         items: const [
@@ -130,6 +131,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     SizedBox(
                       width: 240,
                       child: DropdownButtonFormField<String?>(
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Categorie',
                         ),
@@ -594,6 +596,7 @@ class _AccountingEntryFormState extends ConsumerState<AccountingEntryForm> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<AccountingType>(
+                  isExpanded: true,
                   initialValue: _type,
                   decoration: const InputDecoration(labelText: 'Type'),
                   items: const [
@@ -613,6 +616,7 @@ class _AccountingEntryFormState extends ConsumerState<AccountingEntryForm> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _category,
                   decoration: const InputDecoration(labelText: 'Categorie'),
                   items: categories
@@ -636,6 +640,7 @@ class _AccountingEntryFormState extends ConsumerState<AccountingEntryForm> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _paymentMethod,
                   decoration: const InputDecoration(
                     labelText: 'Mode de paiement',

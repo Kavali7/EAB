@@ -6,7 +6,7 @@ void main() {
   test('Program JSON keeps observations', () {
     final program = Program(
       id: 'p1',
-      type: ProgramType.prayer,
+      type: TypeProgramme.reunionPriere,
       date: DateTime(2025, 1, 1, 18, 0),
       location: 'Temple central',
       description: 'Veillee',

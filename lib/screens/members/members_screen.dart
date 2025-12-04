@@ -1,13 +1,43 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../models/famille.dart';
 import '../../models/member.dart';
+import '../../providers/families_provider.dart';
 import '../../providers/members_provider.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+
+const roleLabels = {
+  RoleFidele.membre: 'Membre',
+  RoleFidele.pasteur: 'Pasteur',
+  RoleFidele.ancien: 'Ancien',
+  RoleFidele.diacre: 'Diacre',
+  RoleFidele.diaconesse: 'Diaconesse',
+  RoleFidele.evangeliste: 'Evangeliste',
+  RoleFidele.autreOfficier: 'Autre officier',
+};
+
+const statutFideleLabels = {
+  StatutFidele.actif: 'Actif',
+  StatutFidele.inactif: 'Inactif',
+  StatutFidele.parti: 'Parti',
+  StatutFidele.decede: 'Decede',
+  StatutFidele.transfere: 'Transfere',
+};
+
+const vulnerabiliteLabels = {
+  VulnerabiliteFidele.orphelin: 'Orphelin',
+  VulnerabiliteFidele.veuf: 'Veuf',
+  VulnerabiliteFidele.veuve: 'Veuve',
+  VulnerabiliteFidele.handicape: 'Handicape',
+  VulnerabiliteFidele.troisiemeAge: '3e age',
+  VulnerabiliteFidele.autre: 'Autre',
+};
 
 class MembersScreen extends ConsumerStatefulWidget {
   const MembersScreen({super.key});
@@ -21,38 +51,76 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   Gender? _genderFilter;
   MaritalStatus? _maritalFilter;
   int? _baptismYearFilter;
+  RoleFidele? _roleFilter;
+  StatutFidele? _statutFilter;
+  bool _onlyChildren = false;
+  bool _onlyOfficers = false;
+  VulnerabiliteFidele? _vulnerabiliteFilter;
+
+  bool _isChild(Member m) {
+    final birth = m.dateNaissance ?? m.birthDate;
+    final now = DateTime.now();
+    final ageYears = now.year - birth.year -
+        ((now.month < birth.month ||
+                (now.month == birth.month && now.day < birth.day))
+            ? 1
+            : 0);
+    return ageYears < 15;
+  }
 
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
+    final familiesAsync = ref.watch(familiesProvider);
     final members = membersAsync.value ?? [];
+    final families = familiesAsync.value ?? [];
+    final familyById = {for (final f in families) f.id: f};
+
     final filtered = members.where((m) {
       final matchesQuery =
-          _query.isEmpty ||
-          m.fullName.toLowerCase().contains(_query.toLowerCase());
+          _query.isEmpty || m.fullName.toLowerCase().contains(_query.toLowerCase());
       final matchesGender = _genderFilter == null || m.gender == _genderFilter;
       final matchesMarital =
           _maritalFilter == null || m.maritalStatus == _maritalFilter;
       final matchesYear =
-          _baptismYearFilter == null ||
-          m.baptismDate?.year == _baptismYearFilter;
-      return matchesQuery && matchesGender && matchesMarital && matchesYear;
+          _baptismYearFilter == null || m.baptismDate?.year == _baptismYearFilter;
+      final matchesRole = _roleFilter == null || m.role == _roleFilter;
+      final matchesStatut = _statutFilter == null || m.statut == _statutFilter;
+      final matchesChildren = !_onlyChildren || _isChild(m);
+      final matchesOfficer = !_onlyOfficers || m.estOfficier;
+      final matchesVulnerabilite = _vulnerabiliteFilter == null
+          ? true
+          : m.vulnerabilites.contains(_vulnerabiliteFilter);
+      return matchesQuery &&
+          matchesGender &&
+          matchesMarital &&
+          matchesYear &&
+          matchesRole &&
+          matchesStatut &&
+          matchesChildren &&
+          matchesOfficer &&
+          matchesVulnerabilite;
     }).toList();
+
     final baptismYears = {
       for (final m in members)
         if (m.baptismDate != null) m.baptismDate!.year,
-    }.toList()..sort((a, b) => b.compareTo(a));
-    final maleCount = members.where((m) => m.gender == Gender.male).length;
-    final femaleCount = members.where((m) => m.gender == Gender.female).length;
-    final marriedCount = members
-        .where((m) => m.maritalStatus == MaritalStatus.married)
-        .length;
+    }.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    final active = filtered.where((m) => m.statut == StatutFidele.actif).toList();
+    final activeMale = active.where((m) => m.gender == Gender.male).length;
+    final activeFemale = active.where((m) => m.gender == Gender.female).length;
+    final childrenCount = filtered.where(_isChild).length;
+    final officersCount = filtered.where((m) => m.estOfficier).length;
+    final vulnerableCount =
+        filtered.where((m) => m.vulnerabilites.isNotEmpty).length;
 
     return AppShell(
       title: 'Fideles',
       currentRoute: '/members',
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context),
+        onPressed: () => _openForm(context, families: families),
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
       ),
@@ -66,26 +134,47 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               SizedBox(
                 width: 220,
                 child: InfoCard(
-                  title: 'Genre',
-                  value: '$maleCount H / $femaleCount F',
-                  subtitle: 'Total ${members.length}',
-                  icon: Icons.people_outline,
+                  title: 'Membres actifs (H / F)',
+                  value: '$activeMale H / $activeFemale F',
+                  subtitle: 'Total actifs ${active.length}',
+                  icon: Icons.verified_user_outlined,
                   color: ChurchTheme.navy,
                 ),
               ),
               SizedBox(
                 width: 220,
                 child: InfoCard(
-                  title: 'Maries',
-                  value: '$marriedCount',
-                  subtitle: 'Statut marital',
-                  icon: Icons.favorite_outline,
-                  color: Colors.pink[400],
+                  title: 'Enfants (0-14 ans)',
+                  value: '$childrenCount',
+                  subtitle: 'Vue filtree',
+                  icon: Icons.child_care,
+                  color: Colors.teal[700],
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: InfoCard(
+                  title: 'Officiers',
+                  value: '$officersCount',
+                  subtitle: 'Pasteur / anciens / diacres',
+                  icon: Icons.workspace_premium_outlined,
+                  color: Colors.orange[700],
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: InfoCard(
+                  title: 'Personnes vulnerables',
+                  value: '$vulnerableCount',
+                  subtitle: 'Orphelins, veufs, 3e age...',
+                  icon: Icons.warning_amber_rounded,
+                  color: Colors.red[600],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
+
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -102,52 +191,58 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               ),
               SizedBox(
                 width: 200,
-                child: DropdownButtonFormField<Gender?>(
-                  decoration: const InputDecoration(labelText: 'Genre'),
+                      child: DropdownButtonFormField<Gender?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Genre'),
                   initialValue: _genderFilter,
-                  items: [
-                    const DropdownMenuItem<Gender?>(
-                      value: null,
-                      child: Text('Tous'),
-                    ),
-                    ...Gender.values.map(
-                      (g) => DropdownMenuItem<Gender?>(
-                        value: g,
-                        child: Text(genderLabels[g]!),
-                      ),
-                    ),
-                  ],
+                  items: const [
+                    DropdownMenuItem<Gender?>(value: null, child: Text('Tous')),
+                  ]
+                      .followedBy(
+                        Gender.values.map(
+                          (g) => DropdownMenuItem<Gender?>(
+                            value: g,
+                            child: Text(genderLabels[g]!),
+                          ),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) => setState(() => _genderFilter = value),
                 ),
               ),
               SizedBox(
                 width: 220,
-                child: DropdownButtonFormField<MaritalStatus?>(
-                  decoration: const InputDecoration(
-                    labelText: 'Statut marital',
-                  ),
+                      child: DropdownButtonFormField<MaritalStatus?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Statut marital (legacy)',
+                        ),
                   initialValue: _maritalFilter,
-                  items: [
-                    const DropdownMenuItem<MaritalStatus?>(
+                  items: const [
+                    DropdownMenuItem<MaritalStatus?>(
                       value: null,
                       child: Text('Tous'),
                     ),
-                    ...MaritalStatus.values.map(
-                      (s) => DropdownMenuItem<MaritalStatus?>(
-                        value: s,
-                        child: Text(maritalStatusLabels[s]!),
-                      ),
-                    ),
-                  ],
+                  ]
+                      .followedBy(
+                        MaritalStatus.values.map(
+                          (s) => DropdownMenuItem<MaritalStatus?>(
+                            value: s,
+                            child: Text(maritalStatusLabels[s]!),
+                          ),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) => setState(() => _maritalFilter = value),
                 ),
               ),
               SizedBox(
-                width: 200,
-                child: DropdownButtonFormField<int?>(
-                  decoration: const InputDecoration(
-                    labelText: 'Annee de bapteme',
-                  ),
+                width: 220,
+                      child: DropdownButtonFormField<int?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Annee de bapteme',
+                        ),
                   initialValue: _baptismYearFilter,
                   items: [
                     const DropdownMenuItem<int?>(
@@ -155,40 +250,143 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       child: Text('Toutes'),
                     ),
                     ...baptismYears.map(
-                      (y) =>
-                          DropdownMenuItem<int?>(value: y, child: Text('$y')),
+                      (y) => DropdownMenuItem<int?>(value: y, child: Text('$y')),
                     ),
                   ],
-                  onChanged: (value) =>
-                      setState(() => _baptismYearFilter = value),
+                  onChanged: (value) => setState(() => _baptismYearFilter = value),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<RoleFidele?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Role'),
+                  initialValue: _roleFilter,
+                  items: [
+                    const DropdownMenuItem<RoleFidele?>(
+                      value: null,
+                      child: Text('Tous les roles'),
+                    ),
+                    ...RoleFidele.values.map(
+                      (r) => DropdownMenuItem<RoleFidele?>(
+                        value: r,
+                        child: Text(roleLabels[r]!),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _roleFilter = value),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: DropdownButtonFormField<StatutFidele?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Statut'),
+                  initialValue: _statutFilter,
+                  items: [
+                    const DropdownMenuItem<StatutFidele?>(
+                      value: null,
+                      child: Text('Tous les statuts'),
+                    ),
+                    ...StatutFidele.values.map(
+                      (s) => DropdownMenuItem<StatutFidele?>(
+                        value: s,
+                        child: Text(statutFideleLabels[s]!),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _statutFilter = value),
+                ),
+              ),
+              SizedBox(
+                width: 220,
+                child: DropdownButtonFormField<VulnerabiliteFidele?>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Vulnerabilite'),
+                  initialValue: _vulnerabiliteFilter,
+                  items: [
+                    const DropdownMenuItem<VulnerabiliteFidele?>(
+                      value: null,
+                      child: Text('Toutes'),
+                    ),
+                    ...VulnerabiliteFidele.values.map(
+                      (v) => DropdownMenuItem<VulnerabiliteFidele?>(
+                        value: v,
+                        child: Text(vulnerabiliteLabels[v]!),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _vulnerabiliteFilter = value),
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: CheckboxListTile(
+                  value: _onlyChildren,
+                  onChanged: (v) => setState(() => _onlyChildren = v ?? false),
+                  dense: true,
+                  title: const Text('Enfants seulement'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: CheckboxListTile(
+                  value: _onlyOfficers,
+                  onChanged: (v) => setState(() => _onlyOfficers = v ?? false),
+                  dense: true,
+                  title: const Text('Officiers seulement'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
+
           Expanded(
             child: membersAsync.isLoading && members.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : Card(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: PaginatedDataTable(
-                        header: Text('Fideles (${filtered.length})'),
-                        rowsPerPage: 8,
-                        columns: const [
-                          DataColumn(label: Text('Nom complet')),
-                          DataColumn(label: Text('Genre')),
-                          DataColumn(label: Text('Naissance')),
-                          DataColumn(label: Text('Statut')),
-                          DataColumn(label: Text('Bapteme')),
-                          DataColumn(label: Text('Actions')),
-                        ],
-                        source: _MembersDataSource(
-                          members: filtered,
-                          onEdit: (m) => _openForm(context, member: m),
-                          onDelete: _confirmDelete,
-                        ),
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final tableWidth = constraints.maxWidth.isFinite
+                            ? constraints.maxWidth
+                            : MediaQuery.of(context).size.width;
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: tableWidth,
+                              maxWidth: tableWidth,
+                            ),
+                            child: PaginatedDataTable(
+                              header: Text('Fideles (${filtered.length})'),
+                              rowsPerPage: 8,
+                              columns: const [
+                                DataColumn(label: Text('Nom complet')),
+                                DataColumn(label: Text('Genre')),
+                                DataColumn(label: Text('Naissance')),
+                                DataColumn(label: Text('Statut marital')),
+                                DataColumn(label: Text('Role')),
+                                DataColumn(label: Text('Statut')),
+                                DataColumn(label: Text('Famille')),
+                                DataColumn(label: Text('Vulnerable')),
+                                DataColumn(label: Text('Bapteme')),
+                                DataColumn(label: Text('Actions')),
+                              ],
+                              source: _MembersDataSource(
+                                members: filtered,
+                                familyById: familyById,
+                                onEdit: (m) =>
+                                    _openForm(context, member: m, families: families),
+                                onDelete: _confirmDelete,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
           ),
@@ -197,10 +395,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     );
   }
 
-  Future<void> _openForm(BuildContext context, {Member? member}) async {
+  Future<void> _openForm(BuildContext context, {Member? member, List<Famille>? families}) async {
     await showDialog<void>(
       context: context,
-      builder: (_) => MemberFormDialog(member: member),
+      builder: (_) => MemberFormDialog(member: member, families: families ?? const []),
     );
   }
 
@@ -232,18 +430,35 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 class _MembersDataSource extends DataTableSource {
   _MembersDataSource({
     required this.members,
+    required this.familyById,
     required this.onEdit,
     required this.onDelete,
   });
 
   final List<Member> members;
+  final Map<String, Famille> familyById;
   final void Function(Member) onEdit;
   final Future<void> Function(Member) onDelete;
+
+  String _role(Member m) => roleLabels[m.role] ?? m.role.name;
+  String _statut(Member m) => statutFideleLabels[m.statut] ?? m.statut.name;
+
+  String? _family(Member m) {
+    if (m.idFamille == null) return null;
+    return familyById[m.idFamille!]?.nom;
+  }
+
+  String? _vulnerabiliteTooltip(Member m) {
+    if (m.vulnerabilites.isEmpty) return null;
+    return m.vulnerabilites.map((v) => vulnerabiliteLabels[v] ?? v.name).join(', ');
+  }
 
   @override
   DataRow? getRow(int index) {
     if (index >= members.length) return null;
     final m = members[index];
+    final familyName = _family(m);
+    final vulnTooltip = _vulnerabiliteTooltip(m);
     return DataRow.byIndex(
       index: index,
       cells: [
@@ -251,6 +466,17 @@ class _MembersDataSource extends DataTableSource {
         DataCell(Text(genderLabels[m.gender]!)),
         DataCell(Text(dateFormatter.format(m.birthDate))),
         DataCell(Text(maritalStatusLabels[m.maritalStatus]!)),
+        DataCell(Text(_role(m))),
+        DataCell(Text(_statut(m))),
+        DataCell(Text(familyName ?? '—')),
+        DataCell(
+          vulnTooltip == null
+              ? const Text('—')
+              : Tooltip(
+                  message: vulnTooltip,
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                ),
+        ),
         DataCell(
           Text(
             m.baptismDate != null ? dateFormatter.format(m.baptismDate!) : '-',
@@ -285,9 +511,10 @@ class _MembersDataSource extends DataTableSource {
 }
 
 class MemberFormDialog extends ConsumerStatefulWidget {
-  const MemberFormDialog({super.key, this.member});
+  const MemberFormDialog({super.key, this.member, required this.families});
 
   final Member? member;
+  final List<Famille> families;
 
   @override
   ConsumerState<MemberFormDialog> createState() => _MemberFormDialogState();
@@ -299,10 +526,22 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
+  final _motifSortieCtrl = TextEditingController();
+
   Gender? _gender;
   MaritalStatus? _maritalStatus;
+  StatutMatrimonial? _statutMatrimonial;
+  RoleFidele _role = RoleFidele.membre;
+  StatutFidele _statut = StatutFidele.actif;
   DateTime? _birthDate;
-  DateTime? _baptismDate;
+  DateTime? _dateConversion;
+  DateTime? _dateBapteme;
+  DateTime? _dateMainAssociation;
+  DateTime? _dateEntree;
+  DateTime? _dateSortie;
+  DateTime? _dateDeces;
+  Set<VulnerabiliteFidele> _vulnerabilites = {};
+  String? _idFamille;
 
   @override
   void initState() {
@@ -315,8 +554,19 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
       _addressCtrl.text = m.address ?? '';
       _gender = m.gender;
       _maritalStatus = m.maritalStatus;
-      _birthDate = m.birthDate;
-      _baptismDate = m.baptismDate;
+      _statutMatrimonial = m.statutMatrimonial;
+      _birthDate = m.dateNaissance ?? m.birthDate;
+      _dateConversion = m.dateConversion;
+      _dateBapteme = m.dateBapteme ?? m.baptismDate;
+      _dateMainAssociation = m.dateMainAssociation;
+      _dateEntree = m.dateEntree;
+      _dateSortie = m.dateSortie;
+      _dateDeces = m.dateDeces;
+      _role = m.role;
+      _statut = m.statut;
+      _vulnerabilites = {...m.vulnerabilites};
+      _motifSortieCtrl.text = m.motifSortie ?? '';
+      _idFamille = m.idFamille;
     }
   }
 
@@ -326,16 +576,24 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _addressCtrl.dispose();
+    _motifSortieCtrl.dispose();
     super.dispose();
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.member != null;
+    final families = widget.families;
     return AlertDialog(
       title: Text(isEditing ? 'Modifier un fidele' : 'Nouveau fidele'),
       content: SizedBox(
-        width: 460,
+        width: 520,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -345,8 +603,7 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
                 TextFormField(
                   controller: _nameCtrl,
                   decoration: const InputDecoration(labelText: 'Nom complet'),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Champ obligatoire' : null,
+                  validator: (v) => v == null || v.isEmpty ? 'Champ obligatoire' : null,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -371,7 +628,7 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
                     Expanded(
                       child: DropdownButtonFormField<MaritalStatus>(
                         initialValue: _maritalStatus,
-                        decoration: const InputDecoration(labelText: 'Statut'),
+                        decoration: const InputDecoration(labelText: 'Statut marital (legacy)'),
                         items: MaritalStatus.values
                             .map(
                               (s) => DropdownMenuItem(
@@ -380,9 +637,58 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
                               ),
                             )
                             .toList(),
-                        onChanged: (value) =>
-                            setState(() => _maritalStatus = value),
+                        onChanged: (value) => setState(() => _maritalStatus = value),
                         validator: (value) => value == null ? 'Requis' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<StatutMatrimonial>(
+                  initialValue: _statutMatrimonial,
+                  decoration: const InputDecoration(labelText: 'Statut matrimonial'),
+                  items: StatutMatrimonial.values
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _statutMatrimonial = value),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<RoleFidele>(
+                        initialValue: _role,
+                        decoration: const InputDecoration(labelText: 'Role dans l\'assemblee'),
+                        items: RoleFidele.values
+                            .map(
+                              (r) => DropdownMenuItem(
+                                value: r,
+                                child: Text(roleLabels[r]!),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _role = value ?? RoleFidele.membre),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<StatutFidele>(
+                        initialValue: _statut,
+                        decoration: const InputDecoration(labelText: 'Statut du fidele'),
+                        items: StatutFidele.values
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(statutFideleLabels[s]!),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _statut = value ?? StatutFidele.actif),
                       ),
                     ),
                   ],
@@ -392,7 +698,7 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
                   children: [
                     Expanded(
                       child: _DateField(
-                        label: 'Naissance',
+                        label: 'Date de naissance',
                         value: _birthDate,
                         onSelected: (d) => setState(() => _birthDate = d),
                       ),
@@ -400,13 +706,126 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _DateField(
-                        label: 'Bapteme',
-                        value: _baptismDate,
-                        onSelected: (d) => setState(() => _baptismDate = d),
+                        label: 'Date d\'entree',
+                        value: _dateEntree,
+                        onSelected: (d) => setState(() => _dateEntree = d),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DateField(
+                        label: 'Date de conversion',
+                        value: _dateConversion,
+                        onSelected: (d) => setState(() => _dateConversion = d),
+                        allowEmpty: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _DateField(
+                        label: 'Date de bapteme',
+                        value: _dateBapteme,
+                        onSelected: (d) => setState(() => _dateBapteme = d),
                         allowEmpty: true,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DateField(
+                        label: 'Date main d\'association',
+                        value: _dateMainAssociation,
+                        onSelected: (d) => setState(() => _dateMainAssociation = d),
+                        allowEmpty: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        initialValue: _idFamille,
+                        decoration: const InputDecoration(labelText: 'Famille'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('Aucune'),
+                          ),
+                          ...families.map(
+                            (f) => DropdownMenuItem<String?>(
+                              value: f.id,
+                              child: Text(f.nom),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() => _idFamille = v),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_statut == StatutFidele.parti || _statut == StatutFidele.transfere)
+                  Column(
+                    children: [
+                      _DateField(
+                        label: 'Date de sortie',
+                        value: _dateSortie,
+                        onSelected: (d) => setState(() => _dateSortie = d),
+                        allowEmpty: true,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _motifSortieCtrl,
+                        decoration: const InputDecoration(labelText: 'Motif de sortie'),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                if (_statut == StatutFidele.decede)
+                  Column(
+                    children: [
+                      _DateField(
+                        label: 'Date de deces',
+                        value: _dateDeces,
+                        onSelected: (d) => setState(() => _dateDeces = d),
+                        allowEmpty: true,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Vulnerabilites',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: VulnerabiliteFidele.values
+                      .map(
+                        (v) => FilterChip(
+                          label: Text(vulnerabiliteLabels[v] ?? v.name),
+                          selected: _vulnerabilites.contains(v),
+                          onSelected: (sel) {
+                            setState(() {
+                              if (sel) {
+                                _vulnerabilites.add(v);
+                              } else {
+                                _vulnerabilites.remove(v);
+                              }
+                            });
+                          },
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -442,24 +861,86 @@ class _MemberFormDialogState extends ConsumerState<MemberFormDialog> {
     );
   }
 
+  bool _validateDates() {
+    if (_birthDate == null) {
+      _showError('Veuillez renseigner la date de naissance.');
+      return false;
+    }
+    if (_dateEntree == null) {
+      _showError('Veuillez renseigner la date d\'entree.');
+      return false;
+    }
+    if (_dateBapteme != null) {
+      if (_birthDate != null && _dateBapteme!.isBefore(_birthDate!)) {
+        _showError('La date de bapteme doit etre apres la naissance.');
+        return false;
+      }
+      if (_dateConversion != null && _dateBapteme!.isBefore(_dateConversion!)) {
+        _showError('La date de bapteme doit etre apres la conversion.');
+        return false;
+      }
+    }
+    if ((_statut == StatutFidele.parti || _statut == StatutFidele.transfere) &&
+        _dateSortie == null) {
+      _showError('Veuillez renseigner la date de sortie.');
+      return false;
+    }
+    if (_statut == StatutFidele.decede && _dateDeces == null) {
+      _showError('Veuillez renseigner la date de deces.');
+      return false;
+    }
+    return true;
+  }
+
+  MaritalStatus _deriveMaritalStatus() {
+    switch (_statutMatrimonial) {
+      case StatutMatrimonial.marie:
+        return MaritalStatus.married;
+      case StatutMatrimonial.veuf:
+      case StatutMatrimonial.veuve:
+        return MaritalStatus.widowed;
+      case StatutMatrimonial.divorce:
+      case StatutMatrimonial.separe:
+        return MaritalStatus.divorced;
+      case StatutMatrimonial.celibataire:
+      default:
+        return MaritalStatus.single;
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_birthDate == null) return;
-    final notifier = ref.read(membersProvider.notifier);
+    if (!_validateDates()) return;
+
     final id = widget.member?.id ?? const Uuid().v4();
     final member = Member(
       id: id,
       fullName: _nameCtrl.text.trim(),
       gender: _gender!,
       birthDate: _birthDate!,
-      maritalStatus: _maritalStatus!,
-      baptismDate: _baptismDate,
+      maritalStatus: _maritalStatus ?? _deriveMaritalStatus(),
+      baptismDate: _dateBapteme,
       phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
       email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-      address: _addressCtrl.text.trim().isEmpty
+      address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+      dateNaissance: _birthDate,
+      statutMatrimonial: _statutMatrimonial,
+      dateConversion: _dateConversion,
+      dateBapteme: _dateBapteme,
+      dateMainAssociation: _dateMainAssociation,
+      statut: _statut,
+      dateEntree: _dateEntree,
+      dateSortie: _dateSortie,
+      motifSortie: _motifSortieCtrl.text.trim().isEmpty
           ? null
-          : _addressCtrl.text.trim(),
+          : _motifSortieCtrl.text.trim(),
+      dateDeces: _dateDeces,
+      role: _role,
+      vulnerabilites: _vulnerabilites,
+      idFamille: _idFamille,
     );
+
+    final notifier = ref.read(membersProvider.notifier);
     if (widget.member == null) {
       await notifier.addMember(member);
     } else {
@@ -490,7 +971,7 @@ class _DateField extends StatelessWidget {
           context: context,
           initialDate: value ?? DateTime.now(),
           firstDate: DateTime(1940),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
         );
         if (picked != null || allowEmpty) {
           onSelected(picked);
@@ -518,3 +999,4 @@ class _DateField extends StatelessWidget {
     );
   }
 }
+

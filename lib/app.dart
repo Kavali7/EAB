@@ -14,6 +14,7 @@ class ChurchApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Gestion EAB',
+      debugShowCheckedModeBanner: false,
       theme: ChurchTheme.lightTheme,
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(

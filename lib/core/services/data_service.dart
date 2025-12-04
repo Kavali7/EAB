@@ -1,8 +1,11 @@
 import '../../models/accounting_entry.dart';
+import '../../models/famille.dart';
 import '../../models/member.dart';
 import '../../models/program.dart';
 
 abstract class DataService {
+  Future<List<Famille>> getFamilies();
+
   Future<List<Member>> getMembers();
   Future<void> addMember(Member member);
   Future<void> updateMember(Member member);

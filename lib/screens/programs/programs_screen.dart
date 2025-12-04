@@ -18,7 +18,7 @@ class ProgramsScreen extends ConsumerStatefulWidget {
 
 class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
   String _query = '';
-  ProgramType? _typeFilter;
+  TypeProgramme? _typeFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
     final filtered = programs.where((p) {
       final matchesQuery =
           _query.isEmpty ||
-          programTypeLabels[p.type]!.toLowerCase().contains(
+          typeProgrammeLabels[p.type]!.toLowerCase().contains(
             _query.toLowerCase(),
           ) ||
           p.location.toLowerCase().contains(_query.toLowerCase());
@@ -62,18 +62,18 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
               ),
               SizedBox(
                 width: 220,
-                child: DropdownButtonFormField<ProgramType?>(
+                child: DropdownButtonFormField<TypeProgramme?>(
                   decoration: const InputDecoration(labelText: 'Type'),
                   initialValue: _typeFilter,
                   items: [
-                    const DropdownMenuItem<ProgramType?>(
+                    const DropdownMenuItem<TypeProgramme?>(
                       value: null,
                       child: Text('Tous'),
                     ),
-                    ...ProgramType.values.map(
-                      (t) => DropdownMenuItem<ProgramType?>(
+                    ...TypeProgramme.values.map(
+                      (t) => DropdownMenuItem<TypeProgramme?>(
                         value: t,
-                        child: Text(programTypeLabels[t]!),
+                        child: Text(typeProgrammeLabels[t]!),
                       ),
                     ),
                   ],
@@ -101,7 +101,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                             .map(
                               (p) => DataRow(
                                 cells: [
-                                  DataCell(Text(programTypeLabels[p.type]!)),
+                                  DataCell(Text(typeProgrammeLabels[p.type]!)),
                                   DataCell(Text(dateFormatter.format(p.date))),
                                   DataCell(Text(p.location)),
                                   DataCell(Text('${p.participantIds.length}')),
@@ -155,7 +155,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Supprimer'),
         content: Text(
-          'Supprimer le programme ${programTypeLabels[program.type]} ?',
+          'Supprimer le programme ${typeProgrammeLabels[program.type]} ?',
         ),
         actions: [
           TextButton(
@@ -183,7 +183,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Programme ${programTypeLabels[program.type]}'),
+        title: Text('Programme ${typeProgrammeLabels[program.type]}'),
         content: SizedBox(
           width: 480,
           child: Column(
@@ -247,7 +247,7 @@ class ProgramFormDialog extends ConsumerStatefulWidget {
 
 class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  ProgramType? _type;
+  TypeProgramme? _type;
   DateTime? _date;
   final _locationCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
@@ -291,14 +291,14 @@ class _ProgramFormDialogState extends ConsumerState<ProgramFormDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<ProgramType>(
+                DropdownButtonFormField<TypeProgramme>(
                   initialValue: _type,
                   decoration: const InputDecoration(labelText: 'Type'),
-                  items: ProgramType.values
+                  items: TypeProgramme.values
                       .map(
                         (t) => DropdownMenuItem(
                           value: t,
-                          child: Text(programTypeLabels[t]!),
+                          child: Text(typeProgrammeLabels[t]!),
                         ),
                       )
                       .toList(),

@@ -4,17 +4,23 @@ enum Gender { male, female }
 
 enum MaritalStatus { single, married, divorced, widowed }
 
-enum ProgramType {
-  wedding,
-  baptism,
-  communion,
-  evangelization,
-  prayer,
-  seminar,
-  vigil,
-  conference,
-  youthRetreat,
+enum TypeProgramme {
+  culte,
+  evangelisationMasse,
+  evangelisationPorteAPorte,
+  baptemes,
+  mainsAssociation,
+  sainteCene,
+  reunionPriere,
+  mariage,
+  discipline,
+  visite,
+  ecoleDuDimanche,
+  autre,
 }
+
+// Compatibilite transitoire avec l'ancien nom ProgramType.
+typedef ProgramType = TypeProgramme;
 
 enum AccountingType { income, expense }
 
@@ -27,17 +33,23 @@ const maritalStatusLabels = {
   MaritalStatus.widowed: 'Veuf/Veuve',
 };
 
-const programTypeLabels = {
-  ProgramType.wedding: 'Mariage',
-  ProgramType.baptism: 'Bapteme',
-  ProgramType.communion: 'Sainte cene',
-  ProgramType.evangelization: 'Evangelisation',
-  ProgramType.prayer: 'Priere',
-  ProgramType.seminar: 'Seminaire',
-  ProgramType.vigil: 'Veillee',
-  ProgramType.conference: 'Conference',
-  ProgramType.youthRetreat: 'Retraite',
+const typeProgrammeLabels = {
+  TypeProgramme.culte: 'Culte',
+  TypeProgramme.evangelisationMasse: 'Evangelisation de masse',
+  TypeProgramme.evangelisationPorteAPorte: 'Evangelisation porte a porte',
+  TypeProgramme.baptemes: 'Baptemes',
+  TypeProgramme.mainsAssociation: "Main d'association",
+  TypeProgramme.sainteCene: 'Sainte cene',
+  TypeProgramme.reunionPriere: 'Reunion de priere',
+  TypeProgramme.mariage: 'Mariage',
+  TypeProgramme.discipline: 'Discipline',
+  TypeProgramme.visite: 'Visite',
+  TypeProgramme.ecoleDuDimanche: 'Ecole du dimanche',
+  TypeProgramme.autre: 'Autre',
 };
+
+// Compatibilite avec l'ancien nom.
+const programTypeLabels = typeProgrammeLabels;
 
 const accountingTypeLabels = {
   AccountingType.income: 'Recette',
