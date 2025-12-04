@@ -12,6 +12,7 @@ class SideNavigation extends StatelessWidget {
       _NavItem('Tableau de bord', '/', Icons.dashboard_outlined),
       _NavItem('Fideles', '/members', Icons.people_alt_outlined),
       _NavItem('Programmes', '/programs', Icons.event_note_outlined),
+      _NavItem('Structure de l\'Eglise', '/structure', Icons.account_tree_outlined),
       _NavItem(
         'Comptabilite',
         '/accounting',
