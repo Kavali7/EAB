@@ -63,6 +63,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
               SizedBox(
                 width: 220,
                 child: DropdownButtonFormField<TypeProgramme?>(
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Type'),
                   initialValue: _typeFilter,
                   items: [
@@ -88,51 +89,53 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : Card(
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Type')),
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Lieu')),
-                          DataColumn(label: Text('Participants')),
-                          DataColumn(label: Text('Actions')),
-                        ],
-                        rows: filtered
-                            .map(
-                              (p) => DataRow(
-                                cells: [
-                                  DataCell(Text(typeProgrammeLabels[p.type]!)),
-                                  DataCell(Text(dateFormatter.format(p.date))),
-                                  DataCell(Text(p.location)),
-                                  DataCell(Text('${p.participantIds.length}')),
-                                  DataCell(
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.visibility_outlined,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('Type')),
+                            DataColumn(label: Text('Date')),
+                            DataColumn(label: Text('Lieu')),
+                            DataColumn(label: Text('Participants')),
+                            DataColumn(label: Text('Actions')),
+                          ],
+                          rows: filtered
+                              .map(
+                                (p) => DataRow(
+                                  cells: [
+                                    DataCell(Text(typeProgrammeLabels[p.type]!)),
+                                    DataCell(Text(dateFormatter.format(p.date))),
+                                    DataCell(Text(p.location)),
+                                    DataCell(Text('${p.participantIds.length}')),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.visibility_outlined,
+                                            ),
+                                            onPressed: () => _showDetails(p),
                                           ),
-                                          onPressed: () => _showDetails(p),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.edit_outlined),
-                                          onPressed: () =>
-                                              _openForm(context, program: p),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.redAccent,
+                                          IconButton(
+                                            icon: const Icon(Icons.edit_outlined),
+                                            onPressed: () =>
+                                                _openForm(context, program: p),
                                           ),
-                                          onPressed: () => _confirmDelete(p),
-                                        ),
-                                      ],
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.redAccent,
+                                            ),
+                                            onPressed: () => _confirmDelete(p),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            )
-                            .toList(),
+                                  ],
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ),
                     ),
                   ),

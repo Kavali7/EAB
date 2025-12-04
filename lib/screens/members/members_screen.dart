@@ -355,33 +355,35 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                             ? constraints.maxWidth
                             : MediaQuery.of(context).size.width;
                         return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: tableWidth,
-                              maxWidth: tableWidth,
-                            ),
-                            child: PaginatedDataTable(
-                              header: Text('Fideles (${filtered.length})'),
-                              rowsPerPage: 8,
-                              columns: const [
-                                DataColumn(label: Text('Nom complet')),
-                                DataColumn(label: Text('Genre')),
-                                DataColumn(label: Text('Naissance')),
-                                DataColumn(label: Text('Statut marital')),
-                                DataColumn(label: Text('Role')),
-                                DataColumn(label: Text('Statut')),
-                                DataColumn(label: Text('Famille')),
-                                DataColumn(label: Text('Vulnerable')),
-                                DataColumn(label: Text('Bapteme')),
-                                DataColumn(label: Text('Actions')),
-                              ],
-                              source: _MembersDataSource(
-                                members: filtered,
-                                familyById: familyById,
-                                onEdit: (m) =>
-                                    _openForm(context, member: m, families: families),
-                                onDelete: _confirmDelete,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: tableWidth,
+                                maxWidth: tableWidth,
+                              ),
+                              child: PaginatedDataTable(
+                                header: Text('Fideles (${filtered.length})'),
+                                rowsPerPage: 8,
+                                columns: const [
+                                  DataColumn(label: Text('Nom complet')),
+                                  DataColumn(label: Text('Genre')),
+                                  DataColumn(label: Text('Naissance')),
+                                  DataColumn(label: Text('Statut marital')),
+                                  DataColumn(label: Text('Role')),
+                                  DataColumn(label: Text('Statut')),
+                                  DataColumn(label: Text('Famille')),
+                                  DataColumn(label: Text('Vulnerable')),
+                                  DataColumn(label: Text('Bapteme')),
+                                  DataColumn(label: Text('Actions')),
+                                ],
+                                source: _MembersDataSource(
+                                  members: filtered,
+                                  familyById: familyById,
+                                  onEdit: (m) =>
+                                      _openForm(context, member: m, families: families),
+                                  onDelete: _confirmDelete,
+                                ),
                               ),
                             ),
                           ),
