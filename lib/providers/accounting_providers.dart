@@ -20,6 +20,20 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
     final dataService = ref.read(dataServiceProvider);
     return dataService.getComptesComptables();
   }
+
+  Future<void> ajouterCompte(CompteComptable compte) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, compte]);
+  }
+
+  Future<void> mettreAJourCompte(CompteComptable compte) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((c) => c.id == compte.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = compte;
+    state = AsyncData(maj);
+  }
 }
 
 // Journaux comptables
@@ -33,6 +47,20 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   Future<List<JournalComptable>> build() async {
     final dataService = ref.read(dataServiceProvider);
     return dataService.getJournauxComptables();
+  }
+
+  Future<void> ajouterJournal(JournalComptable journal) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, journal]);
+  }
+
+  Future<void> mettreAJourJournal(JournalComptable journal) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((j) => j.id == journal.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = journal;
+    state = AsyncData(maj);
   }
 }
 
@@ -49,6 +77,20 @@ class CentresAnalytiquesNotifier
     final dataService = ref.read(dataServiceProvider);
     return dataService.getCentresAnalytiques();
   }
+
+  Future<void> ajouterCentre(CentreAnalytique centre) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, centre]);
+  }
+
+  Future<void> mettreAJourCentre(CentreAnalytique centre) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((c) => c.id == centre.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = centre;
+    state = AsyncData(maj);
+  }
 }
 
 // Tiers
@@ -60,6 +102,20 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   Future<List<Tiers>> build() async {
     final dataService = ref.read(dataServiceProvider);
     return dataService.getTiers();
+  }
+
+  Future<void> ajouterTiers(Tiers t) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, t]);
+  }
+
+  Future<void> mettreAJourTiers(Tiers t) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((x) => x.id == t.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = t;
+    state = AsyncData(maj);
   }
 }
 

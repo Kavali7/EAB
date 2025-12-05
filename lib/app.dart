@@ -7,6 +7,7 @@ import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/members/members_screen.dart';
 import 'screens/programs/programs_screen.dart';
 import 'screens/church_structure/church_structure_screen.dart';
+import 'screens/accounting/accounting_settings_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
@@ -34,6 +35,7 @@ class ChurchApp extends StatelessWidget {
         '/programs': (_) => const ProgramsScreen(),
         '/accounting': (_) => const AccountingScreen(),
         '/structure': (_) => const ChurchStructureScreen(),
+        '/accounting-settings': (_) => const AccountingSettingsScreen(),
       },
     );
   }
