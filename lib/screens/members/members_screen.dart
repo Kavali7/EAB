@@ -86,6 +86,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final districtsAsync = ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final profilCourant = ref.watch(profilUtilisateurCourantProvider);
+    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
     final regions = regionsAsync.value ?? [];
@@ -121,14 +122,16 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       final matchesVulnerabilite = _vulnerabiliteFilter == null
           ? true
           : m.vulnerabilites.contains(_vulnerabiliteFilter);
+      final idAssembleePourFiltre =
+          _idAssembleeLocaleFilter ?? assembleeActiveId;
       final assemblee = m.idAssembleeLocale != null
           ? assembleeById[m.idAssembleeLocale!]
           : null;
       final district = assemblee != null ? districtById[assemblee.idDistrict] : null;
       final regionId = district?.idRegion;
       final matchesStructure = () {
-        if (_idAssembleeLocaleFilter != null) {
-          return m.idAssembleeLocale == _idAssembleeLocaleFilter;
+        if (idAssembleePourFiltre != null) {
+          return m.idAssembleeLocale == idAssembleePourFiltre;
         }
         if (_idDistrictFilter != null) {
           return assemblee != null && assemblee.idDistrict == _idDistrictFilter;

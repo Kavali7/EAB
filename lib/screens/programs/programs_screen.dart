@@ -48,6 +48,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
     final districtsAsync = ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final profilCourant = ref.watch(profilUtilisateurCourantProvider);
+    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final programs = programsAsync.value ?? [];
     final regions = regionsAsync.value ?? [];
     final districts = districtsAsync.value ?? [];
@@ -80,13 +81,15 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       final matchesDateDebut =
           _dateDebut == null || !p.date.isBefore(_dateDebut!);
       final matchesDateFin = _dateFin == null || !p.date.isAfter(_dateFin!);
+      final idAssembleePourFiltre =
+          _idAssembleeLocaleFilter ?? assembleeActiveId;
       final assemblee =
           p.idAssembleeLocale != null ? assembleeById[p.idAssembleeLocale!] : null;
       final district = assemblee != null ? districtById[assemblee.idDistrict] : null;
       final regionId = district?.idRegion;
       final matchesStructure = () {
-        if (_idAssembleeLocaleFilter != null) {
-          return p.idAssembleeLocale == _idAssembleeLocaleFilter;
+        if (idAssembleePourFiltre != null) {
+          return p.idAssembleeLocale == idAssembleePourFiltre;
         }
         if (_idDistrictFilter != null) {
           return assemblee != null && assemblee.idDistrict == _idDistrictFilter;

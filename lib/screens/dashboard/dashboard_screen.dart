@@ -7,8 +7,10 @@ import '../../core/theme.dart';
 import '../../models/accounting_entry.dart';
 import '../../models/program.dart';
 import '../../providers/accounting_provider.dart';
+import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
+import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 
@@ -20,13 +22,33 @@ class DashboardScreen extends ConsumerWidget {
     final membersAsync = ref.watch(membersProvider);
     final programsAsync = ref.watch(programsProvider);
     final entriesAsync = ref.watch(accountingEntriesProvider);
+    final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
     final entries = entriesAsync.value ?? [];
-    final isLoading =
-        membersAsync.isLoading &&
-        programsAsync.isLoading &&
-        entriesAsync.isLoading;
+    final assemblees = assembleesAsync.value ?? [];
+    final isLoading = membersAsync.isLoading ||
+        programsAsync.isLoading ||
+        entriesAsync.isLoading ||
+        assembleesAsync.isLoading;
+
+    final filteredMembers = assembleeActiveId == null
+        ? members
+        : members
+            .where((m) => m.idAssembleeLocale == assembleeActiveId)
+            .toList();
+    final filteredPrograms = assembleeActiveId == null
+        ? programs
+        : programs
+            .where((p) => p.idAssembleeLocale == assembleeActiveId)
+            .toList();
+
+    final activeAssemblee =
+        assemblees.where((a) => a.id == assembleeActiveId).toList();
+    final activeContextLabel = assembleeActiveId == null
+        ? 'Toutes les assemblees'
+        : 'Assemblee active : ${activeAssemblee.isNotEmpty ? activeAssemblee.first.nom : assembleeActiveId}';
 
     final totalIncome = entries
         .where((e) => e.type == AccountingType.income)
@@ -34,10 +56,13 @@ class DashboardScreen extends ConsumerWidget {
     final totalExpense = entries
         .where((e) => e.type == AccountingType.expense)
         .fold<double>(0, (p, e) => p + e.amount);
-    final maleCount = members.where((m) => m.gender == Gender.male).length;
-    final femaleCount = members.where((m) => m.gender == Gender.female).length;
-    final baptized = members.where((m) => m.baptismDate != null).length;
-    final newConverts = members
+    final maleCount =
+        filteredMembers.where((m) => m.gender == Gender.male).length;
+    final femaleCount =
+        filteredMembers.where((m) => m.gender == Gender.female).length;
+    final baptized =
+        filteredMembers.where((m) => m.baptismDate != null).length;
+    final newConverts = filteredMembers
         .where(
           (m) =>
               m.baptismDate != null &&
@@ -48,8 +73,8 @@ class DashboardScreen extends ConsumerWidget {
         .length;
 
     final monthly = _monthlyCashflow(entries);
-    final programStats = _programDistribution(programs);
-    final maritalStats = _maritalDistribution(members);
+    final programStats = _programDistribution(filteredPrograms);
+    final maritalStats = _maritalDistribution(filteredMembers);
 
     return AppShell(
       title: 'Tableau de bord',
@@ -60,6 +85,15 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Contexte : $activeContextLabel',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -70,7 +104,7 @@ class DashboardScreen extends ConsumerWidget {
                           title: 'Fideles',
                           value: '$maleCount H / $femaleCount F',
                           subtitle:
-                              'Total ${members.length} | Baptises $baptized',
+                              'Total ${filteredMembers.length} | Baptises $baptized',
                           icon: Icons.people_alt_outlined,
                           color: ChurchTheme.navy,
                         ),
@@ -100,7 +134,7 @@ class DashboardScreen extends ConsumerWidget {
                         width: 260,
                         child: InfoCard(
                           title: 'Programmes planifies',
-                          value: '${programs.length}',
+                          value: '${filteredPrograms.length}',
                           subtitle:
                               'Dont ${programStats.entries.isNotEmpty ? programStats.entries.first.value : 0} ${programStats.entries.isNotEmpty ? programStats.entries.first.key : ''}',
                           icon: Icons.event_note_outlined,

@@ -30,3 +30,17 @@ final profilUtilisateurCourantProvider =
     NotifierProvider<ProfilUtilisateurCourantNotifier, ProfilUtilisateur?>(
   ProfilUtilisateurCourantNotifier.new,
 );
+
+class AssembleeActiveNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setAssemblee(String? id) {
+    state = id;
+  }
+}
+
+final assembleeActiveIdProvider =
+    NotifierProvider<AssembleeActiveNotifier, String?>(
+  AssembleeActiveNotifier.new,
+);
