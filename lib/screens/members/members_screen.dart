@@ -10,9 +10,11 @@ import '../../models/member.dart';
 import '../../models/region_eglise.dart';
 import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/families_provider.dart';
 import '../../providers/members_provider.dart';
+import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 
@@ -63,6 +65,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   String? _idRegionFilter;
   String? _idDistrictFilter;
   String? _idAssembleeLocaleFilter;
+  String? _profileAppliedId;
 
   bool _isChild(Member m) {
     final birth = m.dateNaissance ?? m.birthDate;
@@ -82,6 +85,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final regionsAsync = ref.watch(regionsProvider);
     final districtsAsync = ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
     final regions = regionsAsync.value ?? [];
@@ -97,6 +101,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         ? assemblees
         : assemblees.where((a) => a.idDistrict == _idDistrictFilter).toList();
     final familyById = {for (final f in families) f.id: f};
+    if (profilCourant != null && _profileAppliedId != profilCourant.id) {
+      _applyProfileScope(profilCourant);
+      _profileAppliedId = profilCourant.id;
+    }
 
     final filtered = members.where((m) {
       final matchesQuery =
@@ -377,7 +385,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       ),
                     ),
                   ],
-                  onChanged: regionsAsync.isLoading
+                  onChanged: regionsAsync.isLoading || _isRegionLocked(profilCourant)
                       ? null
                       : (value) => setState(() {
                             _idRegionFilter = value;
@@ -404,7 +412,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       ),
                     ),
                   ],
-                  onChanged: districtsAsync.isLoading
+                  onChanged: districtsAsync.isLoading || _isDistrictLocked(profilCourant)
                       ? null
                       : (value) => setState(() {
                             _idDistrictFilter = value;
@@ -430,7 +438,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       ),
                     ),
                   ],
-                  onChanged: assembleesAsync.isLoading
+                  onChanged: assembleesAsync.isLoading || _isAssembleeLocked(profilCourant)
                       ? null
                       : (value) => setState(() => _idAssembleeLocaleFilter = value),
                 ),
@@ -522,6 +530,44 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       context: context,
       builder: (_) => MemberFormDialog(member: member, families: families ?? const []),
     );
+  }
+
+  void _applyProfileScope(ProfilUtilisateur profil) {
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return;
+      case RoleUtilisateur.responsableRegion:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = null;
+        _idAssembleeLocaleFilter = null;
+        return;
+      case RoleUtilisateur.surintendantDistrict:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = profil.idDistrict ?? _idDistrictFilter;
+        _idAssembleeLocaleFilter = null;
+        return;
+      case RoleUtilisateur.tresorierAssemblee:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = profil.idDistrict ?? _idDistrictFilter;
+        _idAssembleeLocaleFilter = profil.idAssembleeLocale ?? _idAssembleeLocaleFilter;
+        return;
+    }
+  }
+
+  bool _isRegionLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role != RoleUtilisateur.adminNational;
+  }
+
+  bool _isDistrictLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.surintendantDistrict ||
+        profil.role == RoleUtilisateur.tresorierAssemblee;
+  }
+
+  bool _isAssembleeLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.tresorierAssemblee;
   }
 
   Future<void> _confirmDelete(Member member) async {

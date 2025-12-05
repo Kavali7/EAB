@@ -7,6 +7,7 @@ import '../../models/member.dart';
 import '../../models/region_eglise.dart';
 import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
 import 'data_service.dart';
 
@@ -22,6 +23,7 @@ class InMemoryDataService implements DataService {
   final _regions = <RegionEglise>[];
   final _districts = <DistrictEglise>[];
   final _assembleesLocales = <AssembleeLocale>[];
+  final _profilsUtilisateurs = <ProfilUtilisateur>[];
   final _uuid = const Uuid();
 
   List<Famille> get familles => List<Famille>.unmodifiable(_familles);
@@ -48,6 +50,11 @@ class InMemoryDataService implements DataService {
   @override
   Future<List<AssembleeLocale>> getAssembleesLocales() async {
     return List<AssembleeLocale>.unmodifiable(_assembleesLocales);
+  }
+
+  @override
+  Future<List<ProfilUtilisateur>> getProfilsUtilisateurs() async {
+    return List<ProfilUtilisateur>.unmodifiable(_profilsUtilisateurs);
   }
 
   void _seed() {
@@ -178,6 +185,35 @@ class InMemoryDataService implements DataService {
         code: 'ASS-NAT-CENTRE',
         idDistrict: 'district_natitingou',
         ville: 'Natitingou',
+      ),
+    ]);
+
+    _profilsUtilisateurs.addAll(const [
+      ProfilUtilisateur(
+        id: 'profil_admin',
+        nom: 'Admin national (simulation)',
+        role: RoleUtilisateur.adminNational,
+      ),
+      ProfilUtilisateur(
+        id: 'profil_responsable_region_sud',
+        nom: 'Responsable Region Sud',
+        role: RoleUtilisateur.responsableRegion,
+        idRegion: 'region_sud',
+      ),
+      ProfilUtilisateur(
+        id: 'profil_surintendant_district_cotonou',
+        nom: 'Surintendant District Cotonou',
+        role: RoleUtilisateur.surintendantDistrict,
+        idRegion: 'region_sud',
+        idDistrict: 'district_cotonou',
+      ),
+      ProfilUtilisateur(
+        id: 'profil_tresorier_cotonou_centre',
+        nom: 'Tresorier Assemblee Cotonou Centre',
+        role: RoleUtilisateur.tresorierAssemblee,
+        idRegion: 'region_sud',
+        idDistrict: 'district_cotonou',
+        idAssembleeLocale: 'assemblee_cotonou_centre',
       ),
     ]);
 

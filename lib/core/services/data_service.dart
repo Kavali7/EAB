@@ -4,6 +4,7 @@ import '../../models/member.dart';
 import '../../models/region_eglise.dart';
 import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
 
 abstract class DataService {
@@ -11,6 +12,7 @@ abstract class DataService {
   Future<List<RegionEglise>> getRegions();
   Future<List<DistrictEglise>> getDistricts();
   Future<List<AssembleeLocale>> getAssembleesLocales();
+  Future<List<ProfilUtilisateur>> getProfilsUtilisateurs();
 
   Future<List<Member>> getMembers();
   Future<void> addMember(Member member);

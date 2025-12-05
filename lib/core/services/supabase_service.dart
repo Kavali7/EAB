@@ -4,6 +4,7 @@ import '../../models/member.dart';
 import '../../models/region_eglise.dart';
 import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
 import 'data_service.dart';
 
@@ -26,6 +27,12 @@ class SupabaseDataService implements DataService {
   @override
   Future<List<AssembleeLocale>> getAssembleesLocales() async =>
       _notImplemented();
+
+  @override
+  Future<List<ProfilUtilisateur>> getProfilsUtilisateurs() =>
+      throw UnimplementedError(
+        'getProfilsUtilisateurs() non implemente pour Supabase (simulation uniquement).',
+      );
 
   @override
   Future<void> addAccountingEntry(AccountingEntry entry) async =>

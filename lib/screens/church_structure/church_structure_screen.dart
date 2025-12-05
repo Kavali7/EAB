@@ -8,9 +8,11 @@ import '../../models/district_eglise.dart';
 import '../../models/member.dart';
 import '../../models/program.dart';
 import '../../models/region_eglise.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
+import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 
 class ChurchStructureScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,8 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
   String? _selectedRegionId;
   String? _selectedDistrictId;
   String? _selectedAssembleeId;
+  String? _profileAppliedId;
+  Map<String, DistrictEglise> _latestDistrictById = {};
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +37,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final membersAsync = ref.watch(membersProvider);
     final programsAsync = ref.watch(programsProvider);
+    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
 
     if (regionsAsync.isLoading ||
         districtsAsync.isLoading ||
@@ -63,6 +68,12 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     final assemblees = assembleesAsync.value ?? [];
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
+    _latestDistrictById = {for (final d in districts) d.id: d};
+
+    if (profilCourant != null && _profileAppliedId != profilCourant.id) {
+      _applyProfileScope(profilCourant, districts, assemblees);
+      _profileAppliedId = profilCourant.id;
+    }
 
     final districtById = {for (final d in districts) d.id: d};
     final regionById = {for (final r in regions) r.id: r};
@@ -128,6 +139,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                 districts: districts,
                 members: members,
                 programs: programs,
+                profil: profilCourant,
               ),
             ),
           ],
@@ -154,6 +166,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                 itemBuilder: (context, index) {
                   final region = regions[index];
                   final selected = region.id == _selectedRegionId;
+                  final enabled = _canSelectRegion(region);
                   return Card(
                     color: selected
                         ? ChurchTheme.gold.withValues(alpha: 0.12)
@@ -163,14 +176,17 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                       subtitle:
                           region.code != null ? Text(region.code!) : null,
                       selected: selected,
-                      onTap: () {
-                        setState(() {
-                          _selectedRegionId =
-                              selected ? null : region.id;
-                          _selectedDistrictId = null;
-                          _selectedAssembleeId = null;
-                        });
-                      },
+                      enabled: enabled,
+                      onTap: !enabled
+                          ? null
+                          : () {
+                              setState(() {
+                                _selectedRegionId =
+                                    selected ? null : region.id;
+                                _selectedDistrictId = null;
+                                _selectedAssembleeId = null;
+                              });
+                            },
                     ),
                   );
                 },
@@ -204,6 +220,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                       itemBuilder: (context, index) {
                         final district = districts[index];
                         final selected = district.id == _selectedDistrictId;
+                        final enabled = _canSelectDistrict(district);
                         return Card(
                           color:
                               selected ? ChurchTheme.gold.withValues(alpha: 0.12) : null,
@@ -213,13 +230,16 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                                 ? Text(district.code!)
                                 : null,
                             selected: selected,
-                            onTap: () {
-                              setState(() {
-                                _selectedDistrictId =
-                                    selected ? null : district.id;
-                                _selectedAssembleeId = null;
-                              });
-                            },
+                            enabled: enabled,
+                            onTap: !enabled
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _selectedDistrictId =
+                                          selected ? null : district.id;
+                                      _selectedAssembleeId = null;
+                                    });
+                                  },
                           ),
                         );
                       },
@@ -267,6 +287,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                         if (district != null) {
                           subtitleParts.add('District: ${district.nom}');
                         }
+                        final enabled = _canSelectAssemblee(assembl);
                         return Card(
                           color: selected
                               ? ChurchTheme.gold.withValues(alpha: 0.12)
@@ -277,12 +298,15 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                                 ? Text(subtitleParts.join(' • '))
                                 : null,
                             selected: selected,
-                            onTap: () {
-                              setState(() {
-                                _selectedAssembleeId =
-                                    selected ? null : assembl.id;
-                              });
-                            },
+                            enabled: enabled,
+                            onTap: !enabled
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _selectedAssembleeId =
+                                          selected ? null : assembl.id;
+                                    });
+                                  },
                           ),
                         );
                       },
@@ -304,6 +328,7 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     required List<DistrictEglise> districts,
     required List<Member> members,
     required List<Program> programs,
+    required ProfilUtilisateur? profil,
   }) {
     Widget buildStat(String label, String value, {IconData? icon}) {
       return Card(
@@ -345,6 +370,13 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (profil != null) ...[
+                  Text(
+                    'Profil simulé : ${profil.nom}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
                   selectedAssemblee.nom,
                   style: Theme.of(context).textTheme.headlineSmall,
@@ -424,6 +456,13 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (profil != null) ...[
+                Text(
+                  'Profil simulé : ${profil.nom}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 selectedDistrict.nom,
                 style: Theme.of(context).textTheme.headlineSmall,
@@ -433,12 +472,9 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                 Text('Code: ${selectedDistrict.code}'),
               const SizedBox(height: 6),
               Text('Region: ${region?.nom ?? '--'}'),
+              const SizedBox(height: 6),
+              Text('Assemblées: ${assembleesForDistrict.length}'),
               const SizedBox(height: 12),
-              buildStat(
-                'Assemblées',
-                assembleesForDistrict.length.toString(),
-                icon: Icons.church_outlined,
-              ),
               buildStat(
                 'Fidèles',
                 membersForDistrict.length.toString(),
@@ -475,6 +511,13 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (profil != null) ...[
+                Text(
+                  'Profil simulé : ${profil.nom}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+              ],
               Text(
                 selectedRegion.nom,
                 style: Theme.of(context).textTheme.headlineSmall,
@@ -516,5 +559,76 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
         ),
       ),
     );
+  }
+
+  void _applyProfileScope(
+    ProfilUtilisateur profil,
+    List<DistrictEglise> districts,
+    List<AssembleeLocale> assemblees,
+  ) {
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return;
+      case RoleUtilisateur.responsableRegion:
+        _selectedRegionId = profil.idRegion;
+        _selectedDistrictId = null;
+        _selectedAssembleeId = null;
+        return;
+      case RoleUtilisateur.surintendantDistrict:
+        _selectedRegionId = profil.idRegion;
+        _selectedDistrictId = profil.idDistrict;
+        _selectedAssembleeId = null;
+        return;
+      case RoleUtilisateur.tresorierAssemblee:
+        _selectedRegionId = profil.idRegion;
+        _selectedDistrictId = profil.idDistrict;
+        _selectedAssembleeId = profil.idAssembleeLocale;
+        return;
+    }
+  }
+
+  bool _canSelectRegion(RegionEglise region) {
+    final profil = ref.read(profilUtilisateurCourantProvider);
+    if (profil == null) return true;
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return true;
+      case RoleUtilisateur.responsableRegion:
+      case RoleUtilisateur.surintendantDistrict:
+      case RoleUtilisateur.tresorierAssemblee:
+        return profil.idRegion == region.id;
+    }
+  }
+
+  bool _canSelectDistrict(DistrictEglise district) {
+    final profil = ref.read(profilUtilisateurCourantProvider);
+    if (profil == null) return true;
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return true;
+      case RoleUtilisateur.responsableRegion:
+        return profil.idRegion == district.idRegion;
+      case RoleUtilisateur.surintendantDistrict:
+        return profil.idDistrict == district.id;
+      case RoleUtilisateur.tresorierAssemblee:
+        return profil.idDistrict == district.id;
+    }
+  }
+
+  bool _canSelectAssemblee(AssembleeLocale assemblee) {
+    final profil = ref.read(profilUtilisateurCourantProvider);
+    if (profil == null) return true;
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return true;
+      case RoleUtilisateur.responsableRegion:
+        return profil.idRegion != null &&
+            _latestDistrictById[assemblee.idDistrict]?.idRegion ==
+                profil.idRegion;
+      case RoleUtilisateur.surintendantDistrict:
+        return profil.idDistrict == assemblee.idDistrict;
+      case RoleUtilisateur.tresorierAssemblee:
+        return profil.idAssembleeLocale == assemblee.id;
+    }
   }
 }

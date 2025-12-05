@@ -7,9 +7,11 @@ import '../../models/program.dart';
 import '../../models/region_eglise.dart';
 import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
+import '../../models/profil_utilisateur.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
+import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 
@@ -37,6 +39,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
   String? _idRegionFilter;
   String? _idDistrictFilter;
   String? _idAssembleeLocaleFilter;
+  String? _profileAppliedId;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +47,7 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
     final regionsAsync = ref.watch(regionsProvider);
     final districtsAsync = ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
     final programs = programsAsync.value ?? [];
     final regions = regionsAsync.value ?? [];
     final districts = districtsAsync.value ?? [];
@@ -51,6 +55,10 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
     final regionById = {for (final r in regions) r.id: r};
     final districtById = {for (final d in districts) d.id: d};
     final assembleeById = {for (final a in assemblees) a.id: a};
+    if (profilCourant != null && _profileAppliedId != profilCourant.id) {
+      _applyProfileScope(profilCourant);
+      _profileAppliedId = profilCourant.id;
+    }
     final filteredDistricts = _idRegionFilter == null
         ? districts
         : districts.where((d) => d.idRegion == _idRegionFilter).toList();
@@ -169,11 +177,13 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                   ],
                   onChanged: regionsAsync.isLoading
                       ? null
-                      : (value) => setState(() {
-                            _idRegionFilter = value;
-                            _idDistrictFilter = null;
-                            _idAssembleeLocaleFilter = null;
-                          }),
+                      : _isRegionLocked(profilCourant)
+                          ? null
+                          : (value) => setState(() {
+                                _idRegionFilter = value;
+                                _idDistrictFilter = null;
+                                _idAssembleeLocaleFilter = null;
+                              }),
                 ),
               ),
               SizedBox(
@@ -196,10 +206,12 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                   ],
                   onChanged: districtsAsync.isLoading
                       ? null
-                      : (value) => setState(() {
-                            _idDistrictFilter = value;
-                            _idAssembleeLocaleFilter = null;
-                          }),
+                      : _isDistrictLocked(profilCourant)
+                          ? null
+                          : (value) => setState(() {
+                                _idDistrictFilter = value;
+                                _idAssembleeLocaleFilter = null;
+                              }),
                 ),
               ),
               SizedBox(
@@ -222,7 +234,9 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
                   ],
                   onChanged: assembleesAsync.isLoading
                       ? null
-                      : (value) => setState(() => _idAssembleeLocaleFilter = value),
+                      : _isAssembleeLocked(profilCourant)
+                          ? null
+                          : (value) => setState(() => _idAssembleeLocaleFilter = value),
                 ),
               ),
               if (_typeFilter == TypeProgramme.visite)
@@ -428,6 +442,44 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
         ],
       ),
     );
+  }
+
+  void _applyProfileScope(ProfilUtilisateur profil) {
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return;
+      case RoleUtilisateur.responsableRegion:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = null;
+        _idAssembleeLocaleFilter = null;
+        return;
+      case RoleUtilisateur.surintendantDistrict:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = profil.idDistrict ?? _idDistrictFilter;
+        _idAssembleeLocaleFilter = null;
+        return;
+      case RoleUtilisateur.tresorierAssemblee:
+        _idRegionFilter = profil.idRegion ?? _idRegionFilter;
+        _idDistrictFilter = profil.idDistrict ?? _idDistrictFilter;
+        _idAssembleeLocaleFilter = profil.idAssembleeLocale ?? _idAssembleeLocaleFilter;
+        return;
+    }
+  }
+
+  bool _isRegionLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role != RoleUtilisateur.adminNational;
+  }
+
+  bool _isDistrictLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.surintendantDistrict ||
+        profil.role == RoleUtilisateur.tresorierAssemblee;
+  }
+
+  bool _isAssembleeLocked(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.tresorierAssemblee;
   }
 
   Future<void> _openForm(BuildContext context, {Program? program}) async {

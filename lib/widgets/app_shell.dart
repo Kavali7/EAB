@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../models/profil_utilisateur.dart';
+import '../providers/user_profile_providers.dart';
 import 'side_navigation.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({
     super.key,
     required this.title,
@@ -22,11 +25,74 @@ class AppShell extends StatelessWidget {
   final PreferredSizeWidget? bottom;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profilsAsync = ref.watch(profilsUtilisateursProvider);
+    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
+
+    profilsAsync.whenData((profils) {
+      if (profilCourant == null && profils.isNotEmpty) {
+        final defaultProfil = profils.firstWhere(
+          (p) => p.id == 'profil_tresorier_cotonou_centre',
+          orElse: () => profils.first,
+        );
+        ref
+            .read(profilUtilisateurCourantProvider.notifier)
+            .setProfil(defaultProfil);
+      }
+    });
+
+    final profileAction = profilsAsync.when<List<Widget>>(
+      data: (profils) {
+        if (profils.isEmpty) return const [];
+        final current = ref.watch(profilUtilisateurCourantProvider);
+        return [
+          DropdownButtonHideUnderline(
+            child: DropdownButton<ProfilUtilisateur>(
+              value: current,
+              items: profils
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p.nom),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (p) {
+                if (p != null) {
+                  ref.read(profilUtilisateurCourantProvider.notifier).setProfil(p);
+                }
+              },
+            ),
+          ),
+        ];
+      },
+      error: (_, __) => const [],
+      loading: () => const [],
+    );
+
     final isWide = MediaQuery.of(context).size.width >= 1000;
 
     return Scaffold(
-      appBar: AppBar(title: Text(title), actions: actions, bottom: bottom),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          if (profileAction.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Center(
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 18),
+                    const SizedBox(width: 6),
+                    ...profileAction,
+                  ],
+                ),
+              ),
+            ),
+          ...?actions,
+        ],
+        bottom: bottom,
+      ),
       drawer: isWide
           ? null
           : Drawer(child: SideNavigation(currentRoute: currentRoute)),
