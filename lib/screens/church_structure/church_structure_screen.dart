@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
@@ -38,6 +39,9 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     final membersAsync = ref.watch(membersProvider);
     final programsAsync = ref.watch(programsProvider);
     final profilCourant = ref.watch(profilUtilisateurCourantProvider);
+    final regionsNotifier = ref.read(regionsProvider.notifier);
+    final districtsNotifier = ref.read(districtsProvider.notifier);
+    final assembleesNotifier = ref.read(assembleesLocalesProvider.notifier);
 
     if (regionsAsync.isLoading ||
         districtsAsync.isLoading ||
@@ -117,15 +121,25 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
           children: [
             Expanded(
               flex: 2,
-              child: _buildRegionsColumn(regions),
+              child: _buildRegionsColumn(regions, profilCourant, regionsNotifier),
             ),
             Expanded(
               flex: 2,
-              child: _buildDistrictsColumn(filteredDistricts),
+              child: _buildDistrictsColumn(
+                filteredDistricts,
+                profilCourant,
+                districtsNotifier,
+                regionById,
+              ),
             ),
             Expanded(
               flex: 3,
-              child: _buildAssembleesColumn(filteredAssemblees, districtById),
+              child: _buildAssembleesColumn(
+                filteredAssemblees,
+                districtById,
+                profilCourant,
+                assembleesNotifier,
+              ),
             ),
             Expanded(
               flex: 4,
@@ -148,16 +162,36 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     );
   }
 
-  Widget _buildRegionsColumn(List<RegionEglise> regions) {
+  Widget _buildRegionsColumn(
+    List<RegionEglise> regions,
+    ProfilUtilisateur? profil,
+    RegionsNotifier regionsNotifier,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Regions',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Regions',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Ajouter une region',
+                  icon: const Icon(Icons.add),
+                  onPressed: _peutGererRegions(profil)
+                      ? () => _openRegionDialog(
+                            notifier: regionsNotifier,
+                            profil: profil,
+                          )
+                      : null,
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -177,6 +211,17 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                           region.code != null ? Text(region.code!) : null,
                       selected: selected,
                       enabled: enabled,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Modifier',
+                        onPressed: _peutGererRegions(profil)
+                            ? () => _openRegionDialog(
+                                  notifier: regionsNotifier,
+                                  profil: profil,
+                                  region: region,
+                                )
+                            : null,
+                      ),
                       onTap: !enabled
                           ? null
                           : () {
@@ -198,16 +243,39 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
     );
   }
 
-  Widget _buildDistrictsColumn(List<DistrictEglise> districts) {
+  Widget _buildDistrictsColumn(
+    List<DistrictEglise> districts,
+    ProfilUtilisateur? profil,
+    DistrictsNotifier districtsNotifier,
+    Map<String, RegionEglise> regionById,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Districts',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Districts',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Ajouter un district',
+                  icon: const Icon(Icons.add),
+                  onPressed: _peutAjouterDistrict(profil)
+                      ? () => _openDistrictDialog(
+                            notifier: districtsNotifier,
+                            profil: profil,
+                            regionById: regionById,
+                            regionPreferee: _selectedRegionId,
+                          )
+                      : null,
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -231,6 +299,18 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                                 : null,
                             selected: selected,
                             enabled: enabled,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: 'Modifier',
+                              onPressed: _peutGererDistricts(profil, district, regionById)
+                                  ? () => _openDistrictDialog(
+                                        notifier: districtsNotifier,
+                                        profil: profil,
+                                        regionById: regionById,
+                                        district: district,
+                                      )
+                                  : null,
+                            ),
                             onTap: !enabled
                                 ? null
                                 : () {
@@ -254,6 +334,8 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
   Widget _buildAssembleesColumn(
     List<AssembleeLocale> assemblees,
     Map<String, DistrictEglise> districtById,
+    ProfilUtilisateur? profil,
+    AssembleesLocalesNotifier assembleesNotifier,
   ) {
     return Card(
       child: Padding(
@@ -261,9 +343,27 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Assemblees locales',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Assemblees locales',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Ajouter une assemblee',
+                  icon: const Icon(Icons.add),
+                  onPressed: _peutAjouterAssemblee(profil)
+                      ? () => _openAssembleeDialog(
+                            notifier: assembleesNotifier,
+                            profil: profil,
+                            districtPrefere: _selectedDistrictId,
+                            districtById: districtById,
+                          )
+                      : null,
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -299,6 +399,19 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                                 : null,
                             selected: selected,
                             enabled: enabled,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: 'Modifier',
+                              onPressed: _peutGererAssemblee(profil, assembl)
+                                  ? () => _openAssembleeDialog(
+                                        notifier: assembleesNotifier,
+                                        profil: profil,
+                                        districtPrefere: _selectedDistrictId,
+                                        districtById: districtById,
+                                        assemblee: assembl,
+                                      )
+                                  : null,
+                            ),
                             onTap: !enabled
                                 ? null
                                 : () {
@@ -362,6 +475,16 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
           membersForAssembly.where((m) => m.gender == Gender.female).length;
       int countType(TypeProgramme type) =>
           programsForAssembly.where((p) => p.type == type).length;
+      Member? pasteur;
+      if (selectedAssemblee.idFidelePasteurResponsable != null) {
+        try {
+          pasteur = membersForAssembly.firstWhere(
+            (m) => m.id == selectedAssemblee.idFidelePasteurResponsable,
+          );
+        } catch (_) {
+          pasteur = null;
+        }
+      }
 
       return Card(
         child: Padding(
@@ -413,6 +536,20 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
                   'Region: ${region?.nom ?? '--'}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  'Pasteur responsable:',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(pasteur?.fullName ?? 'Aucun assigne'),
+                if (_peutGererPasteur(profil, selectedAssemblee))
+                  TextButton.icon(
+                    onPressed: () =>
+                        _openPasteurDialog(selectedAssemblee, membersForAssembly),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Modifier le pasteur responsable'),
+                  ),
                 const SizedBox(height: 12),
                 buildStat(
                   'Fideles',
@@ -630,5 +767,408 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
       case RoleUtilisateur.tresorierAssemblee:
         return profil.idAssembleeLocale == assemblee.id;
     }
+  }
+
+  bool _peutGererRegions(ProfilUtilisateur? profil) {
+    return profil?.role == RoleUtilisateur.adminNational;
+  }
+
+  bool _peutAjouterDistrict(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.adminNational ||
+        profil.role == RoleUtilisateur.responsableRegion;
+  }
+
+  bool _peutGererDistricts(
+    ProfilUtilisateur? profil,
+    DistrictEglise district,
+    Map<String, RegionEglise> regionById,
+  ) {
+    if (profil == null) return false;
+    if (profil.role == RoleUtilisateur.adminNational) return true;
+    if (profil.role == RoleUtilisateur.responsableRegion) {
+      final region = regionById[district.idRegion];
+      return region != null && profil.idRegion == region.id;
+    }
+    return false;
+  }
+
+  bool _peutAjouterAssemblee(ProfilUtilisateur? profil) {
+    if (profil == null) return false;
+    return profil.role == RoleUtilisateur.adminNational ||
+        profil.role == RoleUtilisateur.responsableRegion ||
+        profil.role == RoleUtilisateur.surintendantDistrict;
+  }
+
+  bool _peutGererAssemblee(
+    ProfilUtilisateur? profil,
+    AssembleeLocale assemblee,
+  ) {
+    if (profil == null) return false;
+    if (profil.role == RoleUtilisateur.adminNational) return true;
+    if (profil.role == RoleUtilisateur.responsableRegion) {
+      final regionId = _latestDistrictById[assemblee.idDistrict]?.idRegion;
+      return regionId != null && regionId == profil.idRegion;
+    }
+    if (profil.role == RoleUtilisateur.surintendantDistrict) {
+      return profil.idDistrict == assemblee.idDistrict;
+    }
+    return false;
+  }
+
+  bool _peutGererPasteur(
+    ProfilUtilisateur? profil,
+    AssembleeLocale assemblee,
+  ) {
+    if (profil == null) return false;
+    if (profil.role == RoleUtilisateur.adminNational) return true;
+    if (profil.role == RoleUtilisateur.responsableRegion) {
+      final regionId = _latestDistrictById[assemblee.idDistrict]?.idRegion;
+      return regionId != null && regionId == profil.idRegion;
+    }
+    if (profil.role == RoleUtilisateur.surintendantDistrict) {
+      return profil.idDistrict == assemblee.idDistrict;
+    }
+    return false;
+  }
+
+  Future<void> _openRegionDialog({
+    required RegionsNotifier notifier,
+    required ProfilUtilisateur? profil,
+    RegionEglise? region,
+  }) async {
+    final formKey = GlobalKey<FormState>();
+    final nomCtrl = TextEditingController(text: region?.nom ?? '');
+    final codeCtrl = TextEditingController(text: region?.code ?? '');
+    final descCtrl = TextEditingController(text: region?.description ?? '');
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(region == null ? 'Nouvelle region' : 'Modifier la region'),
+        content: Form(
+          key: formKey,
+          child: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nomCtrl,
+                  decoration: const InputDecoration(labelText: 'Nom'),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Le nom est obligatoire.' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: codeCtrl,
+                  decoration: const InputDecoration(labelText: 'Code (optionnel)'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              if (!formKey.currentState!.validate()) return;
+              final newRegion = RegionEglise(
+                id: region?.id ?? 'region_${const Uuid().v4()}',
+                nom: nomCtrl.text.trim(),
+                code: codeCtrl.text.trim().isEmpty ? null : codeCtrl.text.trim(),
+                description:
+                    descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+              );
+              if (region == null) {
+                await notifier.ajouterRegion(newRegion);
+              } else {
+                await notifier.mettreAJourRegion(newRegion);
+              }
+              navigator.pop();
+            },
+            child: Text(region == null ? 'Ajouter' : 'Mettre a jour'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDistrictDialog({
+    required DistrictsNotifier notifier,
+    required Map<String, RegionEglise> regionById,
+    required ProfilUtilisateur? profil,
+    DistrictEglise? district,
+    String? regionPreferee,
+  }) async {
+    final regions = regionById.values.toList();
+    final formKey = GlobalKey<FormState>();
+    final nomCtrl = TextEditingController(text: district?.nom ?? '');
+    final codeCtrl = TextEditingController(text: district?.code ?? '');
+    String? selectedRegionId = district?.idRegion ?? regionPreferee;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title:
+            Text(district == null ? 'Nouveau district' : 'Modifier le district'),
+        content: Form(
+          key: formKey,
+          child: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRegionId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Region'),
+                  items: regions
+                      .map(
+                        (r) => DropdownMenuItem(
+                          value: r.id,
+                          child: Text(r.nom),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => selectedRegionId = value,
+                  validator: (v) => v == null ? 'Choisir une region' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nomCtrl,
+                  decoration: const InputDecoration(labelText: 'Nom'),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Le nom est obligatoire.' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: codeCtrl,
+                  decoration: const InputDecoration(labelText: 'Code (optionnel)'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              if (!formKey.currentState!.validate()) return;
+              final newDistrict = DistrictEglise(
+                id: district?.id ?? 'district_${const Uuid().v4()}',
+                nom: nomCtrl.text.trim(),
+                code: codeCtrl.text.trim().isEmpty ? null : codeCtrl.text.trim(),
+                idRegion: selectedRegionId!,
+                description: null,
+              );
+              if (district == null) {
+                await notifier.ajouterDistrict(newDistrict);
+              } else {
+                await notifier.mettreAJourDistrict(newDistrict);
+              }
+              navigator.pop();
+            },
+            child: Text(district == null ? 'Ajouter' : 'Mettre a jour'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAssembleeDialog({
+    required AssembleesLocalesNotifier notifier,
+    required Map<String, DistrictEglise> districtById,
+    required ProfilUtilisateur? profil,
+    String? districtPrefere,
+    AssembleeLocale? assemblee,
+  }) async {
+    final districts = districtById.values.toList();
+    final formKey = GlobalKey<FormState>();
+    final nomCtrl = TextEditingController(text: assemblee?.nom ?? '');
+    final codeCtrl = TextEditingController(text: assemblee?.code ?? '');
+    final villeCtrl = TextEditingController(text: assemblee?.ville ?? '');
+    final quartierCtrl = TextEditingController(text: assemblee?.quartier ?? '');
+    final adresseCtrl =
+        TextEditingController(text: assemblee?.adressePostale ?? '');
+    final telCtrl = TextEditingController(text: assemblee?.telephone ?? '');
+    final emailCtrl = TextEditingController(text: assemblee?.email ?? '');
+    String? selectedDistrictId = assemblee?.idDistrict ?? districtPrefere;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          assemblee == null ? 'Nouvelle assemblee' : 'Modifier l assemblee',
+        ),
+        content: Form(
+          key: formKey,
+          child: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedDistrictId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'District'),
+                    items: districts
+                        .map(
+                          (d) => DropdownMenuItem(
+                            value: d.id,
+                            child: Text(d.nom),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => selectedDistrictId = value,
+                    validator: (v) => v == null ? 'Choisir un district' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: nomCtrl,
+                    decoration: const InputDecoration(labelText: 'Nom'),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Le nom est obligatoire.' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: codeCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Code (optionnel)'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: villeCtrl,
+                    decoration: const InputDecoration(labelText: 'Ville'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: quartierCtrl,
+                    decoration: const InputDecoration(labelText: 'Quartier'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: adresseCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Adresse postale'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: telCtrl,
+                    decoration: const InputDecoration(labelText: 'Telephone'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              if (!formKey.currentState!.validate()) return;
+              final newAssemblee = AssembleeLocale(
+                id: assemblee?.id ?? 'assemblee_${const Uuid().v4()}',
+                nom: nomCtrl.text.trim(),
+                code: codeCtrl.text.trim().isEmpty ? null : codeCtrl.text.trim(),
+                idDistrict: selectedDistrictId!,
+                ville: villeCtrl.text.trim().isEmpty ? null : villeCtrl.text.trim(),
+                quartier:
+                    quartierCtrl.text.trim().isEmpty ? null : quartierCtrl.text.trim(),
+                adressePostale:
+                    adresseCtrl.text.trim().isEmpty ? null : adresseCtrl.text.trim(),
+                telephone: telCtrl.text.trim().isEmpty ? null : telCtrl.text.trim(),
+                email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
+                idFidelePasteurResponsable:
+                    assemblee?.idFidelePasteurResponsable,
+              );
+              if (assemblee == null) {
+                await notifier.ajouterAssemblee(newAssemblee);
+              } else {
+                await notifier.mettreAJourAssemblee(newAssemblee);
+              }
+              navigator.pop();
+            },
+            child: Text(assemblee == null ? 'Ajouter' : 'Mettre a jour'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openPasteurDialog(
+    AssembleeLocale assemblee,
+    List<Member> membersForAssembly,
+  ) async {
+    final candidats = membersForAssembly
+        .where((m) => m.role == RoleFidele.pasteur || m.estOfficier)
+        .toList();
+    final options = candidats.isNotEmpty ? candidats : membersForAssembly;
+    String? selectedId = assemblee.idFidelePasteurResponsable;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modifier le pasteur responsable'),
+        content: SizedBox(
+          width: 420,
+          child: DropdownButtonFormField<String>(
+            initialValue: selectedId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Fidele'),
+            items: options
+                .map(
+                  (m) => DropdownMenuItem(
+                    value: m.id,
+                    child: Text(m.fullName),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => selectedId = value,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              final updated = assemblee.copyWith(
+                idFidelePasteurResponsable: selectedId,
+              );
+              await ref
+                  .read(assembleesLocalesProvider.notifier)
+                  .mettreAJourAssemblee(updated);
+              navigator.pop();
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
   }
 }
