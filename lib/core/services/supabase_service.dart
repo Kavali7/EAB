@@ -13,6 +13,7 @@ import '../../models/tiers.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/budget_comptable.dart';
 import '../../models/immobilisation_comptable.dart';
+import '../../models/releve_bancaire.dart';
 import 'data_service.dart';
 
 /// Placeholder for the future Supabase/PostgreSQL implementation.
@@ -133,6 +134,13 @@ class SupabaseDataService implements DataService {
   Future<List<ImmobilisationComptable>> getImmobilisationsComptables() {
     throw UnimplementedError(
       'getImmobilisationsComptables() non implemente pour Supabase (phase frontend uniquement).',
+    );
+  }
+
+  @override
+  Future<List<LigneReleveBancaire>> getLignesRelevesBancaires() {
+    throw UnimplementedError(
+      'getLignesRelevesBancaires() non implemente pour Supabase (phase frontend uniquement).',
     );
   }
 }

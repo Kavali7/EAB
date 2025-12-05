@@ -10,6 +10,8 @@ import 'screens/church_structure/church_structure_screen.dart';
 import 'screens/accounting/accounting_settings_screen.dart';
 import 'screens/accounting/accounting_budgets_screen.dart';
 import 'screens/accounting/accounting_immobilisations_screen.dart';
+import 'screens/accounting/accounting_treasury_screen.dart';
+import 'screens/accounting/accounting_reconciliation_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
@@ -41,6 +43,9 @@ class ChurchApp extends StatelessWidget {
         '/accounting-budgets': (_) => const AccountingBudgetsScreen(),
         '/accounting-immobilisations': (_) =>
             const AccountingImmobilisationsScreen(),
+        '/accounting-treasury': (_) => const AccountingTreasuryScreen(),
+        '/accounting-reconciliation': (_) =>
+            const AccountingReconciliationScreen(),
       },
     );
   }

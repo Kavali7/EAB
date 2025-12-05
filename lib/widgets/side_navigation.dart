@@ -19,6 +19,16 @@ class SideNavigation extends StatelessWidget {
         Icons.account_balance_wallet_outlined,
       ),
       _NavItem(
+        'Tresorerie',
+        '/accounting-treasury',
+        Icons.account_balance_wallet,
+      ),
+      _NavItem(
+        'Rapprochement bancaire',
+        '/accounting-reconciliation',
+        Icons.compare_arrows,
+      ),
+      _NavItem(
         'Budgets',
         '/accounting-budgets',
         Icons.insert_chart_outlined,

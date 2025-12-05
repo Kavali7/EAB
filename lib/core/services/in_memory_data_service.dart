@@ -17,6 +17,7 @@ import '../../models/ecriture_comptable.dart';
 import '../../models/compta_enums.dart';
 import '../../models/budget_comptable.dart';
 import '../../models/immobilisation_comptable.dart';
+import '../../models/releve_bancaire.dart';
 import 'data_service.dart';
 
 class InMemoryDataService implements DataService {
@@ -448,6 +449,36 @@ class InMemoryDataService implements DataService {
       estSortie: false,
     ),
   ];
+  final List<LigneReleveBancaire> _lignesRelevesBancaires = [
+    LigneReleveBancaire(
+      id: 'releve_5121_001',
+      dateOperation: DateTime(2025, 3, 1),
+      libelle: 'Solde initial',
+      montant: 0,
+      soldeApresOperation: 2000000,
+      idCompteBanque: 'compte_5121',
+      referenceOperation: 'SI-2025-03',
+      estPointe: true,
+    ),
+    LigneReleveBancaire(
+      id: 'releve_5121_002',
+      dateOperation: DateTime(2025, 3, 2),
+      libelle: 'Depot offrandes culte dominical',
+      montant: 150000,
+      soldeApresOperation: 2150000,
+      idCompteBanque: 'compte_5121',
+      referenceOperation: 'DEP-2025-03-02',
+    ),
+    LigneReleveBancaire(
+      id: 'releve_5121_003',
+      dateOperation: DateTime(2025, 3, 5),
+      libelle: 'Paiement facture sonorisation',
+      montant: -80000,
+      soldeApresOperation: 2070000,
+      idCompteBanque: 'compte_5121',
+      referenceOperation: 'VIR-SONO-2025-03-05',
+    ),
+  ];
   final _familles = <Famille>[];
   final _regions = <RegionEglise>[];
   final _districts = <DistrictEglise>[];
@@ -470,6 +501,8 @@ class InMemoryDataService implements DataService {
   List<LigneBudgetComptable> get lignesBudgetsComptables => _lignesBudgets;
   List<ImmobilisationComptable> get immobilisationsComptables =>
       _immobilisationsComptables;
+  List<LigneReleveBancaire> get lignesRelevesBancaires =>
+      _lignesRelevesBancaires;
   @override
   Future<List<Famille>> getFamilies() async {
     return List<Famille>.unmodifiable(_familles);
@@ -2568,5 +2601,10 @@ class InMemoryDataService implements DataService {
   @override
   Future<List<ImmobilisationComptable>> getImmobilisationsComptables() async {
     return _immobilisationsComptables;
+  }
+
+  @override
+  Future<List<LigneReleveBancaire>> getLignesRelevesBancaires() async {
+    return _lignesRelevesBancaires;
   }
 }

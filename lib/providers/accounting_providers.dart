@@ -12,6 +12,7 @@ import '../models/region_eglise.dart';
 import '../models/profil_utilisateur.dart';
 import '../models/budget_comptable.dart';
 import '../models/immobilisation_comptable.dart';
+import '../models/releve_bancaire.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
 import 'church_structure_providers.dart';
@@ -223,6 +224,30 @@ class ImmobilisationsComptablesNotifier
     if (index == -1) return;
     final maj = [...actuelle];
     maj[index] = immo;
+    state = AsyncData(maj);
+  }
+}
+
+// Releves bancaires
+final lignesRelevesBancairesProvider = AsyncNotifierProvider<
+    LignesRelevesBancairesNotifier, List<LigneReleveBancaire>>(
+  LignesRelevesBancairesNotifier.new,
+);
+
+class LignesRelevesBancairesNotifier
+    extends AsyncNotifier<List<LigneReleveBancaire>> {
+  @override
+  Future<List<LigneReleveBancaire>> build() async {
+    final dataService = ref.read(dataServiceProvider);
+    return dataService.getLignesRelevesBancaires();
+  }
+
+  Future<void> mettreAJourLigneReleve(LigneReleveBancaire ligne) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((l) => l.id == ligne.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = ligne;
     state = AsyncData(maj);
   }
 }
