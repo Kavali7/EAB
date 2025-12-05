@@ -11,6 +11,7 @@ import '../../models/journal_comptable.dart';
 import '../../models/centre_analytique.dart';
 import '../../models/tiers.dart';
 import '../../models/ecriture_comptable.dart';
+import '../../models/budget_comptable.dart';
 import 'data_service.dart';
 
 /// Placeholder for the future Supabase/PostgreSQL implementation.
@@ -110,6 +111,20 @@ class SupabaseDataService implements DataService {
   Future<List<EcritureComptable>> getEcrituresComptables() {
     throw UnimplementedError(
       'getEcrituresComptables() non implemente pour Supabase.',
+    );
+  }
+
+  @override
+  Future<List<BudgetComptable>> getBudgetsComptables() {
+    throw UnimplementedError(
+      'getBudgetsComptables() non implemente pour Supabase (phase frontend uniquement).',
+    );
+  }
+
+  @override
+  Future<List<LigneBudgetComptable>> getLignesBudgetsComptables() {
+    throw UnimplementedError(
+      'getLignesBudgetsComptables() non implemente pour Supabase (phase frontend uniquement).',
     );
   }
 }

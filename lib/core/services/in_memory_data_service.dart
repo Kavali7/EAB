@@ -15,6 +15,7 @@ import '../../models/centre_analytique.dart';
 import '../../models/tiers.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/compta_enums.dart';
+import '../../models/budget_comptable.dart';
 import 'data_service.dart';
 
 class InMemoryDataService implements DataService {
@@ -309,6 +310,84 @@ class InMemoryDataService implements DataService {
       ],
     ),
   ];
+  final List<BudgetComptable> _budgetsComptables = [
+    const BudgetComptable(
+      id: 'budget_cot_centre_2025',
+      exercice: 2025,
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idCentreAnalytique: 'centre_assemblee_cotonou_centre',
+      libelle: 'Budget fonctionnement 2025 - Cotonou Centre',
+    ),
+    const BudgetComptable(
+      id: 'budget_agla_2025',
+      exercice: 2025,
+      idAssembleeLocale: 'assemblee_agla',
+      idCentreAnalytique: 'centre_assemblee_agla',
+      libelle: 'Budget fonctionnement 2025 - Agla',
+    ),
+    const BudgetComptable(
+      id: 'budget_projet_evangelisation_2025',
+      exercice: 2025,
+      idCentreAnalytique: 'centre_projet_evangelisation_2025',
+      libelle: 'Budget projet evangelisation 2025',
+    ),
+  ];
+  final List<LigneBudgetComptable> _lignesBudgets = [
+    const LigneBudgetComptable(
+      id: 'ligbud_cot_613',
+      idBudget: 'budget_cot_centre_2025',
+      idCompteComptable: 'compte_613',
+      montantPrevu: 1200000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_cot_615',
+      idBudget: 'budget_cot_centre_2025',
+      idCompteComptable: 'compte_615',
+      montantPrevu: 600000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_cot_645',
+      idBudget: 'budget_cot_centre_2025',
+      idCompteComptable: 'compte_645',
+      montantPrevu: 500000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_cot_702',
+      idBudget: 'budget_cot_centre_2025',
+      idCompteComptable: 'compte_702',
+      montantPrevu: 3000000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_cot_706',
+      idBudget: 'budget_cot_centre_2025',
+      idCompteComptable: 'compte_706',
+      montantPrevu: 1500000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_agla_613',
+      idBudget: 'budget_agla_2025',
+      idCompteComptable: 'compte_613',
+      montantPrevu: 800000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_agla_702',
+      idBudget: 'budget_agla_2025',
+      idCompteComptable: 'compte_702',
+      montantPrevu: 2500000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_proj_ev_624',
+      idBudget: 'budget_projet_evangelisation_2025',
+      idCompteComptable: 'compte_624',
+      montantPrevu: 700000,
+    ),
+    const LigneBudgetComptable(
+      id: 'ligbud_proj_ev_615',
+      idBudget: 'budget_projet_evangelisation_2025',
+      idCompteComptable: 'compte_615',
+      montantPrevu: 400000,
+    ),
+  ];
   final _familles = <Famille>[];
   final _regions = <RegionEglise>[];
   final _districts = <DistrictEglise>[];
@@ -327,6 +406,8 @@ class InMemoryDataService implements DataService {
   List<CentreAnalytique> get centresAnalytiques => _centresAnalytiques;
   List<Tiers> get tiers => _tiers;
   List<EcritureComptable> get ecrituresComptables => _ecrituresComptables;
+  List<BudgetComptable> get budgetsComptables => _budgetsComptables;
+  List<LigneBudgetComptable> get lignesBudgetsComptables => _lignesBudgets;
   @override
   Future<List<Famille>> getFamilies() async {
     return List<Famille>.unmodifiable(_familles);
@@ -2410,5 +2491,15 @@ class InMemoryDataService implements DataService {
   @override
   Future<List<EcritureComptable>> getEcrituresComptables() async {
     return _ecrituresComptables;
+  }
+
+  @override
+  Future<List<BudgetComptable>> getBudgetsComptables() async {
+    return _budgetsComptables;
+  }
+
+  @override
+  Future<List<LigneBudgetComptable>> getLignesBudgetsComptables() async {
+    return _lignesBudgets;
   }
 }

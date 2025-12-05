@@ -19,6 +19,11 @@ class SideNavigation extends StatelessWidget {
         Icons.account_balance_wallet_outlined,
       ),
       _NavItem(
+        'Budgets',
+        '/accounting-budgets',
+        Icons.insert_chart_outlined,
+      ),
+      _NavItem(
         'Parametrage comptable',
         '/accounting-settings',
         Icons.tune,

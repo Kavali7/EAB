@@ -10,6 +10,7 @@ import '../models/assemblee_locale.dart';
 import '../models/district_eglise.dart';
 import '../models/region_eglise.dart';
 import '../models/profil_utilisateur.dart';
+import '../models/budget_comptable.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
 import 'church_structure_providers.dart';
@@ -135,6 +136,63 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
     if (index == -1) return;
     final maj = [...actuelle];
     maj[index] = t;
+    state = AsyncData(maj);
+  }
+}
+
+// Budgets
+final budgetsComptablesProvider =
+    AsyncNotifierProvider<BudgetsComptablesNotifier, List<BudgetComptable>>(
+  BudgetsComptablesNotifier.new,
+);
+
+class BudgetsComptablesNotifier
+    extends AsyncNotifier<List<BudgetComptable>> {
+  @override
+  Future<List<BudgetComptable>> build() async {
+    final dataService = ref.read(dataServiceProvider);
+    return dataService.getBudgetsComptables();
+  }
+
+  Future<void> ajouterBudget(BudgetComptable budget) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, budget]);
+  }
+
+  Future<void> mettreAJourBudget(BudgetComptable budget) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((b) => b.id == budget.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = budget;
+    state = AsyncData(maj);
+  }
+}
+
+final lignesBudgetsProvider = AsyncNotifierProvider<
+    LignesBudgetsNotifier, List<LigneBudgetComptable>>(
+  LignesBudgetsNotifier.new,
+);
+
+class LignesBudgetsNotifier
+    extends AsyncNotifier<List<LigneBudgetComptable>> {
+  @override
+  Future<List<LigneBudgetComptable>> build() async {
+    final dataService = ref.read(dataServiceProvider);
+    return dataService.getLignesBudgetsComptables();
+  }
+
+  Future<void> ajouterLigne(LigneBudgetComptable ligne) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, ligne]);
+  }
+
+  Future<void> mettreAJourLigne(LigneBudgetComptable ligne) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((l) => l.id == ligne.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = ligne;
     state = AsyncData(maj);
   }
 }
