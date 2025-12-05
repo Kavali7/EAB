@@ -16,6 +16,7 @@ import '../../models/tiers.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/compta_enums.dart';
 import '../../models/budget_comptable.dart';
+import '../../models/immobilisation_comptable.dart';
 import 'data_service.dart';
 
 class InMemoryDataService implements DataService {
@@ -388,6 +389,65 @@ class InMemoryDataService implements DataService {
       montantPrevu: 400000,
     ),
   ];
+  final List<ImmobilisationComptable> _immobilisationsComptables = [
+    ImmobilisationComptable(
+      id: 'immo_terrain_cot_centre',
+      libelle: 'Terrain temple Cotonou Centre',
+      type: TypeImmobilisation.terrain,
+      dateAcquisition: DateTime(2010, 1, 1),
+      valeurAcquisition: 5000000,
+      valeurResiduelle: 5000000,
+      dureeUtiliteEnAnnees: 0,
+      idCompteImmobilisation: 'compte_21_terrain',
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idCentreAnalytique: 'centre_assemblee_cotonou_centre',
+      estSortie: false,
+    ),
+    ImmobilisationComptable(
+      id: 'immo_batiment_cot_centre',
+      libelle: 'Batiment temple Cotonou Centre',
+      type: TypeImmobilisation.batiment,
+      dateAcquisition: DateTime(2015, 6, 15),
+      valeurAcquisition: 15000000,
+      valeurResiduelle: 1500000,
+      dureeUtiliteEnAnnees: 30,
+      idCompteImmobilisation: 'compte_213',
+      idCompteAmortissement: 'compte_2813',
+      idCompteDotation: 'compte_6811',
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idCentreAnalytique: 'centre_assemblee_cotonou_centre',
+      estSortie: false,
+    ),
+    ImmobilisationComptable(
+      id: 'immo_mobilier_agla',
+      libelle: 'Mobilier salle de culte Agla',
+      type: TypeImmobilisation.mobilier,
+      dateAcquisition: DateTime(2022, 3, 10),
+      valeurAcquisition: 800000,
+      valeurResiduelle: 0,
+      dureeUtiliteEnAnnees: 10,
+      idCompteImmobilisation: 'compte_2183',
+      idCompteAmortissement: 'compte_28183',
+      idCompteDotation: 'compte_6811',
+      idAssembleeLocale: 'assemblee_agla',
+      idCentreAnalytique: 'centre_assemblee_agla',
+      estSortie: false,
+    ),
+    ImmobilisationComptable(
+      id: 'immo_sono_projet_ev',
+      libelle: 'Materiel de sonorisation projet evangelisation 2025',
+      type: TypeImmobilisation.materielSono,
+      dateAcquisition: DateTime(2024, 11, 1),
+      valeurAcquisition: 1200000,
+      valeurResiduelle: 100000,
+      dureeUtiliteEnAnnees: 5,
+      idCompteImmobilisation: 'compte_2184',
+      idCompteAmortissement: 'compte_28184',
+      idCompteDotation: 'compte_6811',
+      idCentreAnalytique: 'centre_projet_evangelisation_2025',
+      estSortie: false,
+    ),
+  ];
   final _familles = <Famille>[];
   final _regions = <RegionEglise>[];
   final _districts = <DistrictEglise>[];
@@ -408,6 +468,8 @@ class InMemoryDataService implements DataService {
   List<EcritureComptable> get ecrituresComptables => _ecrituresComptables;
   List<BudgetComptable> get budgetsComptables => _budgetsComptables;
   List<LigneBudgetComptable> get lignesBudgetsComptables => _lignesBudgets;
+  List<ImmobilisationComptable> get immobilisationsComptables =>
+      _immobilisationsComptables;
   @override
   Future<List<Famille>> getFamilies() async {
     return List<Famille>.unmodifiable(_familles);
@@ -2501,5 +2563,10 @@ class InMemoryDataService implements DataService {
   @override
   Future<List<LigneBudgetComptable>> getLignesBudgetsComptables() async {
     return _lignesBudgets;
+  }
+
+  @override
+  Future<List<ImmobilisationComptable>> getImmobilisationsComptables() async {
+    return _immobilisationsComptables;
   }
 }

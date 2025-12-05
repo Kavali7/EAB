@@ -24,6 +24,11 @@ class SideNavigation extends StatelessWidget {
         Icons.insert_chart_outlined,
       ),
       _NavItem(
+        'Immobilisations',
+        '/accounting-immobilisations',
+        Icons.inventory_2_outlined,
+      ),
+      _NavItem(
         'Parametrage comptable',
         '/accounting-settings',
         Icons.tune,

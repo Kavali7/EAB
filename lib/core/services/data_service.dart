@@ -12,6 +12,7 @@ import '../../models/centre_analytique.dart';
 import '../../models/tiers.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/budget_comptable.dart';
+import '../../models/immobilisation_comptable.dart';
 
 abstract class DataService {
   Future<List<Famille>> getFamilies();
@@ -42,4 +43,5 @@ abstract class DataService {
   Future<List<EcritureComptable>> getEcrituresComptables();
   Future<List<BudgetComptable>> getBudgetsComptables();
   Future<List<LigneBudgetComptable>> getLignesBudgetsComptables();
+  Future<List<ImmobilisationComptable>> getImmobilisationsComptables();
 }

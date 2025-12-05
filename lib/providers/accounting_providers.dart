@@ -11,6 +11,7 @@ import '../models/district_eglise.dart';
 import '../models/region_eglise.dart';
 import '../models/profil_utilisateur.dart';
 import '../models/budget_comptable.dart';
+import '../models/immobilisation_comptable.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
 import 'church_structure_providers.dart';
@@ -193,6 +194,35 @@ class LignesBudgetsNotifier
     if (index == -1) return;
     final maj = [...actuelle];
     maj[index] = ligne;
+    state = AsyncData(maj);
+  }
+}
+
+// Immobilisations
+final immobilisationsComptablesProvider = AsyncNotifierProvider<
+    ImmobilisationsComptablesNotifier, List<ImmobilisationComptable>>(
+  ImmobilisationsComptablesNotifier.new,
+);
+
+class ImmobilisationsComptablesNotifier
+    extends AsyncNotifier<List<ImmobilisationComptable>> {
+  @override
+  Future<List<ImmobilisationComptable>> build() async {
+    final dataService = ref.read(dataServiceProvider);
+    return dataService.getImmobilisationsComptables();
+  }
+
+  Future<void> ajouterImmobilisation(ImmobilisationComptable immo) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, immo]);
+  }
+
+  Future<void> mettreAJourImmobilisation(ImmobilisationComptable immo) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((i) => i.id == immo.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = immo;
     state = AsyncData(maj);
   }
 }
