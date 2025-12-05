@@ -76,6 +76,26 @@ class EcrituresComptablesNotifier
     final dataService = ref.read(dataServiceProvider);
     return dataService.getEcrituresComptables();
   }
+
+  Future<void> ajouterEcriture(EcritureComptable ecriture) async {
+    final actuelle = state.value ?? [];
+    state = AsyncData([...actuelle, ecriture]);
+  }
+
+  Future<void> mettreAJourEcriture(EcritureComptable ecriture) async {
+    final actuelle = state.value ?? [];
+    final index = actuelle.indexWhere((e) => e.id == ecriture.id);
+    if (index == -1) return;
+    final maj = [...actuelle];
+    maj[index] = ecriture;
+    state = AsyncData(maj);
+  }
+
+  Future<void> supprimerEcriture(String idEcriture) async {
+    final actuelle = state.value ?? [];
+    final maj = actuelle.where((e) => e.id != idEcriture).toList();
+    state = AsyncData(maj);
+  }
 }
 
 /// Ecritures filtrees par assemblee active.

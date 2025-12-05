@@ -12,6 +12,8 @@ import '../../models/compta_enums.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/journal_comptable.dart';
+import '../../models/profil_utilisateur.dart';
+import '../../models/district_eglise.dart';
 import '../../models/tiers.dart';
 import '../../providers/accounting_provider.dart';
 import '../../providers/accounting_providers.dart';
@@ -19,6 +21,7 @@ import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+import 'widgets/ecriture_comptable_form.dart';
 
 class AccountingScreen extends ConsumerStatefulWidget {
   const AccountingScreen({super.key});
@@ -41,12 +44,14 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   Widget build(BuildContext context) {
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final districtsAsync = ref.watch(districtsProvider);
     final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
     final ecrituresBase = ref.watch(ecrituresFiltreesProvider);
     final journauxAsync = ref.watch(journauxComptablesProvider);
     final comptesAsync = ref.watch(comptesComptablesProvider);
     final centresAsync = ref.watch(centresAnalytiquesProvider);
     final tiersAsync = ref.watch(tiersProvider);
+    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
     final entriesAsync = ref.watch(accountingEntriesProvider);
     final entries = entriesAsync.value ?? [];
     final entriesInRange = entries.where((e) {
@@ -70,6 +75,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     final centres = centresAsync.value ?? [];
     final tiers = tiersAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
+    final districts = districtsAsync.value ?? [];
     final journalById = {for (final j in journaux) j.id: j};
     final compteById = {for (final c in comptes) c.id: c};
     final centreById = {for (final c in centres) c.id: c};
@@ -79,18 +85,24 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         ? 'Toutes les assemblees'
         : 'Assemblee active : ${assembleeById[assembleeActiveId]?.nom ?? assembleeActiveId}';
     final ecrituresJournal = _filtrerEcrituresJournal(ecrituresBase);
+    final assembleesAutorisees =
+        _assembleesAutorisees(profilCourant, assemblees, districts);
+    final peutCreerEcriture = assembleeActiveId != null &&
+        assembleesAutorisees.any((a) => a.id == assembleeActiveId);
     final isJournalLoading = ecrituresAsync.isLoading ||
         journauxAsync.isLoading ||
         comptesAsync.isLoading ||
         centresAsync.isLoading ||
         tiersAsync.isLoading ||
-        assembleesAsync.isLoading;
+        assembleesAsync.isLoading ||
+        districtsAsync.isLoading;
     final hasJournalError = ecrituresAsync.hasError ||
         journauxAsync.hasError ||
         comptesAsync.hasError ||
         centresAsync.hasError ||
         tiersAsync.hasError ||
-        assembleesAsync.hasError;
+        assembleesAsync.hasError ||
+        districtsAsync.hasError;
 
     final totalIncome = filtered
         .where((e) => e.type == AccountingType.income)
@@ -110,16 +122,43 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             Tab(text: 'Synthese'),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _openForm(context),
-          icon: const Icon(Icons.add),
-          label: const Text('Nouvelle ecriture'),
-        ),
+        floatingActionButton: peutCreerEcriture
+            ? FloatingActionButton.extended(
+                onPressed: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (context) =>
+                        const EcritureComptableFormDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Nouvelle ecriture'),
+              )
+            : null,
         body: TabBarView(
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      onPressed: peutCreerEcriture
+                          ? () async {
+                              await showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    const EcritureComptableFormDialog(),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Nouvelle ecriture'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -282,21 +321,102 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                                                     ),
                                                   ),
                                                   DataCell(
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.visibility_outlined,
-                                                      ),
-                                                      tooltip: 'Voir le detail',
-                                                      onPressed: () =>
-                                                          _showEcritureDetails(
-                                                        context,
-                                                        e,
-                                                        journalById,
-                                                        compteById,
-                                                        centreById,
-                                                        tiersById,
-                                                        assembleeById,
-                                                      ),
+                                                    Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        IconButton(
+                                                          icon: const Icon(
+                                                            Icons.visibility_outlined,
+                                                          ),
+                                                          tooltip:
+                                                              'Voir le detail',
+                                                          onPressed: () =>
+                                                              _showEcritureDetails(
+                                                            context,
+                                                            e,
+                                                            journalById,
+                                                            compteById,
+                                                            centreById,
+                                                            tiersById,
+                                                            assembleeById,
+                                                          ),
+                                                        ),
+                                                        IconButton(
+                                                          icon: const Icon(
+                                                            Icons.edit_outlined,
+                                                          ),
+                                                          tooltip:
+                                                              'Modifier cette ecriture',
+                                                          onPressed: _peutGererEcriture(
+                                                                  profilCourant,
+                                                                  assembleesAutorisees,
+                                                                  e)
+                                                              ? () async {
+                                                                  await showDialog(
+                                                                    context:
+                                                                        context,
+                                                                    builder:
+                                                                        (context) =>
+                                                                            EcritureComptableFormDialog(
+                                                                      ecritureExistante:
+                                                                          e,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              : null,
+                                                        ),
+                                                        IconButton(
+                                                          icon: const Icon(
+                                                            Icons.delete_outline,
+                                                          ),
+                                                          tooltip:
+                                                              'Supprimer cette ecriture',
+                                                          onPressed: _peutGererEcriture(
+                                                                  profilCourant,
+                                                                  assembleesAutorisees,
+                                                                  e)
+                                                              ? () async {
+                                                                  final confirm =
+                                                                      await showDialog<
+                                                                          bool>(
+                                                                    context:
+                                                                        context,
+                                                                    builder: (ctx) =>
+                                                                        AlertDialog(
+                                                                      title: const Text(
+                                                                          'Supprimer l\'ecriture'),
+                                                                      content:
+                                                                          const Text(
+                                                                              'Voulez-vous vraiment supprimer cette ecriture ?'),
+                                                                      actions: [
+                                                                        TextButton(
+                                                                          onPressed: () => Navigator.of(ctx)
+                                                                              .pop(false),
+                                                                          child:
+                                                                              const Text('Annuler'),
+                                                                        ),
+                                                                        ElevatedButton(
+                                                                          onPressed: () => Navigator.of(ctx)
+                                                                              .pop(true),
+                                                                          style:
+                                                                              ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                                                          child:
+                                                                              const Text('Supprimer'),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  );
+                                                                  if (confirm ==
+                                                                      true) {
+                                                                    await ref
+                                                                        .read(ecrituresComptablesProvider.notifier)
+                                                                        .supprimerEcriture(e.id);
+                                                                  }
+                                                                }
+                                                              : null,
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                 ],
@@ -562,6 +682,47 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     }
   }
 
+  List<AssembleeLocale> _assembleesAutorisees(
+    ProfilUtilisateur? profil,
+    List<AssembleeLocale> assemblees,
+    List<DistrictEglise> districts,
+  ) {
+    if (profil == null) return [];
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return assemblees;
+      case RoleUtilisateur.responsableRegion:
+        final idRegion = profil.idRegion;
+        if (idRegion == null) return [];
+        final districtIds = districts
+            .where((d) => d.idRegion == idRegion)
+            .map((d) => d.id)
+            .toSet();
+        return assemblees
+            .where((a) => districtIds.contains(a.idDistrict))
+            .toList();
+      case RoleUtilisateur.surintendantDistrict:
+        final idDistrict = profil.idDistrict;
+        if (idDistrict == null) return [];
+        return assemblees.where((a) => a.idDistrict == idDistrict).toList();
+      case RoleUtilisateur.tresorierAssemblee:
+        final idAss = profil.idAssembleeLocale;
+        if (idAss == null) return [];
+        return assemblees.where((a) => a.id == idAss).toList();
+    }
+  }
+
+  bool _peutGererEcriture(
+    ProfilUtilisateur? profil,
+    List<AssembleeLocale> assembleesAutorisees,
+    EcritureComptable ecriture,
+  ) {
+    if (profil == null) return false;
+    if (profil.role == RoleUtilisateur.adminNational) return true;
+    if (ecriture.idAssembleeLocale == null) return false;
+    return assembleesAutorisees.any((a) => a.id == ecriture.idAssembleeLocale);
+  }
+
   Future<void> _showEcritureDetails(
     BuildContext context,
     EcritureComptable ecriture,
@@ -673,13 +834,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _openForm(BuildContext context, {AccountingEntry? entry}) async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AccountingEntryForm(entry: entry),
     );
   }
 
