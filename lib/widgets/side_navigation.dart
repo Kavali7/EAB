@@ -29,6 +29,11 @@ class SideNavigation extends StatelessWidget {
         Icons.compare_arrows,
       ),
       _NavItem(
+        'Etats & exports',
+        '/accounting-reports',
+        Icons.assessment_outlined,
+      ),
+      _NavItem(
         'Budgets',
         '/accounting-budgets',
         Icons.insert_chart_outlined,
