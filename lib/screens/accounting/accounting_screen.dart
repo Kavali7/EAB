@@ -46,6 +46,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     final centresAsync = ref.watch(centresAnalytiquesProvider);
     final tiersAsync = ref.watch(tiersProvider);
     final profilCourant = ref.watch(profilUtilisateurCourantProvider);
+    final portee = ref.watch(porteeComptableProvider);
     final journaux = journauxAsync.value ?? [];
     final comptes = comptesAsync.value ?? [];
     final centres = centresAsync.value ?? [];
@@ -109,6 +110,10 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: _buildSelecteurPortee(portee, profilCourant),
+                ),
                 Row(
                   children: [
                     const Spacer(),
@@ -403,6 +408,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
               assembleeContextLabel,
               comptesAsync,
               ecrituresBase,
+              portee,
+              profilCourant,
             ),
           ],
         ),
@@ -544,11 +551,82 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     return assembleesAutorisees.any((a) => a.id == ecriture.idAssembleeLocale);
   }
 
+  Widget _buildSelecteurPortee(
+    PorteeComptable portee,
+    ProfilUtilisateur? profil,
+  ) {
+    final options = _porteesDisponiblesPourProfil(profil);
+    final current =
+        options.contains(portee) ? portee : options.isNotEmpty ? options.first : PorteeComptable.assemblee;
+    return Row(
+      children: [
+        const Text('Portee comptable :'),
+        const SizedBox(width: 8),
+        DropdownButton<PorteeComptable>(
+          value: current,
+          items: options
+              .map(
+                (p) => DropdownMenuItem(
+                  value: p,
+                  child: Text(_labelPortee(p)),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            ref.read(porteeComptableProvider.notifier).setPortee(value);
+          },
+        ),
+      ],
+    );
+  }
+
+  List<PorteeComptable> _porteesDisponiblesPourProfil(ProfilUtilisateur? profil) {
+    if (profil == null) return const [PorteeComptable.assemblee];
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return const [
+          PorteeComptable.assemblee,
+          PorteeComptable.district,
+          PorteeComptable.region,
+          PorteeComptable.national,
+        ];
+      case RoleUtilisateur.responsableRegion:
+        return const [
+          PorteeComptable.assemblee,
+          PorteeComptable.district,
+          PorteeComptable.region,
+        ];
+      case RoleUtilisateur.surintendantDistrict:
+        return const [
+          PorteeComptable.assemblee,
+          PorteeComptable.district,
+        ];
+      case RoleUtilisateur.tresorierAssemblee:
+        return const [PorteeComptable.assemblee];
+    }
+  }
+
+  String _labelPortee(PorteeComptable p) {
+    switch (p) {
+      case PorteeComptable.assemblee:
+        return 'Assemblee';
+      case PorteeComptable.district:
+        return 'District';
+      case PorteeComptable.region:
+        return 'Region';
+      case PorteeComptable.national:
+        return 'National';
+    }
+  }
+
   Widget _buildSyntheseTab(
     BuildContext context,
     String assembleeContextLabel,
     AsyncValue<List<CompteComptable>> comptesAsync,
     List<EcritureComptable> ecrituresBase,
+    PorteeComptable portee,
+    ProfilUtilisateur? profil,
   ) {
     return comptesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -568,6 +646,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSelecteurPortee(portee, profil),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,

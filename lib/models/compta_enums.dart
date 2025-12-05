@@ -48,3 +48,11 @@ enum ModePaiement {
   microfinance,
   autre,
 }
+
+/// Portee de consolidation comptable.
+enum PorteeComptable {
+  assemblee,
+  district,
+  region,
+  national,
+}

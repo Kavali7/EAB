@@ -5,14 +5,34 @@ import '../models/compte_comptable.dart';
 import '../models/ecriture_comptable.dart';
 import '../models/journal_comptable.dart';
 import '../models/tiers.dart';
+import '../models/compta_enums.dart';
+import '../models/assemblee_locale.dart';
+import '../models/district_eglise.dart';
+import '../models/region_eglise.dart';
+import '../models/profil_utilisateur.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
+import 'church_structure_providers.dart';
 
 // Comptes comptables
 final comptesComptablesProvider =
     AsyncNotifierProvider<ComptesComptablesNotifier, List<CompteComptable>>(
   ComptesComptablesNotifier.new,
 );
+
+final porteeComptableProvider =
+    NotifierProvider<PorteeComptableNotifier, PorteeComptable>(
+  PorteeComptableNotifier.new,
+);
+
+class PorteeComptableNotifier extends Notifier<PorteeComptable> {
+  @override
+  PorteeComptable build() => PorteeComptable.assemblee;
+
+  void setPortee(PorteeComptable portee) {
+    state = portee;
+  }
+}
 
 class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   @override
@@ -154,22 +174,148 @@ class EcrituresComptablesNotifier
   }
 }
 
-/// Ecritures filtrees par assemblee active.
+/// Ecritures filtrees par portee comptable et assemblees autorisees.
 final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
-  final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
   final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
+  final portee = ref.watch(porteeComptableProvider);
+  final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+  final profil = ref.watch(profilUtilisateurCourantProvider);
 
-  return ecrituresAsync.maybeWhen(
-    data: (ecritures) {
-      if (assembleeActiveId == null) return ecritures;
-      return ecritures
-          .where(
-            (e) =>
-                e.idAssembleeLocale == null ||
-                e.idAssembleeLocale == assembleeActiveId,
-          )
-          .toList();
-    },
-    orElse: () => <EcritureComptable>[],
+  final assembleesAsync = ref.watch(assembleesLocalesProvider);
+  final districtsAsync = ref.watch(districtsProvider);
+  final regionsAsync = ref.watch(regionsProvider);
+
+  if (ecrituresAsync.asData == null ||
+      assembleesAsync.asData == null ||
+      districtsAsync.asData == null ||
+      regionsAsync.asData == null) {
+    return <EcritureComptable>[];
+  }
+
+  final ecritures = ecrituresAsync.asData!.value;
+  final assemblees = assembleesAsync.asData!.value;
+  final districts = districtsAsync.asData!.value;
+  final regions = regionsAsync.asData!.value;
+
+  final assembleesParId = {for (var a in assemblees) a.id: a};
+  final districtsParId = {for (var d in districts) d.id: d};
+  final regionsParId = {for (var r in regions) r.id: r};
+
+  final idsAssembleesAutorisees = _calculerAssembleesAutorisees(
+    profil: profil,
+    assemblees: assemblees,
+    districtsParId: districtsParId,
+    regionsParId: regionsParId,
   );
+
+  if (idsAssembleesAutorisees.isEmpty) return <EcritureComptable>[];
+
+  final idsAssembleesCiblees = _calculerAssembleesCibleesParPortee(
+    portee: portee,
+    assembleeActiveId: assembleeActiveId,
+    assembleesParId: assembleesParId,
+    districtsParId: districtsParId,
+    regionsParId: regionsParId,
+    idsAssembleesAutorisees: idsAssembleesAutorisees,
+  );
+
+  if (idsAssembleesCiblees.isEmpty) return <EcritureComptable>[];
+
+  return ecritures.where((e) {
+    final idAss = e.idAssembleeLocale;
+    if (idAss == null) return false;
+    return idsAssembleesCiblees.contains(idAss);
+  }).toList();
 });
+
+Set<String> _calculerAssembleesAutorisees({
+  required ProfilUtilisateur? profil,
+  required List<AssembleeLocale> assemblees,
+  required Map<String, DistrictEglise> districtsParId,
+  required Map<String, RegionEglise> regionsParId,
+}) {
+  final result = <String>{};
+  if (profil == null) return result;
+
+  switch (profil.role) {
+    case RoleUtilisateur.adminNational:
+      result.addAll(assemblees.map((a) => a.id));
+      return result;
+    case RoleUtilisateur.responsableRegion:
+      final idRegion = profil.idRegion;
+      if (idRegion == null) return result;
+      for (final a in assemblees) {
+        final district = districtsParId[a.idDistrict];
+        if (district != null && district.idRegion == idRegion) {
+          result.add(a.id);
+        }
+      }
+      return result;
+    case RoleUtilisateur.surintendantDistrict:
+      final idDistrict = profil.idDistrict;
+      if (idDistrict == null) return result;
+      for (final a in assemblees) {
+        if (a.idDistrict == idDistrict) result.add(a.id);
+      }
+      return result;
+    case RoleUtilisateur.tresorierAssemblee:
+      final idAss = profil.idAssembleeLocale;
+      if (idAss != null) result.add(idAss);
+      return result;
+  }
+}
+
+Set<String> _calculerAssembleesCibleesParPortee({
+  required PorteeComptable portee,
+  required String? assembleeActiveId,
+  required Map<String, AssembleeLocale> assembleesParId,
+  required Map<String, DistrictEglise> districtsParId,
+  required Map<String, RegionEglise> regionsParId,
+  required Set<String> idsAssembleesAutorisees,
+}) {
+  final result = <String>{};
+  if (idsAssembleesAutorisees.isEmpty) return result;
+
+  final assembleeActive =
+      assembleeActiveId != null ? assembleesParId[assembleeActiveId] : null;
+
+  switch (portee) {
+    case PorteeComptable.assemblee:
+      if (assembleeActive != null &&
+          idsAssembleesAutorisees.contains(assembleeActive.id)) {
+        result.add(assembleeActive.id);
+      }
+      break;
+    case PorteeComptable.district:
+      if (assembleeActive == null) break;
+      final district = districtsParId[assembleeActive.idDistrict];
+      if (district == null) break;
+      for (final a in assembleesParId.values) {
+        if (a.idDistrict == district.id &&
+            idsAssembleesAutorisees.contains(a.id)) {
+          result.add(a.id);
+        }
+      }
+      break;
+    case PorteeComptable.region:
+      if (assembleeActive == null) break;
+      final district = districtsParId[assembleeActive.idDistrict];
+      if (district == null) break;
+      final region = regionsParId[district.idRegion];
+      if (region == null) break;
+      for (final a in assembleesParId.values) {
+        final d = districtsParId[a.idDistrict];
+        if (d != null &&
+            d.idRegion == region.id &&
+            idsAssembleesAutorisees.contains(a.id)) {
+          result.add(a.id);
+        }
+      }
+      break;
+    case PorteeComptable.national:
+      result.addAll(idsAssembleesAutorisees);
+      break;
+  }
+
+  return result;
+}
