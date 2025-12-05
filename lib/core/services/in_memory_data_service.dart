@@ -9,6 +9,12 @@ import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
+import '../../models/compte_comptable.dart';
+import '../../models/journal_comptable.dart';
+import '../../models/centre_analytique.dart';
+import '../../models/tiers.dart';
+import '../../models/ecriture_comptable.dart';
+import '../../models/compta_enums.dart';
 import 'data_service.dart';
 
 class InMemoryDataService implements DataService {
@@ -19,6 +25,290 @@ class InMemoryDataService implements DataService {
   final _members = <Member>[];
   final _programs = <Program>[];
   final _entries = <AccountingEntry>[];
+  final List<CompteComptable> _comptesComptables = [
+    // Actif (tresorerie, creances, immobilisations simples)
+    const CompteComptable(
+      id: 'compte_531',
+      numero: '531',
+      intitule: 'Caisse',
+      nature: NatureCompte.actif,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_5121',
+      numero: '5121',
+      intitule: 'Banque - Compte principal',
+      nature: NatureCompte.actif,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_411',
+      numero: '411',
+      intitule: 'Membres / adherents',
+      nature: NatureCompte.actif,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_401',
+      numero: '401',
+      intitule: 'Fournisseurs',
+      nature: NatureCompte.passif,
+      niveau: 3,
+    ),
+
+    // Charges
+    const CompteComptable(
+      id: 'compte_613',
+      numero: '613',
+      intitule: 'Loyers et locations',
+      nature: NatureCompte.charge,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_615',
+      numero: '615',
+      intitule: 'Entretien et reparations',
+      nature: NatureCompte.charge,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_624',
+      numero: '624',
+      intitule: 'Transports',
+      nature: NatureCompte.charge,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_645',
+      numero: '645',
+      intitule: 'Indemnites et aides',
+      nature: NatureCompte.charge,
+      niveau: 3,
+    ),
+
+    // Produits (recettes d'eglise)
+    const CompteComptable(
+      id: 'compte_701',
+      numero: '701',
+      intitule: 'Dimes',
+      nature: NatureCompte.produit,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_702',
+      numero: '702',
+      intitule: 'Offrandes de culte',
+      nature: NatureCompte.produit,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_706',
+      numero: '706',
+      intitule: 'Dons et liberalites',
+      nature: NatureCompte.produit,
+      niveau: 3,
+    ),
+    const CompteComptable(
+      id: 'compte_758',
+      numero: '758',
+      intitule: 'Autres produits de gestion',
+      nature: NatureCompte.produit,
+      niveau: 3,
+    ),
+  ];
+  final List<JournalComptable> _journauxComptables = [
+    const JournalComptable(
+      id: 'journal_caisse',
+      code: 'CAI',
+      intitule: 'Journal de caisse',
+      type: TypeJournalComptable.caisse,
+    ),
+    const JournalComptable(
+      id: 'journal_banque',
+      code: 'BAN',
+      intitule: 'Journal de banque',
+      type: TypeJournalComptable.banque,
+    ),
+    const JournalComptable(
+      id: 'journal_od',
+      code: 'OD',
+      intitule: 'Journal des operations diverses',
+      type: TypeJournalComptable.operationsDiverses,
+    ),
+  ];
+  final List<CentreAnalytique> _centresAnalytiques = [
+    // Centres = assemblees locales
+    const CentreAnalytique(
+      id: 'centre_assemblee_cotonou_centre',
+      code: 'ASS-COT-CENTRE',
+      nom: 'Assemblee de Cotonou Centre',
+      type: TypeCentreAnalytique.assembleeLocale,
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+    ),
+    const CentreAnalytique(
+      id: 'centre_assemblee_agla',
+      code: 'ASS-AGLA',
+      nom: "Assemblee d'Agla",
+      type: TypeCentreAnalytique.assembleeLocale,
+      idAssembleeLocale: 'assemblee_agla',
+    ),
+    const CentreAnalytique(
+      id: 'centre_assemblee_fidjrosse',
+      code: 'ASS-FIDJROSSE',
+      nom: 'Assemblee de Fidjrosse',
+      type: TypeCentreAnalytique.assembleeLocale,
+      idAssembleeLocale: 'assemblee_fidjrosse',
+    ),
+
+    // Centres = projets
+    const CentreAnalytique(
+      id: 'centre_projet_construction_cotonou_centre',
+      code: 'PROJ-CONSTR-COT-CENTRE',
+      nom: 'Projet construction temple Cotonou Centre',
+      type: TypeCentreAnalytique.projet,
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      description: "Travaux de construction / extension de l'eglise.",
+    ),
+    const CentreAnalytique(
+      id: 'centre_projet_evangelisation_2025',
+      code: 'PROJ-EV-2025',
+      nom: 'Projet evangelisation 2025',
+      type: TypeCentreAnalytique.projet,
+      description: "Campagnes d'evangelisation pour l'annee 2025.",
+    ),
+  ];
+  final List<Tiers> _tiers = [
+    // Tiers lies a des fideles (membres)
+    const Tiers(
+      id: 'tiers_membre_001',
+      nom: 'Membre adherent 001',
+      type: TypeTiers.membre,
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idFideleLie: 'fidele_001',
+    ),
+    const Tiers(
+      id: 'tiers_membre_002',
+      nom: 'Membre adherent 002',
+      type: TypeTiers.membre,
+      idAssembleeLocale: 'assemblee_agla',
+      idFideleLie: 'fidele_007',
+    ),
+
+    // Fournisseurs
+    const Tiers(
+      id: 'tiers_fournisseur_sonorisation',
+      nom: 'Fournisseur SONO Services',
+      type: TypeTiers.fournisseur,
+      telephone: '+229 01 23 45 67',
+      adresse: 'Cotonou',
+    ),
+    const Tiers(
+      id: 'tiers_fournisseur_impression',
+      nom: 'Imprimerie Bethanie',
+      type: TypeTiers.fournisseur,
+      telephone: '+229 98 76 54 32',
+      adresse: 'Abomey-Calavi',
+    ),
+
+    // Bailleur / partenaire
+    const Tiers(
+      id: 'tiers_bailleur_fondation_x',
+      nom: 'Fondation Espoir',
+      type: TypeTiers.bailleur,
+      email: 'contact@fondation-espoir.org',
+    ),
+  ];
+  final List<EcritureComptable> _ecrituresComptables = [
+    // 1) Offrandes de culte en especes (Assemblee Cotonou Centre)
+    EcritureComptable(
+      id: 'ecriture_001',
+      date: DateTime(2025, 3, 2),
+      idJournal: 'journal_caisse',
+      referencePiece: 'REC-2025-03-02-001',
+      libelle: 'Offrandes du culte dominical',
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idCentreAnalytiquePrincipal: 'centre_assemblee_cotonou_centre',
+      lignes: const [
+        LigneEcritureComptable(
+          id: 'lig_001_1',
+          idCompteComptable: 'compte_531',
+          debit: 150000,
+          credit: 0,
+          libelle: 'Encaissement des offrandes en especes',
+          modePaiement: ModePaiement.especes,
+          idCentreAnalytique: 'centre_assemblee_cotonou_centre',
+        ),
+        LigneEcritureComptable(
+          id: 'lig_001_2',
+          idCompteComptable: 'compte_702',
+          debit: 0,
+          credit: 150000,
+          libelle: 'Produit des offrandes',
+          idCentreAnalytique: 'centre_assemblee_cotonou_centre',
+        ),
+      ],
+    ),
+
+    // 2) Paiement facture de sonorisation par banque (projet construction)
+    EcritureComptable(
+      id: 'ecriture_002',
+      date: DateTime(2025, 3, 5),
+      idJournal: 'journal_banque',
+      referencePiece: 'FAC-SONO-2025-03',
+      libelle: 'Reglement facture sonorisation culte special',
+      idAssembleeLocale: 'assemblee_cotonou_centre',
+      idCentreAnalytiquePrincipal: 'centre_projet_construction_cotonou_centre',
+      lignes: const [
+        LigneEcritureComptable(
+          id: 'lig_002_1',
+          idCompteComptable: 'compte_613',
+          debit: 80000,
+          credit: 0,
+          libelle: 'Charge de sonorisation',
+          idCentreAnalytique: 'centre_projet_construction_cotonou_centre',
+          idTiers: 'tiers_fournisseur_sonorisation',
+        ),
+        LigneEcritureComptable(
+          id: 'lig_002_2',
+          idCompteComptable: 'compte_5121',
+          debit: 0,
+          credit: 80000,
+          libelle: 'Paiement par banque',
+          modePaiement: ModePaiement.virementBancaire,
+        ),
+      ],
+    ),
+
+    // 3) Indemnite versee a un membre vulnerable
+    EcritureComptable(
+      id: 'ecriture_003',
+      date: DateTime(2025, 3, 10),
+      idJournal: 'journal_caisse',
+      referencePiece: 'AIDE-SOC-2025-03-10',
+      libelle: 'Aide sociale a un membre',
+      idAssembleeLocale: 'assemblee_agla',
+      idCentreAnalytiquePrincipal: 'centre_assemblee_agla',
+      lignes: const [
+        LigneEcritureComptable(
+          id: 'lig_003_1',
+          idCompteComptable: 'compte_645',
+          debit: 30000,
+          credit: 0,
+          libelle: 'Aide a un membre vulnerable',
+          idCentreAnalytique: 'centre_assemblee_agla',
+          idTiers: 'tiers_membre_001',
+        ),
+        LigneEcritureComptable(
+          id: 'lig_003_2',
+          idCompteComptable: 'compte_531',
+          debit: 0,
+          credit: 30000,
+          libelle: 'Decaissement de caisse',
+          modePaiement: ModePaiement.especes,
+        ),
+      ],
+    ),
+  ];
   final _familles = <Famille>[];
   final _regions = <RegionEglise>[];
   final _districts = <DistrictEglise>[];
@@ -32,6 +322,11 @@ class InMemoryDataService implements DataService {
       List<DistrictEglise>.unmodifiable(_districts);
   List<AssembleeLocale> get assembleesLocales =>
       List<AssembleeLocale>.unmodifiable(_assembleesLocales);
+  List<CompteComptable> get comptesComptables => _comptesComptables;
+  List<JournalComptable> get journauxComptables => _journauxComptables;
+  List<CentreAnalytique> get centresAnalytiques => _centresAnalytiques;
+  List<Tiers> get tiers => _tiers;
+  List<EcritureComptable> get ecrituresComptables => _ecrituresComptables;
   @override
   Future<List<Famille>> getFamilies() async {
     return List<Famille>.unmodifiable(_familles);
@@ -2090,5 +2385,30 @@ class InMemoryDataService implements DataService {
     _programs
       ..removeWhere((p) => p.id == program.id)
       ..add(program);
+  }
+
+  @override
+  Future<List<CompteComptable>> getComptesComptables() async {
+    return _comptesComptables;
+  }
+
+  @override
+  Future<List<JournalComptable>> getJournauxComptables() async {
+    return _journauxComptables;
+  }
+
+  @override
+  Future<List<CentreAnalytique>> getCentresAnalytiques() async {
+    return _centresAnalytiques;
+  }
+
+  @override
+  Future<List<Tiers>> getTiers() async {
+    return _tiers;
+  }
+
+  @override
+  Future<List<EcritureComptable>> getEcrituresComptables() async {
+    return _ecrituresComptables;
   }
 }

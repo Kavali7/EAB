@@ -6,7 +6,17 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/accounting_entry.dart';
+import '../../models/centre_analytique.dart';
+import '../../models/compte_comptable.dart';
+import '../../models/compta_enums.dart';
+import '../../models/assemblee_locale.dart';
+import '../../models/ecriture_comptable.dart';
+import '../../models/journal_comptable.dart';
+import '../../models/tiers.dart';
 import '../../providers/accounting_provider.dart';
+import '../../providers/accounting_providers.dart';
+import '../../providers/church_structure_providers.dart';
+import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 
@@ -20,11 +30,23 @@ class AccountingScreen extends ConsumerStatefulWidget {
 class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   AccountingType? _typeFilter;
   String? _categoryFilter;
-  String _query = '';
+  final String _query = '';
   DateTimeRange? _dateRange;
+  String? _journalIdFilter;
+  DateTime? _journalDateDebut;
+  DateTime? _journalDateFin;
+  String _journalRecherche = '';
 
   @override
   Widget build(BuildContext context) {
+    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
+    final ecrituresBase = ref.watch(ecrituresFiltreesProvider);
+    final journauxAsync = ref.watch(journauxComptablesProvider);
+    final comptesAsync = ref.watch(comptesComptablesProvider);
+    final centresAsync = ref.watch(centresAnalytiquesProvider);
+    final tiersAsync = ref.watch(tiersProvider);
     final entriesAsync = ref.watch(accountingEntriesProvider);
     final entries = entriesAsync.value ?? [];
     final entriesInRange = entries.where((e) {
@@ -43,6 +65,33 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
       return matchesType && matchesCategory && matchesQuery;
     }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
+    final journaux = journauxAsync.value ?? [];
+    final comptes = comptesAsync.value ?? [];
+    final centres = centresAsync.value ?? [];
+    final tiers = tiersAsync.value ?? [];
+    final assemblees = assembleesAsync.value ?? [];
+    final journalById = {for (final j in journaux) j.id: j};
+    final compteById = {for (final c in comptes) c.id: c};
+    final centreById = {for (final c in centres) c.id: c};
+    final tiersById = {for (final t in tiers) t.id: t};
+    final assembleeById = {for (final a in assemblees) a.id: a};
+    final assembleeContextLabel = assembleeActiveId == null
+        ? 'Toutes les assemblees'
+        : 'Assemblee active : ${assembleeById[assembleeActiveId]?.nom ?? assembleeActiveId}';
+    final ecrituresJournal = _filtrerEcrituresJournal(ecrituresBase);
+    final isJournalLoading = ecrituresAsync.isLoading ||
+        journauxAsync.isLoading ||
+        comptesAsync.isLoading ||
+        centresAsync.isLoading ||
+        tiersAsync.isLoading ||
+        assembleesAsync.isLoading;
+    final hasJournalError = ecrituresAsync.hasError ||
+        journauxAsync.hasError ||
+        comptesAsync.hasError ||
+        centresAsync.hasError ||
+        tiersAsync.hasError ||
+        assembleesAsync.hasError;
+
     final totalIncome = filtered
         .where((e) => e.type == AccountingType.income)
         .fold<double>(0, (p, e) => p + e.amount);
@@ -57,7 +106,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         currentRoute: '/accounting',
         bottom: const TabBar(
           tabs: [
-            Tab(text: 'Ecritures'),
+            Tab(text: 'Journal'),
             Tab(text: 'Synthese'),
           ],
         ),
@@ -76,162 +125,187 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                   runSpacing: 12,
                   children: [
                     SizedBox(
-                      width: 200,
-                      child: DropdownButtonFormField<AccountingType?>(
-                        isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'Type'),
-                        initialValue: _typeFilter,
-                        items: const [
-                          DropdownMenuItem<AccountingType?>(
-                            value: null,
-                            child: Text('Tous'),
-                          ),
-                          DropdownMenuItem<AccountingType?>(
-                            value: AccountingType.income,
-                            child: Text('Recette'),
-                          ),
-                          DropdownMenuItem<AccountingType?>(
-                            value: AccountingType.expense,
-                            child: Text('Depense'),
-                          ),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _typeFilter = value),
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.date_range),
-                      label: Text(
-                        _dateRange == null
-                            ? 'Periode'
-                            : '${dateFormatter.format(_dateRange!.start)} - ${dateFormatter.format(_dateRange!.end)}',
-                      ),
-                      onPressed: () async {
-                        final picked = await showDateRangePicker(
-                          context: context,
-                          firstDate: DateTime.now().subtract(
-                            const Duration(days: 365 * 5),
-                          ),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365 * 2),
-                          ),
-                          initialDateRange: _dateRange,
-                        );
-                        if (picked != null) {
-                          setState(() => _dateRange = picked);
-                        }
-                      },
-                    ),
-                    if (_dateRange != null)
-                      IconButton(
-                        tooltip: 'Effacer periode',
-                        onPressed: () => setState(() => _dateRange = null),
-                        icon: const Icon(Icons.clear),
-                      ),
-                    SizedBox(
-                      width: 240,
+                      width: 220,
                       child: DropdownButtonFormField<String?>(
                         isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Categorie',
-                        ),
-                        initialValue: _categoryFilter,
+                        decoration:
+                            const InputDecoration(labelText: 'Journal'),
+                        initialValue: _journalIdFilter,
                         items: [
                           const DropdownMenuItem<String?>(
                             value: null,
-                            child: Text('Toutes'),
+                            child: Text('Tous les journaux'),
                           ),
-                          ...(_typeFilter == AccountingType.expense
-                                  ? expenseCategories
-                                  : _typeFilter == AccountingType.income
-                                  ? incomeCategories
-                                  : [...incomeCategories, ...expenseCategories])
-                              .map(
-                                (c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)),
-                              ),
+                          ...journaux.map(
+                            (j) => DropdownMenuItem<String?>(
+                              value: j.id,
+                              child: Text('${j.code} - ${j.intitule}'),
+                            ),
+                          ),
                         ],
-                        onChanged: (value) =>
-                            setState(() => _categoryFilter = value),
+                        onChanged: journauxAsync.isLoading
+                            ? null
+                            : (value) =>
+                                setState(() => _journalIdFilter = value),
                       ),
                     ),
                     SizedBox(
-                      width: 240,
+                      width: 180,
+                      child: _JournalDateFilterField(
+                        label: 'Du',
+                        value: _journalDateDebut,
+                        onSelected: (d) => setState(() {
+                          _journalDateDebut = d;
+                        }),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 180,
+                      child: _JournalDateFilterField(
+                        label: 'Au',
+                        value: _journalDateFin,
+                        onSelected: (d) => setState(() {
+                          _journalDateFin = d;
+                        }),
+                        allowClear: true,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 260,
                       child: TextField(
                         decoration: const InputDecoration(
-                          labelText: 'Rechercher',
+                          labelText: 'Recherche (libelle ou reference)',
                           prefixIcon: Icon(Icons.search),
                         ),
-                        onChanged: (value) => setState(() => _query = value),
+                        onChanged: (value) =>
+                            setState(() => _journalRecherche = value),
                       ),
                     ),
                   ],
                 ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(
+                    assembleeContextLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: entriesAsync.isLoading && entries.isEmpty
+                  child: isJournalLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : Card(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Date')),
-                                DataColumn(label: Text('Type')),
-                                DataColumn(label: Text('Categorie')),
-                                DataColumn(label: Text('Montant')),
-                                DataColumn(label: Text('Mode')),
-                                DataColumn(label: Text('Description')),
-                                DataColumn(label: Text('Actions')),
-                              ],
-                              rows: filtered
-                                  .map(
-                                    (e) => DataRow(
-                                      cells: [
-                                        DataCell(
-                                          Text(dateFormatter.format(e.date)),
-                                        ),
-                                        DataCell(
-                                          Text(accountingTypeLabels[e.type]!),
-                                        ),
-                                        DataCell(Text(e.category)),
-                                        DataCell(
-                                          Text(
-                                            currencyFormatter.format(e.amount),
-                                          ),
-                                        ),
-                                        DataCell(Text(e.paymentMethod ?? '-')),
-                                        DataCell(Text(e.description ?? '-')),
-                                        DataCell(
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.edit_outlined,
-                                                ),
-                                                onPressed: () => _openForm(
-                                                  context,
-                                                  entry: e,
-                                                ),
+                      : hasJournalError
+                          ? Center(
+                              child: Text(
+                                'Erreur lors du chargement des donnees comptables.',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            )
+                          : Card(
+                              child: ecrituresJournal.isEmpty
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text('Aucune ecriture.'),
+                                      ),
+                                    )
+                                  : SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: DataTable(
+                                        columns: const [
+                                          DataColumn(label: Text('Date')),
+                                          DataColumn(label: Text('Journal')),
+                                          DataColumn(label: Text('Reference')),
+                                          DataColumn(label: Text('Libelle')),
+                                          DataColumn(label: Text('Debit')),
+                                          DataColumn(label: Text('Credit')),
+                                          DataColumn(label: Text('Solde')),
+                                          DataColumn(label: Text('Actions')),
+                                        ],
+                                        rows: ecrituresJournal
+                                            .map(
+                                              (e) => DataRow(
+                                                cells: [
+                                                  DataCell(
+                                                    Text(
+                                                      dateFormatter.format(
+                                                        e.date,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    Text(
+                                                      _journalLabel(
+                                                        e.idJournal,
+                                                        journalById,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    Text(
+                                                      e.referencePiece ??
+                                                          '--',
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    SizedBox(
+                                                      width: 220,
+                                                      child: Text(
+                                                        e.libelle,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    Text(
+                                                      currencyFormatter.format(
+                                                        _totalDebit(e),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    Text(
+                                                      currencyFormatter.format(
+                                                        _totalCredit(e),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    Text(
+                                                      currencyFormatter.format(
+                                                        _totalDebit(e) -
+                                                            _totalCredit(e),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  DataCell(
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.visibility_outlined,
+                                                      ),
+                                                      tooltip: 'Voir le detail',
+                                                      onPressed: () =>
+                                                          _showEcritureDetails(
+                                                        context,
+                                                        e,
+                                                        journalById,
+                                                        compteById,
+                                                        centreById,
+                                                        tiersById,
+                                                        assembleeById,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.delete_outline,
-                                                  color: Colors.redAccent,
-                                                ),
-                                                onPressed: () =>
-                                                    _confirmDelete(e),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                            )
+                                            .toList(),
+                                      ),
                                     ),
-                                  )
-                                  .toList(),
                             ),
-                          ),
-                        ),
                 ),
               ],
             ),
@@ -395,35 +469,218 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     );
   }
 
+  List<EcritureComptable> _filtrerEcrituresJournal(
+    List<EcritureComptable> source,
+  ) {
+    Iterable<EcritureComptable> res = source;
+    if (_journalIdFilter != null && _journalIdFilter!.isNotEmpty) {
+      res = res.where((e) => e.idJournal == _journalIdFilter);
+    }
+    if (_journalDateDebut != null) {
+      res = res.where((e) => !e.date.isBefore(_journalDateDebut!));
+    }
+    if (_journalDateFin != null) {
+      res = res.where((e) => !e.date.isAfter(_journalDateFin!));
+    }
+    final q = _journalRecherche.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      res = res.where((e) {
+        final lib = e.libelle.toLowerCase();
+        final ref = (e.referencePiece ?? '').toLowerCase();
+        return lib.contains(q) || ref.contains(q);
+      });
+    }
+    return res.toList()..sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  double _totalDebit(EcritureComptable e) =>
+      e.lignes.fold(0.0, (sum, l) => sum + (l.debit ?? 0));
+
+  double _totalCredit(EcritureComptable e) =>
+      e.lignes.fold(0.0, (sum, l) => sum + (l.credit ?? 0));
+
+  String _journalLabel(
+    String idJournal,
+    Map<String, JournalComptable> journalById,
+  ) {
+    final journal = journalById[idJournal];
+    if (journal == null) return idJournal;
+    return '${journal.code} - ${journal.intitule}';
+  }
+
+  String _compteLabel(
+    String idCompte,
+    Map<String, CompteComptable> compteById,
+  ) {
+    final compte = compteById[idCompte];
+    if (compte == null) return idCompte;
+    return '${compte.numero} - ${compte.intitule}';
+  }
+
+  String _centreLabel(
+    String? idCentre,
+    Map<String, CentreAnalytique> centreById,
+  ) {
+    if (idCentre == null) return '--';
+    final centre = centreById[idCentre];
+    if (centre == null) return idCentre;
+    return '${centre.code} - ${centre.nom}';
+  }
+
+  String _tiersLabel(String? idTiers, Map<String, Tiers> tiersById) {
+    if (idTiers == null) return '--';
+    final t = tiersById[idTiers];
+    if (t == null) return idTiers;
+    return t.nom;
+  }
+
+  String _assembleeLabel(
+    String? idAssemblee,
+    Map<String, AssembleeLocale> assembleeById,
+  ) {
+    if (idAssemblee == null) return 'Non renseignee';
+    final a = assembleeById[idAssemblee];
+    return a?.nom ?? idAssemblee;
+  }
+
+  String _modePaiementLabel(ModePaiement? mode) {
+    switch (mode) {
+      case ModePaiement.especes:
+        return 'Especes';
+      case ModePaiement.cheque:
+        return 'Cheque';
+      case ModePaiement.virementBancaire:
+        return 'Virement bancaire';
+      case ModePaiement.mobileMoney:
+        return 'Mobile money';
+      case ModePaiement.microfinance:
+        return 'Microfinance';
+      case ModePaiement.autre:
+        return 'Autre';
+      case null:
+        return '--';
+    }
+  }
+
+  Future<void> _showEcritureDetails(
+    BuildContext context,
+    EcritureComptable ecriture,
+    Map<String, JournalComptable> journalById,
+    Map<String, CompteComptable> compteById,
+    Map<String, CentreAnalytique> centreById,
+    Map<String, Tiers> tiersById,
+    Map<String, AssembleeLocale> assembleeById,
+  ) async {
+    final journal = journalById[ecriture.idJournal];
+    final centrePrincipal = ecriture.idCentreAnalytiquePrincipal != null
+        ? centreById[ecriture.idCentreAnalytiquePrincipal!]
+        : null;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Ecriture du ${dateFormatter.format(ecriture.date)}'),
+        content: SizedBox(
+          width: 680,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Journal : ${journal != null ? '${journal.code} - ${journal.intitule}' : ecriture.idJournal}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (ecriture.referencePiece != null &&
+                    ecriture.referencePiece!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text('Reference : ${ecriture.referencePiece}'),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text('Libelle : ${ecriture.libelle}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    'Assemblee : ${_assembleeLabel(ecriture.idAssembleeLocale, assembleeById)}',
+                  ),
+                ),
+                if (centrePrincipal != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      'Centre principal : ${centrePrincipal.code} - ${centrePrincipal.nom}',
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  'Lignes',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Compte')),
+                      DataColumn(label: Text('Libelle')),
+                      DataColumn(label: Text('Debit')),
+                      DataColumn(label: Text('Credit')),
+                      DataColumn(label: Text('Centre')),
+                      DataColumn(label: Text('Tiers')),
+                      DataColumn(label: Text('Mode')),
+                    ],
+                    rows: ecriture.lignes
+                        .map(
+                          (l) => DataRow(
+                            cells: [
+                              DataCell(Text(_compteLabel(l.idCompteComptable, compteById))),
+                              DataCell(
+                                SizedBox(
+                                  width: 200,
+                                  child: Text(
+                                    l.libelle ?? '--',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                Text(currencyFormatter
+                                    .format((l.debit ?? 0).toDouble())),
+                              ),
+                              DataCell(
+                                Text(currencyFormatter
+                                    .format((l.credit ?? 0).toDouble())),
+                              ),
+                              DataCell(Text(_centreLabel(l.idCentreAnalytique, centreById))),
+                              DataCell(Text(_tiersLabel(l.idTiers, tiersById))),
+                              DataCell(Text(_modePaiementLabel(l.modePaiement))),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openForm(BuildContext context, {AccountingEntry? entry}) async {
     await showDialog<void>(
       context: context,
       builder: (_) => AccountingEntryForm(entry: entry),
     );
-  }
-
-  Future<void> _confirmDelete(AccountingEntry entry) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer'),
-        content: Text('Supprimer l\'ecriture ${entry.category} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      await ref.read(accountingEntriesProvider.notifier).removeEntry(entry.id);
-    }
   }
 
   void _showExportStub(BuildContext context) {
@@ -725,6 +982,60 @@ class _CategoryTotal {
       category: category ?? this.category,
       total: total ?? this.total,
       type: type ?? this.type,
+    );
+  }
+}
+
+class _JournalDateFilterField extends StatelessWidget {
+  const _JournalDateFilterField({
+    required this.label,
+    required this.value,
+    required this.onSelected,
+    this.allowClear = false,
+  });
+
+  final String label;
+  final DateTime? value;
+  final void Function(DateTime?) onSelected;
+  final bool allowClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value ?? DateTime.now(),
+          firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+        );
+        if (picked != null || allowClear) {
+          onSelected(picked);
+        }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: value == null
+              ? const Icon(Icons.event)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (allowClear)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => onSelected(null),
+                      ),
+                    const Icon(Icons.event),
+                  ],
+                ),
+          suffixIconConstraints:
+              const BoxConstraints(minWidth: 72, minHeight: 48),
+        ),
+        child: Text(
+          value != null ? dateFormatter.format(value!) : 'Aucune date',
+        ),
+      ),
     );
   }
 }

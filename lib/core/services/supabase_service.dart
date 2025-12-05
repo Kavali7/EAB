@@ -6,6 +6,11 @@ import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
+import '../../models/compte_comptable.dart';
+import '../../models/journal_comptable.dart';
+import '../../models/centre_analytique.dart';
+import '../../models/tiers.dart';
+import '../../models/ecriture_comptable.dart';
 import 'data_service.dart';
 
 /// Placeholder for the future Supabase/PostgreSQL implementation.
@@ -72,4 +77,39 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> updateProgram(Program program) async => _notImplemented();
+
+  @override
+  Future<List<CompteComptable>> getComptesComptables() {
+    throw UnimplementedError(
+      'getComptesComptables() non implemente pour Supabase.',
+    );
+  }
+
+  @override
+  Future<List<JournalComptable>> getJournauxComptables() {
+    throw UnimplementedError(
+      'getJournauxComptables() non implemente pour Supabase.',
+    );
+  }
+
+  @override
+  Future<List<CentreAnalytique>> getCentresAnalytiques() {
+    throw UnimplementedError(
+      'getCentresAnalytiques() non implemente pour Supabase.',
+    );
+  }
+
+  @override
+  Future<List<Tiers>> getTiers() {
+    throw UnimplementedError(
+      'getTiers() non implemente pour Supabase.',
+    );
+  }
+
+  @override
+  Future<List<EcritureComptable>> getEcrituresComptables() {
+    throw UnimplementedError(
+      'getEcrituresComptables() non implemente pour Supabase.',
+    );
+  }
 }

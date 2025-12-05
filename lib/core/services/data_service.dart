@@ -6,6 +6,11 @@ import '../../models/district_eglise.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/profil_utilisateur.dart';
 import '../../models/program.dart';
+import '../../models/compte_comptable.dart';
+import '../../models/journal_comptable.dart';
+import '../../models/centre_analytique.dart';
+import '../../models/tiers.dart';
+import '../../models/ecriture_comptable.dart';
 
 abstract class DataService {
   Future<List<Famille>> getFamilies();
@@ -28,4 +33,10 @@ abstract class DataService {
   Future<void> addAccountingEntry(AccountingEntry entry);
   Future<void> updateAccountingEntry(AccountingEntry entry);
   Future<void> deleteAccountingEntry(String id);
+
+  Future<List<CompteComptable>> getComptesComptables();
+  Future<List<JournalComptable>> getJournauxComptables();
+  Future<List<CentreAnalytique>> getCentresAnalytiques();
+  Future<List<Tiers>> getTiers();
+  Future<List<EcritureComptable>> getEcrituresComptables();
 }
