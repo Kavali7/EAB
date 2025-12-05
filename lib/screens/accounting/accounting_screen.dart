@@ -1,11 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
-
 import '../../core/constants.dart';
 import '../../core/theme.dart';
-import '../../models/accounting_entry.dart';
 import '../../models/centre_analytique.dart';
 import '../../models/compte_comptable.dart';
 import '../../models/compta_enums.dart';
@@ -15,7 +12,6 @@ import '../../models/journal_comptable.dart';
 import '../../models/profil_utilisateur.dart';
 import '../../models/district_eglise.dart';
 import '../../models/tiers.dart';
-import '../../providers/accounting_provider.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
@@ -31,14 +27,12 @@ class AccountingScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountingScreenState extends ConsumerState<AccountingScreen> {
-  AccountingType? _typeFilter;
-  String? _categoryFilter;
-  final String _query = '';
-  DateTimeRange? _dateRange;
   String? _journalIdFilter;
   DateTime? _journalDateDebut;
   DateTime? _journalDateFin;
   String _journalRecherche = '';
+  DateTime? _dateDebutSynthese;
+  DateTime? _dateFinSynthese;
 
   @override
   Widget build(BuildContext context) {
@@ -52,24 +46,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     final centresAsync = ref.watch(centresAnalytiquesProvider);
     final tiersAsync = ref.watch(tiersProvider);
     final profilCourant = ref.watch(profilUtilisateurCourantProvider);
-    final entriesAsync = ref.watch(accountingEntriesProvider);
-    final entries = entriesAsync.value ?? [];
-    final entriesInRange = entries.where((e) {
-      if (_dateRange == null) return true;
-      return !e.date.isBefore(_dateRange!.start) &&
-          !e.date.isAfter(_dateRange!.end);
-    }).toList();
-    final filtered = entriesInRange.where((e) {
-      final matchesType = _typeFilter == null || e.type == _typeFilter;
-      final matchesCategory =
-          _categoryFilter == null || e.category == _categoryFilter;
-      final matchesQuery =
-          _query.isEmpty ||
-          (e.description ?? '').toLowerCase().contains(_query.toLowerCase()) ||
-          e.category.toLowerCase().contains(_query.toLowerCase());
-      return matchesType && matchesCategory && matchesQuery;
-    }).toList()..sort((a, b) => b.date.compareTo(a.date));
-
     final journaux = journauxAsync.value ?? [];
     final comptes = comptesAsync.value ?? [];
     final centres = centresAsync.value ?? [];
@@ -103,13 +79,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         tiersAsync.hasError ||
         assembleesAsync.hasError ||
         districtsAsync.hasError;
-
-    final totalIncome = filtered
-        .where((e) => e.type == AccountingType.income)
-        .fold<double>(0, (p, e) => p + e.amount);
-    final totalExpense = filtered
-        .where((e) => e.type == AccountingType.expense)
-        .fold<double>(0, (p, e) => p + e.amount);
 
     return DefaultTabController(
       length: 2,
@@ -429,159 +398,11 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                 ),
               ],
             ),
-            SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Total recettes',
-                          value: currencyFormatter.format(totalIncome),
-                          icon: Icons.trending_up,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Total depenses',
-                          value: currencyFormatter.format(totalExpense),
-                          icon: Icons.trending_down,
-                          color: Colors.red[600],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Balance',
-                          value: currencyFormatter.format(
-                            totalIncome - totalExpense,
-                          ),
-                          icon: Icons.account_balance_wallet_outlined,
-                          color: ChurchTheme.navy,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.download_outlined),
-                        label: const Text('Exporter CSV (stub)'),
-                        onPressed: () => _showExportStub(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Flux sur 6 mois',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 240,
-                            child: LineChart(_sixMonthsLine(filtered)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Top categories',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ..._topCategories(filtered).map(
-                            (item) => ListTile(
-                              dense: true,
-                              title: Text(item.category),
-                              subtitle: Text(accountingTypeLabels[item.type]!),
-                              trailing: Text(
-                                currencyFormatter.format(item.total),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Tableau croise categories',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Type')),
-                                DataColumn(label: Text('Categorie')),
-                                DataColumn(label: Text('Montant')),
-                              ],
-                              rows: _aggregateByCategory(filtered)
-                                  .map(
-                                    (item) => DataRow(
-                                      cells: [
-                                        DataCell(
-                                          Text(
-                                            accountingTypeLabels[item.type]!,
-                                          ),
-                                        ),
-                                        DataCell(Text(item.category)),
-                                        DataCell(
-                                          Text(
-                                            currencyFormatter.format(
-                                              item.total,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            _buildSyntheseTab(
+              context,
+              assembleeContextLabel,
+              comptesAsync,
+              ecrituresBase,
             ),
           ],
         ),
@@ -723,6 +544,339 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     return assembleesAutorisees.any((a) => a.id == ecriture.idAssembleeLocale);
   }
 
+  Widget _buildSyntheseTab(
+    BuildContext context,
+    String assembleeContextLabel,
+    AsyncValue<List<CompteComptable>> comptesAsync,
+    List<EcritureComptable> ecrituresBase,
+  ) {
+    return comptesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const Center(
+        child: Text('Impossible de charger le plan de comptes.'),
+      ),
+      data: (comptes) {
+        final comptesParId = {for (final c in comptes) c.id: c};
+        final ecritures = _filtrerEcrituresSynthese(ecrituresBase);
+        final synthese = _calculerSynthese(ecritures, comptesParId);
+        final topCharges = _topComptes(synthese.chargesParCompte, comptesParId);
+        final topProduits =
+            _topComptes(synthese.produitsParCompte, comptesParId);
+        final resultatParMois = _resultatParMoisLimite(synthese.resultatParMois);
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: 180,
+                    child: _JournalDateFilterField(
+                      label: 'Du',
+                      value: _dateDebutSynthese,
+                      onSelected: (d) => setState(() => _dateDebutSynthese = d),
+                      allowClear: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 180,
+                    child: _JournalDateFilterField(
+                      label: 'Au',
+                      value: _dateFinSynthese,
+                      onSelected: (d) => setState(() => _dateFinSynthese = d),
+                      allowClear: true,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() {
+                      _dateDebutSynthese = null;
+                      _dateFinSynthese = null;
+                    }),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reinitialiser'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                assembleeContextLabel,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: InfoCard(
+                      title: 'Produits (periode)',
+                      value: currencyFormatter.format(synthese.totalProduits),
+                      icon: Icons.trending_up,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 260,
+                    child: InfoCard(
+                      title: 'Charges (periode)',
+                      value: currencyFormatter.format(synthese.totalCharges),
+                      icon: Icons.trending_down,
+                      color: Colors.red[600],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 260,
+                    child: InfoCard(
+                      title: 'Resultat (periode)',
+                      value: currencyFormatter.format(synthese.resultat),
+                      icon: Icons.account_balance_wallet_outlined,
+                      color: synthese.resultat >= 0
+                          ? Colors.green[800]
+                          : Colors.red[700],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Resultat par mois',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 240,
+                        child: resultatParMois.isEmpty
+                            ? const Center(child: Text('Aucune donnee.'))
+                            : LineChart(
+                                _resultatLineChart(resultatParMois),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 800;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: isWide ? (constraints.maxWidth / 2) - 12 : constraints.maxWidth,
+                        child: _buildTopTable(
+                          'Top comptes de charges',
+                          topCharges,
+                        ),
+                      ),
+                      SizedBox(
+                        width: isWide ? (constraints.maxWidth / 2) - 12 : constraints.maxWidth,
+                        child: _buildTopTable(
+                          'Top comptes de produits',
+                          topProduits,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopTable(
+    String title,
+    List<_CompteMontant> donnees,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            if (donnees.isEmpty)
+              const Text('Aucune donnee.')
+            else
+              DataTable(
+                columns: const [
+                  DataColumn(label: Text('Compte')),
+                  DataColumn(label: Text('Montant')),
+                ],
+                rows: donnees
+                    .map(
+                      (d) => DataRow(
+                        cells: [
+                          DataCell(Text('${d.numero} - ${d.intitule}')),
+                          DataCell(Text(currencyFormatter.format(d.montant))),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_CompteMontant> _topComptes(
+    Map<String, double> montantsParCompte,
+    Map<String, CompteComptable> comptesParId,
+  ) {
+    final list = montantsParCompte.entries
+        .map(
+          (e) => _CompteMontant(
+            id: e.key,
+            numero: comptesParId[e.key]?.numero ?? e.key,
+            intitule: comptesParId[e.key]?.intitule ?? '',
+            montant: e.value,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.montant.compareTo(a.montant));
+    return list.take(5).toList();
+  }
+
+  Map<DateTime, double> _resultatParMoisLimite(Map<DateTime, double> data) {
+    final keys = data.keys.toList()..sort();
+    if (keys.length <= 6) return data;
+    final last = keys.sublist(keys.length - 6);
+    return {for (final k in last) k: data[k] ?? 0};
+  }
+
+  LineChartData _resultatLineChart(Map<DateTime, double> data) {
+    final entries = data.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final spots = <FlSpot>[];
+    for (var i = 0; i < entries.length; i++) {
+      spots.add(FlSpot(i.toDouble(), entries[i].value / 1000));
+    }
+    return LineChartData(
+      gridData: const FlGridData(show: true, drawVerticalLine: false),
+      borderData: FlBorderData(show: false),
+      titlesData: FlTitlesData(
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index < 0 || index >= entries.length) return const SizedBox();
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  monthFormatter.format(entries[index].key),
+                  style: const TextStyle(fontSize: 11),
+                ),
+              );
+            },
+          ),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 40,
+            getTitlesWidget: (value, meta) => Text('${value.toInt()}k'),
+          ),
+        ),
+      ),
+      lineBarsData: [
+        LineChartBarData(
+          spots: spots,
+          isCurved: true,
+          color: ChurchTheme.navy,
+          barWidth: 3,
+          dotData: const FlDotData(show: false),
+        ),
+      ],
+    );
+  }
+
+  SyntheseResultat _calculerSynthese(
+    List<EcritureComptable> ecritures,
+    Map<String, CompteComptable> comptesParId,
+  ) {
+    double totalCharges = 0;
+    double totalProduits = 0;
+    final chargesParCompte = <String, double>{};
+    final produitsParCompte = <String, double>{};
+    final resultatParMois = <DateTime, double>{};
+
+    for (final e in ecritures) {
+      double chargesMois = 0;
+      double produitsMois = 0;
+      for (final l in e.lignes) {
+        final compte = comptesParId[l.idCompteComptable];
+        if (compte == null) continue;
+        final debit = l.debit ?? 0;
+        final credit = l.credit ?? 0;
+        if (compte.nature == NatureCompte.charge) {
+          final montant = debit - credit;
+          if (montant != 0) {
+            totalCharges += montant;
+            chargesParCompte[compte.id] =
+                (chargesParCompte[compte.id] ?? 0) + montant;
+            chargesMois += montant;
+          }
+        } else if (compte.nature == NatureCompte.produit) {
+          final montant = credit - debit;
+          if (montant != 0) {
+            totalProduits += montant;
+            produitsParCompte[compte.id] =
+                (produitsParCompte[compte.id] ?? 0) + montant;
+            produitsMois += montant;
+          }
+        }
+      }
+      final moisCle = DateTime(e.date.year, e.date.month);
+      final resMois = produitsMois - chargesMois;
+      resultatParMois[moisCle] = (resultatParMois[moisCle] ?? 0) + resMois;
+    }
+
+    return SyntheseResultat(
+      totalCharges: totalCharges,
+      totalProduits: totalProduits,
+      resultat: totalProduits - totalCharges,
+      chargesParCompte: chargesParCompte,
+      produitsParCompte: produitsParCompte,
+      resultatParMois: resultatParMois,
+    );
+  }
+
+  List<EcritureComptable> _filtrerEcrituresSynthese(
+    List<EcritureComptable> ecritures,
+  ) {
+    Iterable<EcritureComptable> res = ecritures;
+    if (_dateDebutSynthese != null) {
+      res = res.where((e) => !e.date.isBefore(_dateDebutSynthese!));
+    }
+    if (_dateFinSynthese != null) {
+      res = res.where((e) => !e.date.isAfter(_dateFinSynthese!));
+    }
+    return res.toList()..sort((a, b) => a.date.compareTo(b.date));
+  }
+
   Future<void> _showEcritureDetails(
     BuildContext context,
     EcritureComptable ecriture,
@@ -837,307 +991,38 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     );
   }
 
-  void _showExportStub(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export CSV/Excel sera branche cote backend'),
-      ),
-    );
-  }
-
-  LineChartData _sixMonthsLine(List<AccountingEntry> entries) {
-    final now = DateTime.now();
-    final months = List.generate(
-      6,
-      (i) => DateTime(now.year, now.month - (5 - i)),
-    );
-    final income = <FlSpot>[];
-    final expense = <FlSpot>[];
-    for (var i = 0; i < months.length; i++) {
-      final month = months[i];
-      final incomeSum = entries
-          .where(
-            (e) =>
-                e.type == AccountingType.income &&
-                e.date.year == month.year &&
-                e.date.month == month.month,
-          )
-          .fold<double>(0, (p, e) => p + e.amount);
-      final expenseSum = entries
-          .where(
-            (e) =>
-                e.type == AccountingType.expense &&
-                e.date.year == month.year &&
-                e.date.month == month.month,
-          )
-          .fold<double>(0, (p, e) => p + e.amount);
-      income.add(FlSpot(i.toDouble(), incomeSum / 1000));
-      expense.add(FlSpot(i.toDouble(), expenseSum / 1000));
-    }
-    return LineChartData(
-      gridData: FlGridData(show: true, drawVerticalLine: false),
-      borderData: FlBorderData(show: false),
-      titlesData: FlTitlesData(
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              final index = value.toInt();
-              if (index < 0 || index >= months.length) return const SizedBox();
-              return Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  monthFormatter.format(months[index]),
-                  style: const TextStyle(fontSize: 11),
-                ),
-              );
-            },
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 40,
-            getTitlesWidget: (value, meta) => Text('${value.toInt()}k'),
-          ),
-        ),
-      ),
-      lineBarsData: [
-        LineChartBarData(
-          spots: income,
-          isCurved: true,
-          color: Colors.green[700],
-          barWidth: 3,
-          dotData: const FlDotData(show: false),
-        ),
-        LineChartBarData(
-          spots: expense,
-          isCurved: true,
-          color: Colors.red[600],
-          barWidth: 3,
-          dotData: const FlDotData(show: false),
-        ),
-      ],
-    );
-  }
-
-  List<_CategoryTotal> _topCategories(List<AccountingEntry> entries) {
-    final map = <String, _CategoryTotal>{};
-    for (final e in entries) {
-      final key = '${e.type.name}-${e.category}';
-      final current =
-          map[key] ??
-          _CategoryTotal(category: e.category, total: 0, type: e.type);
-      map[key] = current.copyWith(total: current.total + e.amount);
-    }
-    final list = map.values.toList()
-      ..sort((a, b) => b.total.compareTo(a.total));
-    return list.take(6).toList();
-  }
-
-  List<_CategoryTotal> _aggregateByCategory(List<AccountingEntry> entries) {
-    final map = <String, _CategoryTotal>{};
-    for (final e in entries) {
-      final key = '${e.type.name}-${e.category}';
-      final current =
-          map[key] ??
-          _CategoryTotal(category: e.category, total: 0, type: e.type);
-      map[key] = current.copyWith(total: current.total + e.amount);
-    }
-    final list = map.values.toList()
-      ..sort((a, b) => b.total.compareTo(a.total));
-    return list.take(12).toList();
-  }
 }
 
-class AccountingEntryForm extends ConsumerStatefulWidget {
-  const AccountingEntryForm({super.key, this.entry});
-
-  final AccountingEntry? entry;
-
-  @override
-  ConsumerState<AccountingEntryForm> createState() =>
-      _AccountingEntryFormState();
-}
-
-class _AccountingEntryFormState extends ConsumerState<AccountingEntryForm> {
-  final _formKey = GlobalKey<FormState>();
-  AccountingType? _type = AccountingType.income;
-  String? _category;
-  String? _paymentMethod;
-  DateTime _date = DateTime.now();
-  final _amountCtrl = TextEditingController();
-  final _descriptionCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    final e = widget.entry;
-    if (e != null) {
-      _type = e.type;
-      _category = e.category;
-      _paymentMethod = e.paymentMethod;
-      _date = e.date;
-      _amountCtrl.text = e.amount.toStringAsFixed(0);
-      _descriptionCtrl.text = e.description ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    _descriptionCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.entry != null;
-    final categories = _type == AccountingType.expense
-        ? expenseCategories
-        : incomeCategories;
-    return AlertDialog(
-      title: Text(isEditing ? 'Modifier l\'ecriture' : 'Nouvelle ecriture'),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<AccountingType>(
-                  isExpanded: true,
-                  initialValue: _type,
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: AccountingType.income,
-                      child: Text('Recette'),
-                    ),
-                    DropdownMenuItem(
-                      value: AccountingType.expense,
-                      child: Text('Depense'),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _type = value;
-                    _category = null;
-                  }),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: _category,
-                  decoration: const InputDecoration(labelText: 'Categorie'),
-                  items: categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (value) => setState(() => _category = value),
-                  validator: (v) => v == null ? 'Categorie requise' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _amountCtrl,
-                  decoration: const InputDecoration(labelText: 'Montant'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Montant requis';
-                    final parsed = double.tryParse(v.replaceAll(',', '.'));
-                    if (parsed == null) return 'Montant invalide';
-                    if (parsed < 0) return 'Montant negatif non autorise';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: _paymentMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Mode de paiement',
-                  ),
-                  items: paymentMethods
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                      .toList(),
-                  onChanged: (value) => setState(() => _paymentMethod = value),
-                ),
-                const SizedBox(height: 12),
-                _DateField(
-                  label: 'Date',
-                  value: _date,
-                  onSelected: (d) =>
-                      setState(() => _date = d ?? DateTime.now()),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _descriptionCtrl,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          child: Text(isEditing ? 'Mettre a jour' : 'Enregistrer'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
-    final notifier = ref.read(accountingEntriesProvider.notifier);
-    final entry = AccountingEntry(
-      id: widget.entry?.id ?? const Uuid().v4(),
-      date: _date,
-      amount: amount,
-      type: _type ?? AccountingType.income,
-      category: _category ?? '',
-      paymentMethod: _paymentMethod,
-      description: _descriptionCtrl.text.trim().isEmpty
-          ? null
-          : _descriptionCtrl.text.trim(),
-    );
-    if (widget.entry == null) {
-      await notifier.addEntry(entry);
-    } else {
-      await notifier.updateEntry(entry);
-    }
-    if (mounted) Navigator.of(context).pop();
-  }
-}
-
-class _CategoryTotal {
-  const _CategoryTotal({
-    required this.category,
-    required this.total,
-    required this.type,
+class SyntheseResultat {
+  const SyntheseResultat({
+    required this.totalCharges,
+    required this.totalProduits,
+    required this.resultat,
+    required this.chargesParCompte,
+    required this.produitsParCompte,
+    required this.resultatParMois,
   });
 
-  final String category;
-  final double total;
-  final AccountingType type;
+  final double totalCharges;
+  final double totalProduits;
+  final double resultat;
+  final Map<String, double> chargesParCompte;
+  final Map<String, double> produitsParCompte;
+  final Map<DateTime, double> resultatParMois;
+}
 
-  _CategoryTotal copyWith({
-    String? category,
-    double? total,
-    AccountingType? type,
-  }) {
-    return _CategoryTotal(
-      category: category ?? this.category,
-      total: total ?? this.total,
-      type: type ?? this.type,
-    );
-  }
+class _CompteMontant {
+  const _CompteMontant({
+    required this.id,
+    required this.numero,
+    required this.intitule,
+    required this.montant,
+  });
+
+  final String id;
+  final String numero;
+  final String intitule;
+  final double montant;
 }
 
 class _JournalDateFilterField extends StatelessWidget {
@@ -1189,42 +1074,6 @@ class _JournalDateFilterField extends StatelessWidget {
         child: Text(
           value != null ? dateFormatter.format(value!) : 'Aucune date',
         ),
-      ),
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.label,
-    required this.value,
-    required this.onSelected,
-  });
-
-  final String label;
-  final DateTime? value;
-  final void Function(DateTime?) onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value ?? DateTime.now(),
-          firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
-          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-        );
-        if (picked != null) {
-          onSelected(picked);
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: const Icon(Icons.date_range),
-        ),
-        child: Text(value != null ? dateFormatter.format(value!) : 'Choisir'),
       ),
     );
   }
