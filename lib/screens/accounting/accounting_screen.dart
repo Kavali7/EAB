@@ -17,6 +17,7 @@ import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+import '../../widgets/context_header.dart';
 import 'widgets/ecriture_comptable_form.dart';
 
 class AccountingScreen extends ConsumerStatefulWidget {
@@ -110,6 +111,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const ContextHeader(showPorteeComptable: true),
+                const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: _buildSelecteurPortee(portee, profilCourant),
@@ -646,6 +649,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const ContextHeader(showPorteeComptable: true),
+              const SizedBox(height: 8),
               _buildSelecteurPortee(portee, profil),
               Wrap(
                 spacing: 12,

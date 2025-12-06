@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/assemblee_locale.dart';
 import '../../models/compte_comptable.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/tiers.dart';
-import '../../models/profil_utilisateur.dart';
 import '../../models/compta_enums.dart';
 import '../../providers/accounting_providers.dart';
-import '../../providers/user_profile_providers.dart';
-import '../../providers/church_structure_providers.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingReportsScreen extends ConsumerStatefulWidget {
   const AccountingReportsScreen({super.key});
@@ -39,10 +36,6 @@ class _AccountingReportsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final profil = ref.watch(profilUtilisateurCourantProvider);
-    final assembleesAsync = ref.watch(assembleesLocalesProvider);
-    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
-    final portee = ref.watch(porteeComptableProvider);
     final ecritures = ref.watch(ecrituresFiltreesProvider);
     final comptesAsync = ref.watch(comptesComptablesProvider);
     final tiersAsync = ref.watch(tiersProvider);
@@ -68,17 +61,11 @@ class _AccountingReportsScreenState
               const Center(child: Text('Erreur chargement plan de comptes')),
           data: (comptes) {
             final tiers = tiersAsync.asData?.value ?? [];
-            final assemblees = assembleesAsync.asData?.value ?? [];
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildContexteHeader(
-                  profil,
-                  assemblees,
-                  assembleeActiveId,
-                  portee,
-                ),
-                const SizedBox(height: 16),
+                const ContextHeader(showPorteeComptable: true),
+                const SizedBox(height: 12),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
@@ -98,42 +85,6 @@ class _AccountingReportsScreenState
     );
   }
 
-  Widget _buildContexteHeader(
-    ProfilUtilisateur? profil,
-    List<AssembleeLocale> assemblees,
-    String? assembleeActiveId,
-    PorteeComptable portee,
-  ) {
-    AssembleeLocale? assembleeActive;
-    if (assembleeActiveId != null) {
-      assembleeActive = assemblees.firstWhere(
-        (a) => a.id == assembleeActiveId,
-        orElse: () => AssembleeLocale(
-          id: 'inconnu',
-          nom: 'Aucune assemblee active',
-          idDistrict: '',
-        ),
-      );
-    }
-    final porteeLabel = switch (portee) {
-      PorteeComptable.assemblee => 'Assemblee',
-      PorteeComptable.district => 'District',
-      PorteeComptable.region => 'Region',
-      PorteeComptable.national => 'National',
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Profil : ${profil?.nom ?? '—'}',
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
-        Text('Assemblee active : ${assembleeActive?.nom ?? '—'}'),
-        Text('Portee comptable : $porteeLabel'),
-      ],
-    );
-  }
 
   Widget _buildBalanceTab(
     List<CompteComptable> comptes,

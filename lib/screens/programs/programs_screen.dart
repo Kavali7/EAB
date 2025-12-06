@@ -14,6 +14,7 @@ import '../../providers/programs_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+import '../../widgets/context_header.dart';
 
 const typeVisiteLabels = {
   TypeVisite.fidele: 'Fidele',
@@ -119,6 +120,8 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const ContextHeader(showPorteeComptable: false),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 12,
             runSpacing: 12,

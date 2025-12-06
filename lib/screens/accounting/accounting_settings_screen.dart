@@ -15,6 +15,7 @@ import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingSettingsScreen extends ConsumerStatefulWidget {
   const AccountingSettingsScreen({super.key});
@@ -50,6 +51,8 @@ class _AccountingSettingsScreenState
       currentRoute: '/accounting-settings',
       body: Column(
         children: [
+          const ContextHeader(showPorteeComptable: true),
+          const SizedBox(height: 8),
           TabBar(
             controller: _tabController,
             labelColor: ChurchTheme.navy,

@@ -9,6 +9,7 @@ import '../../models/profil_utilisateur.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingImmobilisationsScreen extends ConsumerStatefulWidget {
   const AccountingImmobilisationsScreen({super.key});
@@ -34,24 +35,33 @@ class _AccountingImmobilisationsScreenState
       floatingActionButton: _buildFabAjoutImmo(profil),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: immobilisationsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) => const Center(
-            child: Text('Erreur lors du chargement des immobilisations'),
-          ),
-          data: (immobilisations) {
-            final assemblees = assembleesAsync.asData?.value ?? [];
-            final centres = centresAsync.asData?.value ?? [];
-            final assembleesParId = {for (final a in assemblees) a.id: a};
-            final centresParId = {for (final c in centres) c.id: c};
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ContextHeader(showPorteeComptable: true),
+            const SizedBox(height: 8),
+            Expanded(
+              child: immobilisationsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, st) => const Center(
+                  child: Text('Erreur lors du chargement des immobilisations'),
+                ),
+                data: (immobilisations) {
+                  final assemblees = assembleesAsync.asData?.value ?? [];
+                  final centres = centresAsync.asData?.value ?? [];
+                  final assembleesParId = {for (final a in assemblees) a.id: a};
+                  final centresParId = {for (final c in centres) c.id: c};
 
-            return _buildListeImmobilisations(
-              context: context,
-              immobilisations: immobilisations,
-              assembleesParId: assembleesParId,
-              centresParId: centresParId,
-            );
-          },
+                  return _buildListeImmobilisations(
+                    context: context,
+                    immobilisations: immobilisations,
+                    assembleesParId: assembleesParId,
+                    centresParId: centresParId,
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

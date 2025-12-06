@@ -5,6 +5,7 @@ import '../../models/compte_comptable.dart';
 import '../../models/ecriture_comptable.dart';
 import '../../models/releve_bancaire.dart';
 import '../../providers/accounting_providers.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingReconciliationScreen extends ConsumerStatefulWidget {
   const AccountingReconciliationScreen({super.key});
@@ -30,22 +31,31 @@ class _AccountingReconciliationScreenState
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: comptesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) => const Center(
-            child: Text('Erreur chargement plan de comptes'),
-          ),
-          data: (comptes) {
-            final releves = relevesAsync.asData?.value ?? [];
-            final comptesBanque =
-                comptes.where((c) => c.numero.startsWith('512')).toList();
-            return _buildContent(
-              context: context,
-              comptesBanque: comptesBanque,
-              ecritures: ecritures,
-              releves: releves,
-            );
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ContextHeader(showPorteeComptable: true),
+            const SizedBox(height: 8),
+            Expanded(
+              child: comptesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, st) => const Center(
+                  child: Text('Erreur chargement plan de comptes'),
+                ),
+                data: (comptes) {
+                  final releves = relevesAsync.asData?.value ?? [];
+                  final comptesBanque =
+                      comptes.where((c) => c.numero.startsWith('512')).toList();
+                  return _buildContent(
+                    context: context,
+                    comptesBanque: comptesBanque,
+                    ecritures: ecritures,
+                    releves: releves,
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

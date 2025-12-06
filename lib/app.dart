@@ -13,6 +13,7 @@ import 'screens/accounting/accounting_immobilisations_screen.dart';
 import 'screens/accounting/accounting_treasury_screen.dart';
 import 'screens/accounting/accounting_reconciliation_screen.dart';
 import 'screens/accounting/accounting_reports_screen.dart';
+import 'screens/reports/rapport_mensuel_eab_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
@@ -20,9 +21,9 @@ class ChurchApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gestion EAB',
+      title: 'EAB - Gestion',
       debugShowCheckedModeBanner: false,
-      theme: ChurchTheme.lightTheme,
+      theme: buildAppTheme(),
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(
           child: child!,
@@ -48,6 +49,7 @@ class ChurchApp extends StatelessWidget {
         '/accounting-reconciliation': (_) =>
             const AccountingReconciliationScreen(),
         '/accounting-reports': (_) => const AccountingReportsScreen(),
+        '/reports-rapport-mensuel': (_) => const RapportMensuelEabScreen(),
       },
     );
   }

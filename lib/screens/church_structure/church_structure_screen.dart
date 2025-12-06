@@ -15,6 +15,7 @@ import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
+import '../../widgets/context_header.dart';
 
 class ChurchStructureScreen extends ConsumerStatefulWidget {
   const ChurchStructureScreen({super.key});
@@ -117,43 +118,53 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
       currentRoute: '/structure',
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const ContextHeader(showPorteeComptable: false),
+            const SizedBox(height: 8),
             Expanded(
-              flex: 2,
-              child: _buildRegionsColumn(regions, profilCourant, regionsNotifier),
-            ),
-            Expanded(
-              flex: 2,
-              child: _buildDistrictsColumn(
-                filteredDistricts,
-                profilCourant,
-                districtsNotifier,
-                regionById,
-              ),
-            ),
-            Expanded(
-              flex: 3,
-              child: _buildAssembleesColumn(
-                filteredAssemblees,
-                districtById,
-                profilCourant,
-                assembleesNotifier,
-              ),
-            ),
-            Expanded(
-              flex: 4,
-              child: _buildDetailsPanel(
-                selectedRegion: selectedRegion,
-                selectedDistrict: selectedDistrict,
-                selectedAssemblee: selectedAssemblee,
-                regionById: regionById,
-                districtById: districtById,
-                assemblees: assemblees,
-                districts: districts,
-                members: members,
-                programs: programs,
-                profil: profilCourant,
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child:
+                        _buildRegionsColumn(regions, profilCourant, regionsNotifier),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: _buildDistrictsColumn(
+                      filteredDistricts,
+                      profilCourant,
+                      districtsNotifier,
+                      regionById,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: _buildAssembleesColumn(
+                      filteredAssemblees,
+                      districtById,
+                      profilCourant,
+                      assembleesNotifier,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: _buildDetailsPanel(
+                      selectedRegion: selectedRegion,
+                      selectedDistrict: selectedDistrict,
+                      selectedAssemblee: selectedAssemblee,
+                      regionById: regionById,
+                      districtById: districtById,
+                      assemblees: assemblees,
+                      districts: districts,
+                      members: members,
+                      programs: programs,
+                      profil: profilCourant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

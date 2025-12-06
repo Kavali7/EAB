@@ -6,6 +6,7 @@ import '../../models/ecriture_comptable.dart';
 import '../../models/profil_utilisateur.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/user_profile_providers.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingTreasuryScreen extends ConsumerStatefulWidget {
   const AccountingTreasuryScreen({super.key});
@@ -31,19 +32,28 @@ class _AccountingTreasuryScreenState
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: comptesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) => const Center(
-            child: Text('Erreur chargement plan de comptes'),
-          ),
-          data: (comptes) {
-            return _buildContent(
-              context: context,
-              profil: profil,
-              comptes: comptes,
-              ecritures: ecritures,
-            );
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ContextHeader(showPorteeComptable: true),
+            const SizedBox(height: 8),
+            Expanded(
+              child: comptesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, st) => const Center(
+                  child: Text('Erreur chargement plan de comptes'),
+                ),
+                data: (comptes) {
+                  return _buildContent(
+                    context: context,
+                    profil: profil,
+                    comptes: comptes,
+                    ecritures: ecritures,
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -34,6 +34,11 @@ class SideNavigation extends StatelessWidget {
         Icons.assessment_outlined,
       ),
       _NavItem(
+        'Rapport mensuel EAB',
+        '/reports-rapport-mensuel',
+        Icons.description_outlined,
+      ),
+      _NavItem(
         'Budgets',
         '/accounting-budgets',
         Icons.insert_chart_outlined,

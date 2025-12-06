@@ -69,6 +69,10 @@ class AppShell extends ConsumerWidget {
           DropdownButtonHideUnderline(
             child: DropdownButton<ProfilUtilisateur>(
               value: current,
+              style: const TextStyle(color: Colors.white),
+              iconEnabledColor: Colors.white,
+              iconDisabledColor: Colors.white70,
+              dropdownColor: Colors.white,
               items: profils
                   .map(
                     (p) => DropdownMenuItem(
@@ -105,6 +109,10 @@ class AppShell extends ConsumerWidget {
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selected.id,
+              style: const TextStyle(color: Colors.white),
+              iconEnabledColor: Colors.white,
+              iconDisabledColor: Colors.white70,
+              dropdownColor: Colors.white,
               items: assembleesAutorisees
                   .map(
                     (a) => DropdownMenuItem(

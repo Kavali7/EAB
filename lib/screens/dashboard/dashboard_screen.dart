@@ -13,6 +13,7 @@ import '../../providers/programs_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+import '../../widgets/context_header.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -79,240 +80,248 @@ class DashboardScreen extends ConsumerWidget {
     return AppShell(
       title: 'Tableau de bord',
       currentRoute: '/',
-      body: isLoading && members.isEmpty && programs.isEmpty && entries.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      'Contexte : $activeContextLabel',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: isLoading &&
+                members.isEmpty &&
+                programs.isEmpty &&
+                entries.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ContextHeader(showPorteeComptable: false),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Contexte : $activeContextLabel',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Fideles',
-                          value: '$maleCount H / $femaleCount F',
-                          subtitle:
-                              'Total ${filteredMembers.length} | Baptises $baptized',
-                          icon: Icons.people_alt_outlined,
-                          color: ChurchTheme.navy,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Recettes du mois',
-                          value: currencyFormatter.format(totalIncome),
-                          subtitle: 'Sur ${entries.length} ecritures',
-                          icon: Icons.trending_up,
-                          color: Colors.green[700],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Depenses du mois',
-                          value: currencyFormatter.format(totalExpense),
-                          subtitle:
-                              'Balance ${currencyFormatter.format(totalIncome - totalExpense)}',
-                          icon: Icons.trending_down,
-                          color: Colors.red[600],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Programmes planifies',
-                          value: '${filteredPrograms.length}',
-                          subtitle:
-                              'Dont ${programStats.entries.isNotEmpty ? programStats.entries.first.value : 0} ${programStats.entries.isNotEmpty ? programStats.entries.first.key : ''}',
-                          icon: Icons.event_note_outlined,
-                          color: Colors.indigo,
-                        ),
-                      ),
-                      SizedBox(
-                        width: 260,
-                        child: InfoCard(
-                          title: 'Nouveaux convertis (90j)',
-                          value: '$newConverts',
-                          subtitle: 'Baptises recents',
-                          icon: Icons.star_rate_outlined,
-                          color: Colors.orange[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth > 900;
-                      return Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          SizedBox(
-                            width: isWide
-                                ? constraints.maxWidth * 0.55
-                                : constraints.maxWidth,
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Flux mensuels',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      height: 240,
-                                      child: LineChart(
-                                        _cashflowLineChart(monthly),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SizedBox(
+                          width: 260,
+                          child: InfoCard(
+                            title: 'Fideles',
+                            value: '$maleCount H / $femaleCount F',
+                            subtitle:
+                                'Total ${filteredMembers.length} | Baptises $baptized',
+                            icon: Icons.people_alt_outlined,
+                            color: ChurchTheme.navy,
                           ),
-                          SizedBox(
-                            width: isWide
-                                ? constraints.maxWidth * 0.4 - 16
-                                : constraints.maxWidth,
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Repartition par genre',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      height: 240,
-                                      child: PieChart(
-                                        PieChartData(
-                                          sections: [
-                                            PieChartSectionData(
-                                              value: maleCount.toDouble(),
-                                              color: ChurchTheme.navy,
-                                              title: 'Hommes',
-                                            ),
-                                            PieChartSectionData(
-                                              value: femaleCount.toDouble(),
-                                              color: ChurchTheme.gold,
-                                              title: 'Femmes',
-                                            ),
-                                          ],
-                                          sectionsSpace: 4,
-                                          centerSpaceRadius: 28,
+                        ),
+                        SizedBox(
+                          width: 260,
+                          child: InfoCard(
+                            title: 'Recettes du mois',
+                            value: currencyFormatter.format(totalIncome),
+                            subtitle: 'Sur ${entries.length} ecritures',
+                            icon: Icons.trending_up,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        SizedBox(
+                          width: 260,
+                          child: InfoCard(
+                            title: 'Depenses du mois',
+                            value: currencyFormatter.format(totalExpense),
+                            subtitle:
+                                'Balance ${currencyFormatter.format(totalIncome - totalExpense)}',
+                            icon: Icons.trending_down,
+                            color: Colors.red[600],
+                          ),
+                        ),
+                        SizedBox(
+                          width: 260,
+                          child: InfoCard(
+                            title: 'Programmes planifies',
+                            value: '${filteredPrograms.length}',
+                            subtitle:
+                                'Dont ${programStats.entries.isNotEmpty ? programStats.entries.first.value : 0} ${programStats.entries.isNotEmpty ? programStats.entries.first.key : ''}',
+                            icon: Icons.event_note_outlined,
+                            color: Colors.indigo,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 260,
+                          child: InfoCard(
+                            title: 'Nouveaux convertis (90j)',
+                            value: '$newConverts',
+                            subtitle: 'Baptises recents',
+                            icon: Icons.star_rate_outlined,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth > 900;
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: [
+                            SizedBox(
+                              width: isWide
+                                  ? constraints.maxWidth * 0.55
+                                  : constraints.maxWidth,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Flux mensuels',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 240,
+                                        child: LineChart(
+                                          _cashflowLineChart(monthly),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(
-                            width: isWide
-                                ? constraints.maxWidth * 0.4 - 16
-                                : constraints.maxWidth,
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Statut marital',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
+                            SizedBox(
+                              width: isWide
+                                  ? constraints.maxWidth * 0.4 - 16
+                                  : constraints.maxWidth,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Repartition par genre',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      height: 240,
-                                      child: PieChart(
-                                        PieChartData(
-                                          sections: maritalStats.entries
-                                              .map(
-                                                (e) => PieChartSectionData(
-                                                  value: e.value.toDouble(),
-                                                  title: e.key,
-                                                  color: _colorForMarital(
-                                                    e.key,
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 240,
+                                        child: PieChart(
+                                          PieChartData(
+                                            sections: [
+                                              PieChartSectionData(
+                                                value: maleCount.toDouble(),
+                                                color: ChurchTheme.navy,
+                                                title: 'Hommes',
+                                              ),
+                                              PieChartSectionData(
+                                                value: femaleCount.toDouble(),
+                                                color: ChurchTheme.gold,
+                                                title: 'Femmes',
+                                              ),
+                                            ],
+                                            sectionsSpace: 4,
+                                            centerSpaceRadius: 28,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: isWide
+                                  ? constraints.maxWidth * 0.4 - 16
+                                  : constraints.maxWidth,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Statut marital',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 240,
+                                        child: PieChart(
+                                          PieChartData(
+                                            sections: maritalStats.entries
+                                                .map(
+                                                  (e) => PieChartSectionData(
+                                                    value: e.value.toDouble(),
+                                                    title: e.key,
+                                                    color: _colorForMarital(
+                                                      e.key,
+                                                    ),
                                                   ),
-                                                ),
-                                              )
-                                              .toList(),
-                                          sectionsSpace: 4,
-                                          centerSpaceRadius: 28,
+                                                )
+                                                .toList(),
+                                            sectionsSpace: 4,
+                                            centerSpaceRadius: 28,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(
-                            width: isWide
-                                ? constraints.maxWidth * 0.45
-                                : constraints.maxWidth,
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Programmes par type',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
+                            SizedBox(
+                              width: isWide
+                                  ? constraints.maxWidth * 0.45
+                                  : constraints.maxWidth,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Programmes par type',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      height: 240,
-                                      child: BarChart(
-                                        _programBarChart(programStats),
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 240,
+                                        child: BarChart(
+                                          _programBarChart(programStats),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
+        ),
     );
   }
 

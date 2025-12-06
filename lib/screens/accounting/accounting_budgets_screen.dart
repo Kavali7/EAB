@@ -13,6 +13,7 @@ import '../../models/profil_utilisateur.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
+import '../../widgets/context_header.dart';
 
 class AccountingBudgetsScreen extends ConsumerStatefulWidget {
   const AccountingBudgetsScreen({super.key});
@@ -43,15 +44,24 @@ class _AccountingBudgetsScreenState
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: _buildContent(
-          profil: profil,
-          budgetsAsync: budgetsAsync,
-          lignesBudgetsAsync: lignesBudgetsAsync,
-          comptesAsync: comptesAsync,
-          centresAsync: centresAsync,
-          assembleesAsync: assembleesAsync,
-          districtsAsync: districtsAsync,
-          ecritures: ecritures,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ContextHeader(showPorteeComptable: true),
+            const SizedBox(height: 8),
+            Expanded(
+              child: _buildContent(
+                profil: profil,
+                budgetsAsync: budgetsAsync,
+                lignesBudgetsAsync: lignesBudgetsAsync,
+                comptesAsync: comptesAsync,
+                centresAsync: centresAsync,
+                assembleesAsync: assembleesAsync,
+                districtsAsync: districtsAsync,
+                ecritures: ecritures,
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: _buildFabAjoutBudget(profil),
