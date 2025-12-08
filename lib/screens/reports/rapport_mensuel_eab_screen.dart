@@ -10,6 +10,7 @@ import '../../providers/rapport_mensuel_eab_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/context_header.dart';
+import 'rapport_mensuel_eab_print_screen.dart';
 
 class RapportMensuelEabScreen extends ConsumerStatefulWidget {
   const RapportMensuelEabScreen({super.key});
@@ -86,6 +87,31 @@ class _RapportMensuelEabScreenState
         return AppShell(
           title: 'Rapport mensuel EAB',
           currentRoute: '/reports-rapport-mensuel',
+          actions: [
+            IconButton(
+              tooltip: 'Apercu imprimable',
+              icon: const Icon(Icons.print),
+              onPressed: () {
+                if (_idAssembleeSelectionnee == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Veuillez selectionner une assemblee.'),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => RapportMensuelEabPrintScreen(
+                      annee: _annee,
+                      mois: _mois,
+                      idAssembleeLocale: _idAssembleeSelectionnee!,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
           body: rapportAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, st) => Center(

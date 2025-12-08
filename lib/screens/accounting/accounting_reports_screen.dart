@@ -7,6 +7,8 @@ import '../../models/tiers.dart';
 import '../../models/compta_enums.dart';
 import '../../providers/accounting_providers.dart';
 import '../../widgets/context_header.dart';
+import 'accounting_balance_print_screen.dart';
+import 'accounting_ledger_print_screen.dart';
 
 class AccountingReportsScreen extends ConsumerStatefulWidget {
   const AccountingReportsScreen({super.key});
@@ -139,6 +141,20 @@ class _AccountingReportsScreenState
           'Balance generale (${lignes.length} comptes)',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AccountingBalancePrintScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.print),
+            label: const Text('Apercu imprimable'),
+          ),
+        ),
         const SizedBox(height: 8),
         Expanded(
           child: SingleChildScrollView(
@@ -238,6 +254,23 @@ class _AccountingReportsScreenState
             ),
           ],
         ),
+        if (compteSelectionne != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AccountingLedgerPrintScreen(
+                      idCompteComptable: compteSelectionne.id,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.print),
+              label: const Text('Apercu imprimable'),
+            ),
+          ),
         const SizedBox(height: 16),
         if (compteSelectionne == null)
           const Text('Selectionnez un compte pour voir le grand livre.')
