@@ -14,6 +14,7 @@ import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/context_header.dart';
+import '../../core/theme.dart';
 
 class AccountingBudgetsScreen extends ConsumerStatefulWidget {
   const AccountingBudgetsScreen({super.key});
@@ -174,6 +175,10 @@ class _AccountingBudgetsScreenState
                       ecritures,
                       comptesParId,
                     );
+                    final ecartGlobal = resume.realiseTotal - resume.budgetTotal;
+                    final tauxGlobal = resume.budgetTotal == 0
+                        ? null
+                        : (resume.realiseTotal / resume.budgetTotal);
                     final assemblee =
                         budget.idAssembleeLocale != null ? assembleesParId[budget.idAssembleeLocale] : null;
                     final centre =
@@ -196,7 +201,7 @@ class _AccountingBudgetsScreenState
                               children: [
                                 Wrap(
                                   spacing: 12,
-                                  runSpacing: 12,
+                                  runSpacing: 8,
                                   children: [
                                     _smallInfo(
                                       'Budget prevu',
@@ -208,9 +213,15 @@ class _AccountingBudgetsScreenState
                                     ),
                                     _smallInfo(
                                       'Ecart',
-                                      currencyFormatter.format(
-                                        resume.realiseTotal - resume.budgetTotal,
-                                      ),
+                                      currencyFormatter.format(ecartGlobal),
+                                      valueColor: ecartGlobal >= 0
+                                          ? AppColors.success
+                                          : AppColors.error,
+                                    ),
+                                    _smallInfo(
+                                      'Taux global',
+                                      _texteTaux(tauxGlobal),
+                                      valueColor: _couleurTaux(tauxGlobal),
                                     ),
                                   ],
                                 ),
@@ -253,11 +264,15 @@ class _AccountingBudgetsScreenState
                                           DataCell(
                                             Text(currencyFormatter.format(ecart)),
                                           ),
-                                          DataCell(Text(
-                                            taux == null
-                                                ? '--'
-                                                : '${(taux * 100).toStringAsFixed(1)}%',
-                                          )),
+                                          DataCell(
+                                            Text(
+                                              _texteTaux(taux),
+                                              style: TextStyle(
+                                                color: _couleurTaux(taux),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
                                           DataCell(
                                             IconButton(
                                               icon: const Icon(Icons.edit_outlined),
@@ -309,7 +324,7 @@ class _AccountingBudgetsScreenState
     );
   }
 
-  Widget _smallInfo(String label, String value) {
+  Widget _smallInfo(String label, String value, {Color? valueColor}) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -318,7 +333,14 @@ class _AccountingBudgetsScreenState
           children: [
             Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text(value, style: const TextStyle(fontSize: 16)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                color: valueColor,
+                fontWeight: valueColor != null ? FontWeight.w700 : null,
+              ),
+            ),
           ],
         ),
       ),
@@ -640,6 +662,20 @@ class _AccountingBudgetsScreenState
         if (idAss == null) return {};
         return {idAss};
     }
+  }
+
+  Color _couleurTaux(double? taux) {
+    if (taux == null || taux.isNaN || taux.isInfinite) {
+      return AppColors.textSecondary;
+    }
+    if (taux < 0.8) return AppColors.error;
+    if (taux <= 1.1) return AppColors.success;
+    return AppColors.warning;
+  }
+
+  String _texteTaux(double? taux) {
+    if (taux == null || taux.isNaN || taux.isInfinite) return '-';
+    return '${(taux * 100).toStringAsFixed(0)} %';
   }
 }
 

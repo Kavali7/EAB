@@ -441,7 +441,13 @@ class _EcritureComptableFormDialogState
                               keyboardType: TextInputType.number,
                               decoration:
                                   const InputDecoration(labelText: 'Debit'),
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value.trim().isNotEmpty) {
+                                    _lignes[i].creditCtrl.text = '';
+                                  }
+                                });
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -451,17 +457,46 @@ class _EcritureComptableFormDialogState
                               keyboardType: TextInputType.number,
                               decoration:
                                   const InputDecoration(labelText: 'Credit'),
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value.trim().isNotEmpty) {
+                                    _lignes[i].debitCtrl.text = '';
+                                  }
+                                });
+                              },
                             ),
                           ),
-                          IconButton(
-                            onPressed: _lignes.length > 2
-                                ? () => setState(() {
-                                      _lignes.removeAt(i).dispose();
-                                    })
-                                : null,
-                            icon: const Icon(Icons.delete_outline),
-                            tooltip: 'Supprimer la ligne',
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    final original = _lignes[i];
+                                    final duplicate = _LigneEditable(
+                                      idTemp: _uuid.v4(),
+                                      idCompte: original.idCompte,
+                                      libelle: original.libelleCtrl.text,
+                                      idCentre: original.idCentre,
+                                      idTiers: original.idTiers,
+                                      mode: original.mode ?? _modePaiementGlobal,
+                                    );
+                                    _lignes.insert(i + 1, duplicate);
+                                  });
+                                },
+                                icon: const Icon(Icons.content_copy),
+                                tooltip: 'Dupliquer la ligne',
+                              ),
+                              IconButton(
+                                onPressed: _lignes.length > 2
+                                    ? () => setState(() {
+                                          _lignes.removeAt(i).dispose();
+                                        })
+                                    : null,
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: 'Supprimer la ligne',
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -562,6 +597,10 @@ class _EcritureComptableFormDialogState
         return;
       }
       final centre = l.idCentre ?? _centrePrincipal?.id;
+      final libelleLigneBrut = l.libelleCtrl.text.trim();
+      final libelleFinal = libelleLigneBrut.isEmpty
+          ? _libelleGeneral.trim()
+          : libelleLigneBrut;
       lignesConstruites.add(
         LigneEcritureComptable(
           id: l.idTemp.isNotEmpty ? l.idTemp : _uuid.v4(),
@@ -571,10 +610,7 @@ class _EcritureComptableFormDialogState
           idCentreAnalytique: centre,
           idTiers: l.idTiers,
           modePaiement: l.mode ?? _modePaiementGlobal,
-          libelle: (l.libelleCtrl.text.trim().isNotEmpty
-                  ? l.libelleCtrl.text.trim()
-                  : _libelleGeneral)
-              .trim(),
+          libelle: libelleFinal.isEmpty ? null : libelleFinal,
         ),
       );
     }

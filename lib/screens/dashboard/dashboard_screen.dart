@@ -80,86 +80,98 @@ class DashboardScreen extends ConsumerWidget {
     return AppShell(
       title: 'Tableau de bord',
       currentRoute: '/',
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: isLoading &&
-                members.isEmpty &&
-                programs.isEmpty &&
-                entries.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+      body: isLoading &&
+              members.isEmpty &&
+              programs.isEmpty &&
+              entries.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const ContextHeader(showPorteeComptable: false),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        'Contexte : $activeContextLabel',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Contexte',
+                              style: AppTextStyles.sectionTitle,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              activeContextLabel,
+                              style: AppTextStyles.secondary,
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                SizedBox(
+                                  width: 260,
+                                  child: InfoCard(
+                                    title: 'Fideles',
+                                    value: '$maleCount H / $femaleCount F',
+                                    subtitle:
+                                        'Total ${filteredMembers.length} | Baptises $baptized',
+                                    icon: Icons.people_alt_outlined,
+                                    color: ChurchTheme.navy,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 260,
+                                  child: InfoCard(
+                                    title: 'Recettes du mois',
+                                    value: currencyFormatter.format(totalIncome),
+                                    subtitle:
+                                        'Sur ${entries.length} ecritures',
+                                    icon: Icons.trending_up,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 260,
+                                  child: InfoCard(
+                                    title: 'Depenses du mois',
+                                    value: currencyFormatter.format(totalExpense),
+                                    subtitle:
+                                        'Balance ${currencyFormatter.format(totalIncome - totalExpense)}',
+                                    icon: Icons.trending_down,
+                                    color: Colors.red[600],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 260,
+                                  child: InfoCard(
+                                    title: 'Programmes planifies',
+                                    value: '${filteredPrograms.length}',
+                                    subtitle:
+                                        'Dont ${programStats.entries.isNotEmpty ? programStats.entries.first.value : 0} ${programStats.entries.isNotEmpty ? programStats.entries.first.key : ''}',
+                                    icon: Icons.event_note_outlined,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 260,
+                                  child: InfoCard(
+                                    title: 'Nouveaux convertis (90j)',
+                                    value: '$newConverts',
+                                    subtitle: 'Baptises recents',
+                                    icon: Icons.star_rate_outlined,
+                                    color: Colors.orange[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        SizedBox(
-                          width: 260,
-                          child: InfoCard(
-                            title: 'Fideles',
-                            value: '$maleCount H / $femaleCount F',
-                            subtitle:
-                                'Total ${filteredMembers.length} | Baptises $baptized',
-                            icon: Icons.people_alt_outlined,
-                            color: ChurchTheme.navy,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 260,
-                          child: InfoCard(
-                            title: 'Recettes du mois',
-                            value: currencyFormatter.format(totalIncome),
-                            subtitle: 'Sur ${entries.length} ecritures',
-                            icon: Icons.trending_up,
-                            color: Colors.green[700],
-                          ),
-                        ),
-                        SizedBox(
-                          width: 260,
-                          child: InfoCard(
-                            title: 'Depenses du mois',
-                            value: currencyFormatter.format(totalExpense),
-                            subtitle:
-                                'Balance ${currencyFormatter.format(totalIncome - totalExpense)}',
-                            icon: Icons.trending_down,
-                            color: Colors.red[600],
-                          ),
-                        ),
-                        SizedBox(
-                          width: 260,
-                          child: InfoCard(
-                            title: 'Programmes planifies',
-                            value: '${filteredPrograms.length}',
-                            subtitle:
-                                'Dont ${programStats.entries.isNotEmpty ? programStats.entries.first.value : 0} ${programStats.entries.isNotEmpty ? programStats.entries.first.key : ''}',
-                            icon: Icons.event_note_outlined,
-                            color: Colors.indigo,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 260,
-                          child: InfoCard(
-                            title: 'Nouveaux convertis (90j)',
-                            value: '$newConverts',
-                            subtitle: 'Baptises recents',
-                            icon: Icons.star_rate_outlined,
-                            color: Colors.orange[700],
-                          ),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 16),
                     LayoutBuilder(
@@ -175,16 +187,13 @@ class DashboardScreen extends ConsumerWidget {
                                   : constraints.maxWidth,
                               child: Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Flux mensuels',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16,
-                                        ),
+                                        style: AppTextStyles.sectionTitle,
                                       ),
                                       const SizedBox(height: 12),
                                       SizedBox(
@@ -204,16 +213,13 @@ class DashboardScreen extends ConsumerWidget {
                                   : constraints.maxWidth,
                               child: Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Repartition par genre',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16,
-                                        ),
+                                        style: AppTextStyles.sectionTitle,
                                       ),
                                       const SizedBox(height: 12),
                                       SizedBox(
@@ -248,16 +254,13 @@ class DashboardScreen extends ConsumerWidget {
                                   : constraints.maxWidth,
                               child: Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Statut marital',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16,
-                                        ),
+                                        style: AppTextStyles.sectionTitle,
                                       ),
                                       const SizedBox(height: 12),
                                       SizedBox(
@@ -291,16 +294,13 @@ class DashboardScreen extends ConsumerWidget {
                                   : constraints.maxWidth,
                               child: Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(12),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Programmes par type',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16,
-                                        ),
+                                        style: AppTextStyles.sectionTitle,
                                       ),
                                       const SizedBox(height: 12),
                                       SizedBox(
@@ -321,7 +321,7 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-        ),
+            ),
     );
   }
 

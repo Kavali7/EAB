@@ -14,6 +14,7 @@ import '../../providers/programs_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
+import '../../widgets/section_card.dart';
 import '../../widgets/context_header.dart';
 
 const typeVisiteLabels = {
@@ -117,335 +118,255 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Nouveau programme'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ContextHeader(showPorteeComptable: false),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 260,
-                child: TextField(
-                  decoration: const InputDecoration(
-                    labelText: 'Rechercher (type ou lieu)',
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                  onChanged: (value) => setState(() => _query = value),
-                ),
-              ),
-              SizedBox(
-                width: 240,
-                child: DropdownButtonFormField<TypeProgramme?>(
-                  isExpanded: true,
-                  decoration:
-                      const InputDecoration(labelText: 'Type de programme'),
-                  initialValue: _typeFilter,
-                  items: [
-                    const DropdownMenuItem<TypeProgramme?>(
-                      value: null,
-                      child: Text('Tous'),
-                    ),
-                    ...TypeProgramme.values.map(
-                      (t) => DropdownMenuItem<TypeProgramme?>(
-                        value: t,
-                        child: Text(typeProgrammeLabels[t]!),
-                      ),
+              const ContextHeader(showPorteeComptable: false),
+              const SizedBox(height: 12),
+              SectionCard(
+                title: 'Filtres',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        SizedBox(
+                          width: 260,
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Rechercher (type ou lieu)',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            onChanged: (value) => setState(() => _query = value),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 240,
+                          child: DropdownButtonFormField<TypeProgramme?>(
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'Type de programme'),
+                            initialValue: _typeFilter,
+                            items: [
+                              const DropdownMenuItem<TypeProgramme?>(
+                                value: null,
+                                child: Text('Tous'),
+                              ),
+                              ...TypeProgramme.values.map(
+                                (t) => DropdownMenuItem<TypeProgramme?>(
+                                  value: t,
+                                  child: Text(typeProgrammeLabels[t]!),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) => setState(() {
+                              _typeFilter = value;
+                              if (_typeFilter != TypeProgramme.visite) {
+                                _typeVisiteFilter = null;
+                              }
+                            }),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 200,
+                          child: DropdownButtonFormField<String?>(
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'Region'),
+                            initialValue: _idRegionFilter,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Toutes les regions'),
+                              ),
+                              ...regions.map(
+                                (r) => DropdownMenuItem<String?>(
+                                  value: r.id,
+                                  child: Text(r.nom),
+                                ),
+                              ),
+                            ],
+                            onChanged: regionsAsync.isLoading
+                                ? null
+                                : _isRegionLocked(profilCourant)
+                                    ? null
+                                    : (value) => setState(() {
+                                          _idRegionFilter = value;
+                                          _idDistrictFilter = null;
+                                          _idAssembleeLocaleFilter = null;
+                                        }),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 200,
+                          child: DropdownButtonFormField<String?>(
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'District'),
+                            initialValue: _idDistrictFilter,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Tous les districts'),
+                              ),
+                              ...filteredDistricts.map(
+                                (d) => DropdownMenuItem<String?>(
+                                  value: d.id,
+                                  child: Text(d.nom),
+                                ),
+                              ),
+                            ],
+                            onChanged: districtsAsync.isLoading
+                                ? null
+                                : _isDistrictLocked(profilCourant)
+                                    ? null
+                                    : (value) => setState(() {
+                                          _idDistrictFilter = value;
+                                          _idAssembleeLocaleFilter = null;
+                                        }),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 220,
+                          child: DropdownButtonFormField<String?>(
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'Assemblee locale'),
+                            initialValue: _idAssembleeLocaleFilter,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Toutes les assemblees'),
+                              ),
+                              ...filteredAssemblees.map(
+                                (a) => DropdownMenuItem<String?>(
+                                  value: a.id,
+                                  child: Text(a.nom),
+                                ),
+                              ),
+                            ],
+                            onChanged: assembleesAsync.isLoading
+                                ? null
+                                : _isAssembleeLocked(profilCourant)
+                                    ? null
+                                    : (value) => setState(() => _idAssembleeLocaleFilter = value),
+                          ),
+                        ),
+                        if (_typeFilter == TypeProgramme.visite)
+                          SizedBox(
+                            width: 200,
+                            child: DropdownButtonFormField<TypeVisite?>(
+                              isExpanded: true,
+                              decoration: const InputDecoration(labelText: 'Type de visite'),
+                              initialValue: _typeVisiteFilter,
+                              items: [
+                                const DropdownMenuItem<TypeVisite?>(
+                                  value: null,
+                                  child: Text('Tous'),
+                                ),
+                                ...TypeVisite.values.map(
+                                  (t) => DropdownMenuItem<TypeVisite?>(
+                                    value: t,
+                                    child: Text(typeVisiteLabels[t]!),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) => setState(() => _typeVisiteFilter = value),
+                            ),
+                          ),
+                        SizedBox(
+                          width: 180,
+                          child: _DateFilterField(
+                            label: 'Du',
+                            value: _dateDebut,
+                            onSelected: (d) => setState(() => _dateDebut = d),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 180,
+                          child: _DateFilterField(
+                            label: 'Au',
+                            value: _dateFin,
+                            onSelected: (d) => setState(() => _dateFin = d),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  onChanged: (value) => setState(() {
-                    _typeFilter = value;
-                    if (_typeFilter != TypeProgramme.visite) {
-                      _typeVisiteFilter = null;
-                    }
-                  }),
                 ),
               ),
-              SizedBox(
-                width: 200,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Region'),
-                  initialValue: _idRegionFilter,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Toutes les regions'),
-                    ),
-                    ...regions.map(
-                      (r) => DropdownMenuItem<String?>(
-                        value: r.id,
-                        child: Text(r.nom),
-                      ),
-                    ),
-                  ],
-                  onChanged: regionsAsync.isLoading
-                      ? null
-                      : _isRegionLocked(profilCourant)
-                          ? null
-                          : (value) => setState(() {
-                                _idRegionFilter = value;
-                                _idDistrictFilter = null;
-                                _idAssembleeLocaleFilter = null;
-                              }),
-                ),
-              ),
-              SizedBox(
-                width: 200,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'District'),
-                  initialValue: _idDistrictFilter,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Tous les districts'),
-                    ),
-                    ...filteredDistricts.map(
-                      (d) => DropdownMenuItem<String?>(
-                        value: d.id,
-                        child: Text(d.nom),
-                      ),
-                    ),
-                  ],
-                  onChanged: districtsAsync.isLoading
-                      ? null
-                      : _isDistrictLocked(profilCourant)
-                          ? null
-                          : (value) => setState(() {
-                                _idDistrictFilter = value;
-                                _idAssembleeLocaleFilter = null;
-                              }),
-                ),
-              ),
-              SizedBox(
-                width: 220,
-                child: DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Assemblee locale'),
-                  initialValue: _idAssembleeLocaleFilter,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Toutes les assemblees'),
-                    ),
-                    ...filteredAssemblees.map(
-                      (a) => DropdownMenuItem<String?>(
-                        value: a.id,
-                        child: Text(a.nom),
-                      ),
-                    ),
-                  ],
-                  onChanged: assembleesAsync.isLoading
-                      ? null
-                      : _isAssembleeLocked(profilCourant)
-                          ? null
-                          : (value) => setState(() => _idAssembleeLocaleFilter = value),
-                ),
-              ),
-              if (_typeFilter == TypeProgramme.visite)
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<TypeVisite?>(
-                    isExpanded: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Type de visite'),
-                    initialValue: _typeVisiteFilter,
-                    items: [
-                      const DropdownMenuItem<TypeVisite?>(
-                        value: null,
-                        child: Text('Tous'),
-                      ),
-                      ...TypeVisite.values.map(
-                        (t) => DropdownMenuItem<TypeVisite?>(
-                          value: t,
-                          child: Text(typeVisiteLabels[t]!),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: 'Programmes',
+                child: programsAsync.isLoading && programs.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : SingleChildScrollView(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('Type')),
+                              DataColumn(label: Text('Date')),
+                              DataColumn(label: Text('Lieu')),
+                              DataColumn(label: Text('Assemblee')),
+                              DataColumn(label: Text('Participants')),
+                              DataColumn(label: Text('Conversions')),
+                              DataColumn(label: Text('Ecole du dimanche')),
+                              DataColumn(label: Text('Visite')),
+                              DataColumn(label: Text('Actions')),
+                            ],
+                            rows: filtered
+                                .map(
+                                  (p) => DataRow(
+                                    cells: [
+                                      DataCell(Text(typeProgrammeLabels[p.type]!)),
+                                      DataCell(Text(dateFormatter.format(p.date))),
+                                      DataCell(Text(p.location)),
+                                      DataCell(_buildAssembleeCell(
+                                        p,
+                                        assembleeById,
+                                        districtById,
+                                        regionById,
+                                      )),
+                                      DataCell(Text(_participantsLabel(p))),
+                                      DataCell(Text(_conversionsLabel(p))),
+                                      DataCell(Text(_ecoleDuDimancheLabel(p))),
+                                      DataCell(Text(_typeVisiteLabel(p))),
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              tooltip: 'Details',
+                                              onPressed: () => _showDetails(p),
+                                              icon: const Icon(Icons.remove_red_eye_outlined),
+                                            ),
+                                            IconButton(
+                                              tooltip: 'Modifier',
+                                              onPressed: () => _openForm(context, program: p),
+                                              icon: const Icon(Icons.edit_outlined),
+                                            ),
+                                            IconButton(
+                                              tooltip: 'Supprimer',
+                                              onPressed: () => _confirmDelete(p),
+                                              icon: const Icon(Icons.delete_outline),
+                                              color: Colors.red[700],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                .toList(),
+                          ),
                         ),
                       ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _typeVisiteFilter = value),
-                  ),
-                ),
-              SizedBox(
-                width: 180,
-                child: _DateFilterField(
-                  label: 'Du',
-                  value: _dateDebut,
-                  onSelected: (d) => setState(() => _dateDebut = d),
-                ),
-              ),
-              SizedBox(
-                width: 180,
-                child: _DateFilterField(
-                  label: 'Au',
-                  value: _dateFin,
-                  onSelected: (d) => setState(() => _dateFin = d),
-                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: programsAsync.isLoading && programs.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : Card(
-                    child: SingleChildScrollView(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('Type')),
-                            DataColumn(label: Text('Date')),
-                            DataColumn(label: Text('Lieu')),
-                            DataColumn(label: Text('Assemblee')),
-                            DataColumn(label: Text('Participants')),
-                            DataColumn(label: Text('Conversions')),
-                            DataColumn(label: Text('Ecole du dimanche')),
-                            DataColumn(label: Text('Visite')),
-                            DataColumn(label: Text('Actions')),
-                          ],
-                          rows: filtered
-                              .map(
-                                (p) => DataRow(
-                                  cells: [
-                                    DataCell(Text(typeProgrammeLabels[p.type]!)),
-                                    DataCell(Text(dateFormatter.format(p.date))),
-                                    DataCell(Text(p.location)),
-                                    DataCell(_buildAssembleeCell(
-                                      p,
-                                      assembleeById,
-                                      districtById,
-                                      regionById,
-                                    )),
-                                    DataCell(Text(_formatParticipants(p))),
-                                    DataCell(_buildConversionsCell(p)),
-                                    DataCell(_buildEcoleCell(p)),
-                                    DataCell(_buildVisiteCell(p)),
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.visibility_outlined,
-                                            ),
-                                            onPressed: () => _showDetails(p),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.edit_outlined),
-                                            onPressed: () =>
-                                                _openForm(context, program: p),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: Colors.redAccent,
-                                            ),
-                                            onPressed: () => _confirmDelete(p),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _isEvangelisation(Program program) =>
-      program.type == TypeProgramme.evangelisationMasse ||
-      program.type == TypeProgramme.evangelisationPorteAPorte;
-
-  String _formatParticipants(Program program) {
-    final values = [
-      program.nombreHommes,
-      program.nombreFemmes,
-      program.nombreGarcons,
-      program.nombreFilles,
-    ];
-    if (values.every((v) => v == null)) {
-      return '--';
-    }
-    return 'H: ${program.nombreHommes ?? 0}, F: ${program.nombreFemmes ?? 0}, G: ${program.nombreGarcons ?? 0}, Fi: ${program.nombreFilles ?? 0}';
-  }
-
-  Widget _buildAssembleeCell(
-    Program program,
-    Map<String, AssembleeLocale> assembleeById,
-    Map<String, DistrictEglise> districtById,
-    Map<String, RegionEglise> regionById,
-  ) {
-    if (program.idAssembleeLocale == null) return const Text('--');
-    final assemblee = assembleeById[program.idAssembleeLocale!];
-    if (assemblee == null) return const Text('--');
-    final district = districtById[assemblee.idDistrict];
-    final region = district != null ? regionById[district.idRegion] : null;
-    final tooltipParts = <String>[];
-    if (district != null) tooltipParts.add('District: ${district.nom}');
-    if (region != null) tooltipParts.add('Region: ${region.nom}');
-    final child = Text(assemblee.nom);
-    if (tooltipParts.isEmpty) return child;
-    return Tooltip(message: tooltipParts.join('\n'), child: child);
-  }
-
-  Widget _buildConversionsCell(Program program) {
-    final text = _formatConversionsText(program);
-    return text == '--' ? const Text('--') : Text(text);
-  }
-
-  String _formatConversionsText(Program program) {
-    if (!_isEvangelisation(program)) return '--';
-    final values = [
-      program.conversionsHommes,
-      program.conversionsFemmes,
-      program.conversionsGarcons,
-      program.conversionsFilles,
-    ];
-    if (values.every((v) => v == null)) return '--';
-    return 'H: ${program.conversionsHommes ?? 0}, F: ${program.conversionsFemmes ?? 0}, G: ${program.conversionsGarcons ?? 0}, Fi: ${program.conversionsFilles ?? 0}';
-  }
-
-  Widget _buildEcoleCell(Program program) {
-    if (program.type != TypeProgramme.ecoleDuDimanche) {
-      return const Text('--');
-    }
-    final content =
-        'Classes: ${program.nombreClassesEcoleDuDimanche ?? 0}, Moniteurs: ${program.nombreMoniteursHommes ?? 0} H / ${program.nombreMonitricesFemmes ?? 0} F';
-    final lesson = program.derniereLeconEcoleDuDimanche;
-    if (lesson == null || lesson.isEmpty) {
-      return Text(content);
-    }
-    return Tooltip(
-      message: lesson,
-      child: Text(content),
-    );
-  }
-
-  Widget _buildVisiteCell(Program program) {
-    if (program.type != TypeProgramme.visite) return const Text('--');
-    final label = typeVisiteLabels[program.typeVisite] ?? 'Non precise';
-    final compte = program.compteRenduVisite;
-    final text = Text(label);
-    if (compte == null || compte.isEmpty) return text;
-    return Tooltip(
-      message: compte,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.sticky_note_2_outlined, size: 16),
-          const SizedBox(width: 4),
-          text,
-        ],
+        ),
       ),
     );
   }
@@ -621,6 +542,70 @@ class _ProgramsScreenState extends ConsumerState<ProgramsScreen> {
       ),
     );
   }
+
+  Widget _buildAssembleeCell(
+    Program p,
+    Map<String, AssembleeLocale> assembleeById,
+    Map<String, DistrictEglise> districtById,
+    Map<String, RegionEglise> regionById,
+  ) {
+    final assemblee =
+        p.idAssembleeLocale != null ? assembleeById[p.idAssembleeLocale!] : null;
+    final district =
+        assemblee != null ? districtById[assemblee.idDistrict] : null;
+    final region = district != null ? regionById[district.idRegion] : null;
+    final buffer = StringBuffer();
+    if (assemblee != null) buffer.write(assemblee.nom);
+    if (district != null) buffer.write(' (${district.nom})');
+    if (region != null) buffer.write(' - ${region.nom}');
+    return Text(buffer.isNotEmpty ? buffer.toString() : 'Non renseigne');
+  }
+
+  String _participantsLabel(Program p) => _formatParticipants(p);
+
+  String _conversionsLabel(Program p) {
+    if (!_isEvangelisation(p)) return '-';
+    final conv = (p.conversionsHommes ?? 0) +
+        (p.conversionsFemmes ?? 0) +
+        (p.conversionsGarcons ?? 0) +
+        (p.conversionsFilles ?? 0);
+    return conv == 0 ? '-' : '$conv';
+  }
+
+  String _ecoleDuDimancheLabel(Program p) {
+    if (p.type != TypeProgramme.ecoleDuDimanche) return '-';
+    final classes = p.nombreClassesEcoleDuDimanche ?? 0;
+    final moniteursH = p.nombreMoniteursHommes ?? 0;
+    final monitricesF = p.nombreMonitricesFemmes ?? 0;
+    return 'Classes $classes / Moniteurs $moniteursH H / $monitricesF F';
+  }
+
+  String _typeVisiteLabel(Program p) {
+    if (p.type != TypeProgramme.visite || p.typeVisite == null) return '-';
+    return typeVisiteLabels[p.typeVisite] ?? '-';
+  }
+
+  String _formatParticipants(Program p) {
+    final h = p.nombreHommes ?? 0;
+    final f = p.nombreFemmes ?? 0;
+    final g = p.nombreGarcons ?? 0;
+    final fi = p.nombreFilles ?? 0;
+    final total = h + f + g + fi;
+    return '$total pers. ($h H / $f F / $g G / $fi Fi)';
+  }
+
+  String _formatConversionsText(Program p) {
+    final h = p.conversionsHommes ?? 0;
+    final f = p.conversionsFemmes ?? 0;
+    final g = p.conversionsGarcons ?? 0;
+    final fi = p.conversionsFilles ?? 0;
+    final total = h + f + g + fi;
+    return '$total (H $h / F $f / G $g / Fi $fi)';
+  }
+
+  bool _isEvangelisation(Program p) =>
+      p.type == TypeProgramme.evangelisationMasse ||
+      p.type == TypeProgramme.evangelisationPorteAPorte;
 }
 
 class ProgramFormDialog extends ConsumerStatefulWidget {

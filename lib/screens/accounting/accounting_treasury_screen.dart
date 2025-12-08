@@ -19,6 +19,8 @@ class AccountingTreasuryScreen extends ConsumerStatefulWidget {
 class _AccountingTreasuryScreenState
     extends ConsumerState<AccountingTreasuryScreen> {
   String? _compteSelectionneId;
+  DateTime? _dateDebut;
+  DateTime? _dateFin;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,82 @@ class _AccountingTreasuryScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const ContextHeader(showPorteeComptable: true),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Du :'),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _dateDebut ??
+                                  DateTime(now.year, now.month, 1),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              setState(() => _dateDebut = picked);
+                            }
+                          },
+                          child: Text(
+                            _dateDebut != null
+                                ? _formatDate(_dateDebut!)
+                                : 'debut du mois',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Au :'),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate:
+                                  _dateFin ?? DateTime(now.year, now.month + 1, 0),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              setState(() => _dateFin = picked);
+                            }
+                          },
+                          child: Text(
+                            _dateFin != null
+                                ? _formatDate(_dateFin!)
+                                : 'fin du mois',
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _dateDebut = null;
+                          _dateFin = null;
+                        });
+                      },
+                      child: const Text('Reinitialiser'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: comptesAsync.when(
@@ -209,6 +287,7 @@ class _AccountingTreasuryScreenState
     double debit = 0;
     double credit = 0;
     for (final e in ecritures) {
+      if (!_estDansPeriode(e.date)) continue;
       for (final l in e.lignes) {
         if (l.idCompteComptable == idCompte) {
           debit += l.debit ?? 0;
@@ -225,6 +304,7 @@ class _AccountingTreasuryScreenState
   ) {
     final result = <_MouvementTresorerie>[];
     for (final e in ecritures) {
+      if (!_estDansPeriode(e.date)) continue;
       for (final l in e.lignes) {
         if (l.idCompteComptable == idCompte) {
           final debit = l.debit ?? 0;
@@ -247,6 +327,12 @@ class _AccountingTreasuryScreenState
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  bool _estDansPeriode(DateTime d) {
+    if (_dateDebut != null && d.isBefore(_dateDebut!)) return false;
+    if (_dateFin != null && d.isAfter(_dateFin!)) return false;
+    return true;
+  }
 }
 
 class _MouvementTresorerie {

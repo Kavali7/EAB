@@ -18,6 +18,7 @@ class AccountingReconciliationScreen extends ConsumerStatefulWidget {
 class _AccountingReconciliationScreenState
     extends ConsumerState<AccountingReconciliationScreen> {
   String? _compteBanqueSelectionneId;
+  bool _masquerLignesPointees = false;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +100,18 @@ class _AccountingReconciliationScreenState
           ],
         ),
         const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Switch(
+              value: _masquerLignesPointees,
+              onChanged: (v) => setState(() => _masquerLignesPointees = v),
+            ),
+            const SizedBox(width: 4),
+            const Text('Masquer les lignes deja pointees'),
+          ],
+        ),
+        const SizedBox(height: 8),
         if (selectedId == null)
           const Text('Aucun compte bancaire disponible.')
         else
@@ -128,6 +141,9 @@ class _AccountingReconciliationScreenState
         .where((r) => r.idCompteBanque == compteId)
         .toList()
       ..sort((a, b) => a.dateOperation.compareTo(b.dateOperation));
+    final relevesFiltres = _masquerLignesPointees
+        ? relevesCompte.where((r) => !r.estPointe).toList()
+        : relevesCompte;
 
     final soldeComptable = _calculerSoldeActif(compteId, ecritures);
     final soldeReleve =
@@ -149,7 +165,7 @@ class _AccountingReconciliationScreenState
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildReleveTable(
-                    releves: relevesCompte,
+                    releves: relevesFiltres,
                     ecritures: ecrituresCompte,
                   ),
                 ),

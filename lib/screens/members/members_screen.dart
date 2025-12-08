@@ -18,6 +18,7 @@ import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/section_card.dart';
 
 const roleLabels = {
   RoleFidele.membre: 'Membre',
@@ -176,316 +177,325 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ContextHeader(showPorteeComptable: false),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                SizedBox(
-                  width: 220,
-                  child: InfoCard(
-                    title: 'Membres actifs (H / F)',
-                    value: '$activeMale H / $activeFemale F',
-                    subtitle: 'Total actifs ${active.length}',
-                    icon: Icons.verified_user_outlined,
-                    color: ChurchTheme.navy,
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: InfoCard(
-                    title: 'Enfants (0-14 ans)',
-                    value: '$childrenCount',
-                    subtitle: 'Vue filtree',
-                    icon: Icons.child_care,
-                    color: Colors.teal[700],
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: InfoCard(
-                    title: 'Officiers',
-                    value: '$officersCount',
-                    subtitle: 'Pasteur / anciens / diacres',
-                    icon: Icons.workspace_premium_outlined,
-                    color: Colors.orange[700],
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: InfoCard(
-                    title: 'Personnes vulnerables',
-                    value: '$vulnerableCount',
-                    subtitle: 'Orphelins, veufs, 3e age...',
-                    icon: Icons.warning_amber_rounded,
-                    color: Colors.red[600],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: 240,
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Rechercher un nom',
-                      prefixIcon: Icon(Icons.search),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ContextHeader(showPorteeComptable: false),
+              const SizedBox(height: 12),
+              SectionCard(
+                title: 'Statistiques cles',
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 220,
+                      child: InfoCard(
+                        title: 'Membres actifs (H / F)',
+                        value: '$activeMale H / $activeFemale F',
+                        subtitle: 'Total actifs ${active.length}',
+                        icon: Icons.verified_user_outlined,
+                        color: ChurchTheme.navy,
+                      ),
                     ),
-                    onChanged: (value) => setState(() => _query = value),
-                  ),
+                    SizedBox(
+                      width: 220,
+                      child: InfoCard(
+                        title: 'Enfants (0-14 ans)',
+                        value: '$childrenCount',
+                        subtitle: 'Vue filtree',
+                        icon: Icons.child_care,
+                        color: Colors.teal[700],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 220,
+                      child: InfoCard(
+                        title: 'Officiers',
+                        value: '$officersCount',
+                        subtitle: 'Pasteur / anciens / diacres',
+                        icon: Icons.workspace_premium_outlined,
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 220,
+                      child: InfoCard(
+                        title: 'Personnes vulnerables',
+                        value: '$vulnerableCount',
+                        subtitle: 'Orphelins, veufs, 3e age...',
+                        icon: Icons.warning_amber_rounded,
+                        color: Colors.red[600],
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<Gender?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Genre'),
-                    initialValue: _genderFilter,
-                    items: const [
-                      DropdownMenuItem<Gender?>(value: null, child: Text('Tous')),
-                    ]
-                        .followedBy(
-                          Gender.values.map(
-                            (g) => DropdownMenuItem<Gender?>(
-                              value: g,
-                              child: Text(genderLabels[g]!),
+              ),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: 'Filtres',
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Rechercher un nom',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                        onChanged: (value) => setState(() => _query = value),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<Gender?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Genre'),
+                        initialValue: _genderFilter,
+                        items: const [
+                          DropdownMenuItem<Gender?>(value: null, child: Text('Tous')),
+                        ]
+                            .followedBy(
+                              Gender.values.map(
+                                (g) => DropdownMenuItem<Gender?>(
+                                  value: g,
+                                  child: Text(genderLabels[g]!),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _genderFilter = value),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 220,
+                      child: DropdownButtonFormField<MaritalStatus?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Statut marital (legacy)',
+                        ),
+                        initialValue: _maritalFilter,
+                        items: const [
+                          DropdownMenuItem<MaritalStatus?>(
+                            value: null,
+                            child: Text('Tous'),
+                          ),
+                        ]
+                            .followedBy(
+                              MaritalStatus.values.map(
+                                (s) => DropdownMenuItem<MaritalStatus?>(
+                                  value: s,
+                                  child: Text(maritalStatusLabels[s]!),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _maritalFilter = value),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 220,
+                      child: DropdownButtonFormField<int?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Annee de bapteme',
+                        ),
+                        initialValue: _baptismYearFilter,
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text('Toutes'),
+                          ),
+                          ...baptismYears.map(
+                            (y) => DropdownMenuItem<int?>(value: y, child: Text('$y')),
+                          ),
+                        ],
+                        onChanged: (value) => setState(() => _baptismYearFilter = value),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<RoleFidele?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Role'),
+                        initialValue: _roleFilter,
+                        items: [
+                          const DropdownMenuItem<RoleFidele?>(
+                            value: null,
+                            child: Text('Tous les roles'),
+                          ),
+                          ...RoleFidele.values.map(
+                            (r) => DropdownMenuItem<RoleFidele?>(
+                              value: r,
+                              child: Text(roleLabels[r]!),
                             ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _genderFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<MaritalStatus?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Statut marital (legacy)',
-                    ),
-                    initialValue: _maritalFilter,
-                    items: const [
-                      DropdownMenuItem<MaritalStatus?>(
-                        value: null,
-                        child: Text('Tous'),
+                        ],
+                        onChanged: (value) => setState(() => _roleFilter = value),
                       ),
-                    ]
-                        .followedBy(
-                          MaritalStatus.values.map(
-                            (s) => DropdownMenuItem<MaritalStatus?>(
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<StatutFidele?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Statut'),
+                        initialValue: _statutFilter,
+                        items: [
+                          const DropdownMenuItem<StatutFidele?>(
+                            value: null,
+                            child: Text('Tous les statuts'),
+                          ),
+                          ...StatutFidele.values.map(
+                            (s) => DropdownMenuItem<StatutFidele?>(
                               value: s,
-                              child: Text(maritalStatusLabels[s]!),
+                              child: Text(statutFideleLabels[s]!),
                             ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _maritalFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<int?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Annee de bapteme',
+                        ],
+                        onChanged: (value) => setState(() => _statutFilter = value),
+                      ),
                     ),
-                    initialValue: _baptismYearFilter,
-                    items: [
-                      const DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text('Toutes'),
-                      ),
-                      ...baptismYears.map(
-                        (y) =>
-                            DropdownMenuItem<int?>(value: y, child: Text('$y')),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _baptismYearFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<RoleFidele?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Role'),
-                    initialValue: _roleFilter,
-                    items: [
-                      const DropdownMenuItem<RoleFidele?>(
-                        value: null,
-                        child: Text('Tous les roles'),
-                      ),
-                      ...RoleFidele.values.map(
-                        (r) => DropdownMenuItem<RoleFidele?>(
-                          value: r,
-                          child: Text(roleLabels[r]!),
+                    SizedBox(
+                      width: 220,
+                      child: DropdownButtonFormField<VulnerabiliteFidele?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Vulnerabilite principale',
                         ),
-                      ),
-                    ],
-                    onChanged: (value) => setState(() => _roleFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<StatutFidele?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Statut'),
-                    initialValue: _statutFilter,
-                    items: [
-                      const DropdownMenuItem<StatutFidele?>(
-                        value: null,
-                        child: Text('Tous les statuts'),
-                      ),
-                      ...StatutFidele.values.map(
-                        (s) => DropdownMenuItem<StatutFidele?>(
-                          value: s,
-                          child: Text(statutFideleLabels[s]!),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) => setState(() => _statutFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<VulnerabiliteFidele?>(
-                    isExpanded: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Vulnerabilite'),
                     initialValue: _vulnerabiliteFilter,
-                    items: [
-                      const DropdownMenuItem<VulnerabiliteFidele?>(
-                        value: null,
-                        child: Text('Toutes'),
+                        items: const [
+                          DropdownMenuItem<VulnerabiliteFidele?>(
+                            value: null,
+                            child: Text('Toutes'),
+                          ),
+                        ]
+                            .followedBy(
+                              VulnerabiliteFidele.values.map(
+                                (v) => DropdownMenuItem<VulnerabiliteFidele?>(
+                                  value: v,
+                                  child: Text(vulnerabiliteLabels[v]!),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _vulnerabiliteFilter = value),
                       ),
-                      ...VulnerabiliteFidele.values.map(
-                        (v) => DropdownMenuItem<VulnerabiliteFidele?>(
-                          value: v,
-                          child: Text(vulnerabiliteLabels[v]!),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _vulnerabiliteFilter = value),
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<String?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Region'),
-                    initialValue: _idRegionFilter,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Toutes les regions'),
-                      ),
-                      ...regions.map(
-                        (r) => DropdownMenuItem<String?>(
-                          value: r.id,
-                          child: Text(r.nom),
-                        ),
-                      ),
-                    ],
-                    onChanged:
-                        regionsAsync.isLoading || _isRegionLocked(profilCourant)
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<RegionEglise?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Region'),
+                    initialValue:
+                        _idRegionFilter != null ? regionById[_idRegionFilter!] : null,
+                        items: [
+                          const DropdownMenuItem<RegionEglise?>(
+                            value: null,
+                            child: Text('Toutes les regions'),
+                          ),
+                          ...regions.map(
+                            (r) => DropdownMenuItem<RegionEglise?>(
+                              value: r,
+                              child: Text(r.nom),
+                            ),
+                          ),
+                        ],
+                        onChanged: _isRegionLocked(profilCourant)
                             ? null
                             : (value) => setState(() {
-                                  _idRegionFilter = value;
+                                  _idRegionFilter = value?.id;
                                   _idDistrictFilter = null;
                                   _idAssembleeLocaleFilter = null;
                                 }),
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: DropdownButtonFormField<String?>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'District'),
-                    initialValue: _idDistrictFilter,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Tous les districts'),
                       ),
-                      ...filteredDistricts.map(
-                        (d) => DropdownMenuItem<String?>(
-                          value: d.id,
-                          child: Text(d.nom),
-                        ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: DropdownButtonFormField<DistrictEglise?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'District'),
+                    initialValue: _idDistrictFilter != null
+                        ? districtById[_idDistrictFilter!]
+                        : null,
+                        items: [
+                          const DropdownMenuItem<DistrictEglise?>(
+                            value: null,
+                            child: Text('Tous les districts'),
+                          ),
+                          ...filteredDistricts.map(
+                            (d) => DropdownMenuItem<DistrictEglise?>(
+                              value: d,
+                              child: Text(d.nom),
+                            ),
+                          ),
+                        ],
+                        onChanged: _isDistrictLocked(profilCourant)
+                            ? null
+                            : (value) => setState(() {
+                                  _idDistrictFilter = value?.id;
+                                  _idAssembleeLocaleFilter = null;
+                                }),
                       ),
-                    ],
-                    onChanged: districtsAsync.isLoading ||
-                            _isDistrictLocked(profilCourant)
-                        ? null
-                        : (value) => setState(() {
-                              _idDistrictFilter = value;
-                              _idAssembleeLocaleFilter = null;
-                            }),
-                  ),
-                ),
-                SizedBox(
-                  width: 220,
-                  child: DropdownButtonFormField<String?>(
-                    isExpanded: true,
-                    decoration:
-                        const InputDecoration(labelText: 'Assemblee locale'),
-                    initialValue: _idAssembleeLocaleFilter,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Toutes les assemblees'),
+                    ),
+                    SizedBox(
+                      width: 220,
+                      child: DropdownButtonFormField<AssembleeLocale?>(
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Assemblee locale'),
+                    initialValue: _idAssembleeLocaleFilter != null
+                        ? assembleeById[_idAssembleeLocaleFilter!]
+                        : null,
+                        items: [
+                          const DropdownMenuItem<AssembleeLocale?>(
+                            value: null,
+                            child: Text('Toutes les assemblees'),
+                          ),
+                          ...filteredAssemblees.map(
+                            (a) => DropdownMenuItem<AssembleeLocale?>(
+                              value: a,
+                              child: Text(a.nom),
+                            ),
+                          ),
+                        ],
+                        onChanged: _isAssembleeLocked(profilCourant)
+                            ? null
+                            : (value) => setState(() => _idAssembleeLocaleFilter = value?.id),
                       ),
-                      ...filteredAssemblees.map(
-                        (a) => DropdownMenuItem<String?>(
-                          value: a.id,
-                          child: Text(a.nom),
-                        ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: CheckboxListTile.adaptive(
+                        value: _onlyChildren,
+                        onChanged: (v) => setState(() => _onlyChildren = v ?? false),
+                        dense: true,
+                        title: const Text('Enfants uniquement'),
+                        contentPadding: EdgeInsets.zero,
                       ),
-                    ],
-                    onChanged: assembleesAsync.isLoading ||
-                            _isAssembleeLocked(profilCourant)
-                        ? null
-                        : (value) =>
-                            setState(() => _idAssembleeLocaleFilter = value),
-                  ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: CheckboxListTile.adaptive(
+                        value: _onlyOfficers,
+                        onChanged: (v) => setState(() => _onlyOfficers = v ?? false),
+                        dense: true,
+                        title: const Text('Officiers seulement'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(
-                  width: 200,
-                  child: CheckboxListTile.adaptive(
-                    value: _onlyChildren,
-                    onChanged: (v) => setState(() => _onlyChildren = v ?? false),
-                    dense: true,
-                    title: const Text('Enfants seulement'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                SizedBox(
-                  width: 200,
-                  child: CheckboxListTile.adaptive(
-                    value: _onlyOfficers,
-                    onChanged: (v) => setState(() => _onlyOfficers = v ?? false),
-                    dense: true,
-                    title: const Text('Officiers seulement'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: membersAsync.isLoading && members.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : Card(
-                      child: LayoutBuilder(
+              ),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: 'Liste des fideles',
+                child: membersAsync.isLoading && members.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : LayoutBuilder(
                         builder: (context, constraints) {
                           final tableWidth = constraints.maxWidth.isFinite
                               ? constraints.maxWidth
@@ -530,14 +540,13 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                           );
                         },
                       ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
   Future<void> _openForm(BuildContext context, {Member? member, List<Famille>? families}) async {
     await showDialog<void>(
       context: context,
