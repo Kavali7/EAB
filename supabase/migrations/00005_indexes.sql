@@ -56,11 +56,11 @@ CREATE INDEX idx_membres_role ON membres(role);
 CREATE INDEX idx_membres_full_name ON membres(full_name);
 CREATE INDEX idx_membres_phone ON membres(phone);
 CREATE INDEX idx_membres_email ON membres(email);
--- Full text search on name
-CREATE INDEX idx_membres_full_name_trgm ON membres USING gin (full_name gin_trgm_ops);
-
 -- Enable pg_trgm extension for fuzzy search
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Full text search on name
+CREATE INDEX idx_membres_full_name_trgm ON membres USING gin (full_name gin_trgm_ops);
 
 -- ============================================================================
 -- PROGRAMMES

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/theme.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/signup_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 import 'screens/accounting/accounting_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/members/members_screen.dart';
@@ -20,6 +24,10 @@ class ChurchApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Vérifier si l'utilisateur est connecté
+    final session = Supabase.instance.client.auth.currentSession;
+    final isLoggedIn = session != null;
+
     return MaterialApp(
       title: 'EAB - Gestion',
       debugShowCheckedModeBanner: false,
@@ -35,7 +43,13 @@ class ChurchApp extends StatelessWidget {
           ],
         );
       },
+      initialRoute: isLoggedIn ? '/' : '/login',
       routes: {
+        // Auth
+        '/login': (_) => const LoginScreen(),
+        '/signup': (_) => const SignupScreen(),
+        '/forgot-password': (_) => const ForgotPasswordScreen(),
+        // App
         '/': (_) => const DashboardScreen(),
         '/members': (_) => const MembersScreen(),
         '/programs': (_) => const ProgramsScreen(),
@@ -54,3 +68,4 @@ class ChurchApp extends StatelessWidget {
     );
   }
 }
+

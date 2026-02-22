@@ -1,16 +1,92 @@
-# eab
+# EAB - Gestion d'Église et Comptabilité SYSCEBNL
 
-A new Flutter project.
+## 📋 Présentation
 
-## Getting Started
+**EAB** (Église - Administration - Budget) est une application de gestion complète destinée aux organisations ecclésiastiques. Elle permet de gérer :
 
-This project is a starting point for a Flutter application.
+- 🏛️ **Structure ecclésiastique** : Régions, Districts, Assemblées locales
+- 👥 **Membres / Fidèles** : Informations personnelles, vie spirituelle, familles
+- 📅 **Programmes / Activités** : Cultes, évangélisations, baptêmes, etc.
+- 💰 **Comptabilité SYSCEBNL** : Conforme au Système Comptable des Entités à But Non Lucratif
+- 📊 **Rapports mensuels** : Statistiques consolidées par assemblée
 
-A few resources to get you started if this is your first Flutter project:
+## 🏗️ Architecture technique
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Frontend
+- **Framework** : Flutter (Dart)
+- **State Management** : Riverpod
+- **Modèles** : Freezed + JSON Serializable
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Backend
+- **Base de données** : Supabase (PostgreSQL)
+- **Authentification** : Supabase Auth (Email/Password + OAuth)
+- **Stockage fichiers** : Supabase Storage
+- **Sécurité** : Row Level Security (RLS) basée sur les rôles
+
+## 👥 Rôles utilisateurs
+
+| Rôle | Périmètre d'accès |
+|------|-------------------|
+| **Admin National** | Toutes les données de l'organisation |
+| **Responsable Région** | Toutes les données de sa région |
+| **Surintendant District** | Toutes les données de son district |
+| **Trésorier Assemblée** | Données de son assemblée uniquement |
+
+## 📁 Structure du projet
+
+```
+eab/
+├── lib/
+│   ├── core/           # Configuration, thème, services
+│   ├── models/         # Modèles de données (Freezed)
+│   ├── providers/      # State management (Riverpod)
+│   ├── screens/        # Écrans de l'application
+│   └── widgets/        # Widgets réutilisables
+├── supabase/
+│   └── migrations/     # Fichiers SQL de migration
+├── docs/               # Documentation
+├── test/               # Tests unitaires
+└── web/                # Configuration web
+```
+
+## 🚀 Démarrage rapide
+
+### Prérequis
+- Flutter SDK 3.9+
+- Compte Supabase
+
+### Installation
+
+```bash
+# Cloner le projet
+git clone <repository>
+
+# Installer les dépendances
+cd eab
+flutter pub get
+
+# Générer les fichiers Freezed
+flutter pub run build_runner build
+
+# Lancer l'application
+flutter run
+```
+
+### Configuration Supabase
+
+1. Créer un projet Supabase
+2. Exécuter les migrations SQL (dans `supabase/migrations/`)
+3. Configurer les variables d'environnement :
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+
+## 📚 Documentation
+
+- [Guide d'installation](docs/GUIDE_INSTALLATION.md)
+- [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Comptabilité SYSCEBNL](docs/comptabilite/PLAN_COMPTABLE_SYSCEBNL.md)
+- [Structure ecclésiastique](docs/structure_eglise/ASSEMBLEES.md)
+
+## 📄 Licence
+
+Projet privé - Tous droits réservés.

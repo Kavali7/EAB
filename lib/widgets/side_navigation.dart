@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/theme.dart';
 
 class SideNavigation extends StatelessWidget {
@@ -55,35 +56,59 @@ class SideNavigation extends StatelessWidget {
       ),
     ];
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+    return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Text(
-            'EAB',
-            style: TextStyle(
-              color: ChurchTheme.navy,
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-            ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  'EAB',
+                  style: TextStyle(
+                    color: ChurchTheme.navy,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              ...items.map((item) {
+                final selected = currentRoute == item.route;
+                return ListTile(
+                  leading: Icon(
+                    item.icon,
+                    color: selected ? ChurchTheme.gold : Colors.grey[700],
+                  ),
+                  title: Text(item.label),
+                  selected: selected,
+                  onTap: () {
+                    if (currentRoute == item.route) return;
+                    Navigator.of(context).pushReplacementNamed(item.route);
+                  },
+                );
+              }),
+            ],
           ),
         ),
-        ...items.map((item) {
-          final selected = currentRoute == item.route;
-          return ListTile(
-            leading: Icon(
-              item.icon,
-              color: selected ? ChurchTheme.gold : Colors.grey[700],
-            ),
-            title: Text(item.label),
-            selected: selected,
-            onTap: () {
-              if (currentRoute == item.route) return;
-              Navigator.of(context).pushReplacementNamed(item.route);
-            },
-          );
-        }),
+        const Divider(height: 1),
+        ListTile(
+          leading: const Icon(Icons.logout, color: Colors.red),
+          title: const Text(
+            'Déconnexion',
+            style: TextStyle(color: Colors.red),
+          ),
+          onTap: () async {
+            await Supabase.instance.client.auth.signOut();
+            if (context.mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/login',
+                (route) => false,
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -96,3 +121,4 @@ class _NavItem {
   final String route;
   final IconData icon;
 }
+
