@@ -824,7 +824,7 @@ erDiagram
 
 | Date | Auteur | Description |
 |------|--------|-------------|
-| 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : recréation avec vérification du type `role_utilisateur`, recréation du trigger `on_auth_user_created`. Création de l'organisation initiale `EAB-001` dans `organizations`. Promotion du profil `georgesbusiness54@gmail.com` en `admin_national` avec rattachement à l'organisation. |
+| 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recréation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Création organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Désactivation confirmation email dans Auth. |
 | 2026-02-22 | Système | Création initiale à partir des migrations 00001-00007 |
 
 ---
