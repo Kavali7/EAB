@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-02-22
-- **Fichiers de migration** : `supabase/migrations/00001` → `00007`
+- **Dernière mise à jour** : 2026-02-23
+- **Fichiers de migration** : `supabase/migrations/00001` → `00008`
 
 ---
 
@@ -468,3 +468,369 @@
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
 **RLS** : ✅
+
+---
+
+## 4. Tables — Améliorations
+
+### 4.1 `exercices_comptables`
+> Exercices comptables pour la gestion des périodes comptables.
+
+| Colonne | Type | Nullable | Défaut | Description |
+|---------|------|----------|--------|-------------|
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `annee` | INTEGER | NON | — | Année de l'exercice |
+| `date_debut` | DATE | NON | — | Début exercice |
+| `date_fin` | DATE | NON | — | Fin exercice |
+| `libelle` | TEXT | OUI | — | Libellé |
+| `est_ouvert` | BOOLEAN | NON | `TRUE` | Exercice ouvert |
+| `est_cloture` | BOOLEAN | NON | `FALSE` | Exercice clôturé |
+| `cloture_par` | UUID | OUI | — | FK → `profiles(id)` SET NULL |
+| `cloture_at` | TIMESTAMPTZ | OUI | — | Date de clôture |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(organization_id, annee)`
+
+---
+
+### 4.2 `sequences_pieces`
+> Numérotation automatique des pièces comptables par journal et exercice.
+
+| Colonne | Type | Nullable | Défaut | Description |
+|---------|------|----------|--------|-------------|
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `id_journal` | UUID | NON | — | FK → `journaux_comptables(id)` CASCADE |
+| `exercice` | INTEGER | NON | — | Exercice lié |
+| `dernier_numero` | INTEGER | NON | `0` | Dernier numéro utilisé |
+| `prefixe` | TEXT | OUI | — | Préfixe (ex: "CAI-2025-") |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(organization_id, id_journal, exercice)`
+
+---
+
+### 4.3 `audit_logs`
+> Journal d'audit pour tracer toutes les actions importantes.
+
+| Colonne | Type | Nullable | Défaut | Description |
+|---------|------|----------|--------|-------------|
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | OUI | — | FK → `organizations(id)` SET NULL |
+| `user_id` | UUID | OUI | — | FK → `auth.users(id)` SET NULL |
+| `user_email` | TEXT | OUI | — | Email capturé |
+| `user_role` | TEXT | OUI | — | Rôle capturé |
+| `action` | `action_audit` | NON | — | Type d'action |
+| `table_name` | TEXT | OUI | — | Table concernée |
+| `record_id` | UUID | OUI | — | ID de l'enregistrement |
+| `old_data` | JSONB | OUI | — | Données avant |
+| `new_data` | JSONB | OUI | — | Données après |
+| `changes` | JSONB | OUI | — | Résumé des changements |
+| `ip_address` | INET | OUI | — | Adresse IP |
+| `user_agent` | TEXT | OUI | — | User agent |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ (admins uniquement en lecture)
+
+---
+
+## 5. Clés étrangères — Résumé
+
+Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `profiles` (`id UUID PK REFERENCES auth.users(id)`).
+
+| Source | Colonne | → Cible | ON DELETE |
+|--------|---------|---------|-----------|
+| `profiles` | `id` | `auth.users(id)` | CASCADE |
+| `profiles` | `organization_id` | `organizations(id)` | SET NULL |
+| `profiles` | `id_region` | `regions_eglise(id)` | SET NULL |
+| `profiles` | `id_district` | `districts_eglise(id)` | SET NULL |
+| `profiles` | `id_assemblee_locale` | `assemblees_locales(id)` | SET NULL |
+| `districts_eglise` | `id_region` | `regions_eglise(id)` | CASCADE |
+| `assemblees_locales` | `id_district` | `districts_eglise(id)` | CASCADE |
+| `assemblees_locales` | `id_fidele_pasteur_responsable` | `membres(id)` | SET NULL |
+| `familles` | `id_epoux` / `id_epouse` | `membres(id)` | SET NULL |
+| `membres` | `id_famille` | `familles(id)` | SET NULL |
+| `ecritures_comptables` | `id_journal` | `journaux_comptables(id)` | **RESTRICT** |
+| `lignes_ecritures` | `id_ecriture` | `ecritures_comptables(id)` | CASCADE |
+| `lignes_ecritures` | `id_compte_comptable` | `comptes_comptables(id)` | **RESTRICT** |
+| `lignes_budgets` | `id_budget` | `budgets_comptables(id)` | CASCADE |
+| `lignes_budgets` | `id_compte_comptable` | `comptes_comptables(id)` | **RESTRICT** |
+| `immobilisations_comptables` | `id_compte_immobilisation` | `comptes_comptables(id)` | **RESTRICT** |
+| `sequences_pieces` | `id_journal` | `journaux_comptables(id)` | CASCADE |
+| `audit_logs` | `user_id` | `auth.users(id)` | SET NULL |
+
+> **Note** : Toutes les tables (sauf `lignes_*`, `audit_logs`, `sequences_pieces`) ont une FK `organization_id → organizations(id)` ON DELETE CASCADE.
+
+---
+
+## 6. Contraintes CHECK et UNIQUE
+
+| Table | Type | Expression |
+|-------|------|------------|
+| `organizations` | UNIQUE | `code` |
+| `regions_eglise` | UNIQUE | `(organization_id, code)` |
+| `districts_eglise` | UNIQUE | `(organization_id, code)` |
+| `assemblees_locales` | UNIQUE | `(organization_id, code)` |
+| `comptes_comptables` | UNIQUE | `(organization_id, numero)` |
+| `journaux_comptables` | UNIQUE | `(organization_id, code)` |
+| `centres_analytiques` | UNIQUE | `(organization_id, code)` |
+| `lignes_ecritures` | CHECK | `(debit>0 AND credit=0) OR (debit=0 AND credit>0) OR (debit=0 AND credit=0)` |
+| `budgets_comptables` | UNIQUE | `(organization_id, exercice, id_assemblee_locale, id_centre_analytique)` |
+| `lignes_budgets` | UNIQUE | `(id_budget, id_compte_comptable)` |
+| `rapports_mensuels_eab` | CHECK | `mois >= 1 AND mois <= 12` |
+| `rapports_mensuels_eab` | UNIQUE | `(organization_id, id_assemblee_locale, annee, mois)` |
+| `exercices_comptables` | UNIQUE | `(organization_id, annee)` |
+| `sequences_pieces` | UNIQUE | `(organization_id, id_journal, exercice)` |
+
+---
+
+## 7. Politiques RLS
+
+> RLS est activé sur **toutes les 22 tables**. Toutes les fonctions helper sont `SECURITY DEFINER STABLE`.
+
+### Fonctions helper RLS
+
+| Fonction | Retour | Description |
+|----------|--------|-------------|
+| `get_user_organization_id()` | UUID | `organization_id` du profil courant |
+| `get_user_role()` | `role_utilisateur` | Rôle du profil courant |
+| `get_user_region_id()` | UUID | `id_region` du profil courant |
+| `get_user_district_id()` | UUID | `id_district` du profil courant |
+| `get_user_assemblee_id()` | UUID | `id_assemblee_locale` du profil courant |
+| `user_has_region_access(UUID)` | BOOLEAN | Vérifie accès à une région |
+| `user_has_district_access(UUID)` | BOOLEAN | Vérifie accès à un district |
+| `user_has_assemblee_access(UUID)` | BOOLEAN | Vérifie accès à une assemblée |
+
+### Récapitulatif par table
+
+| Table | SELECT | Mutations | Logique |
+|-------|--------|-----------|---------|
+| `organizations` | Propre org | Admin national | Isolation org |
+| `profiles` | Même org | Propre profil / Admin | Multi-niveau |
+| `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
+| `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
+| `assemblees_locales` | Même org | Admin / Resp. / Surint. / Trés. | Hiérarchique |
+| `membres` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
+| `familles` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
+| `programmes` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
+| `comptes_comptables` | Même org | Admin seulement | Org simple |
+| `journaux_comptables` | Même org | Admin seulement | Org simple |
+| `centres_analytiques` | Même org | Admin seulement | Org simple |
+| `tiers` | Org + assemblee (+NULL) | Org + accès assemblée | Mixte |
+| `ecritures_comptables` | Org + accès assemblée | Idem | Accès assemblée |
+| `lignes_ecritures` | Via parent `ecritures_comptables` | Idem | Hérité |
+| `budgets_comptables` | Org + accès assemblée | Idem | Accès assemblée |
+| `lignes_budgets` | Via parent `budgets_comptables` | Idem | Hérité |
+| `immobilisations_comptables` | Org + accès assemblée | Idem | Accès assemblée |
+| `rapports_mensuels_eab` | Org + accès assemblée | Idem | Accès assemblée |
+| `releves_bancaires` | Org + accès assemblée | Idem | Accès assemblée |
+| `exercices_comptables` | Même org | Admin seulement | Org simple |
+| `sequences_pieces` | Même org | Même org (système) | Org simple |
+| `audit_logs` | Admin national seulement | — | Lecture seule |
+
+---
+
+## 8. Fonctions PostgreSQL
+
+| Fonction | Langage | Sécurité | Description |
+|----------|---------|----------|-------------|
+| `update_updated_at_column()` | plpgsql | — | Met `updated_at = NOW()` avant UPDATE |
+| `handle_new_user()` | plpgsql | DEFINER | Crée profil `tresorier_assemblee` à l'inscription |
+| `verify_ecriture_equilibree()` | plpgsql | — | Vérifie débit = crédit (écritures validées) |
+| `prevent_modification_validated_ecriture()` | plpgsql | — | Bloque modification écritures validées/clôturées |
+| `validate_ecriture(UUID)` | plpgsql | DEFINER | Valide une écriture après vérification équilibre |
+| `calculate_solde_compte(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Calcule solde selon nature du compte |
+| `generate_rapport_mensuel(UUID, INT, INT)` | plpgsql | DEFINER | Génère rapport mensuel (membres, activités, finances) |
+| `get_assemblee_hierarchy(UUID)` | plpgsql | DEFINER STABLE | Retourne assemblée + district + région |
+| `get_next_piece_number(UUID, UUID, INT)` | plpgsql | DEFINER | Numérotation auto pièces (ex: "CAI-2025-000001") |
+| `soft_delete()` | plpgsql | — | Marque `deleted_at = NOW()` |
+| `log_audit_action(...)` | plpgsql | DEFINER | Enregistre action dans `audit_logs` avec diff |
+| `audit_membres()` | plpgsql | DEFINER | Trigger audit sur `membres` |
+| `audit_ecritures()` | plpgsql | DEFINER | Trigger audit sur `ecritures_comptables` |
+| `calculate_amortissement(UUID, DATE)` | plpgsql | DEFINER STABLE | Calcul amortissement linéaire |
+| `cloturer_exercice(UUID)` | plpgsql | DEFINER | Clôture exercice (admin uniquement) |
+
+---
+
+## 9. Triggers
+
+### Triggers `updated_at` (BEFORE UPDATE)
+Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables` (20 tables).
+
+### Triggers métier
+
+| Trigger | Table | Événement | Fonction |
+|---------|-------|-----------|----------|
+| `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` |
+| `check_ecriture_equilibree` | `lignes_ecritures` | AFTER INSERT/UPDATE/DELETE | `verify_ecriture_equilibree()` |
+| `protect_validated_ecritures` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `prevent_modification_validated_ecriture()` |
+| `audit_membres_trigger` | `membres` | AFTER INSERT/UPDATE/DELETE | `audit_membres()` |
+| `audit_ecritures_trigger` | `ecritures_comptables` | AFTER INSERT/UPDATE/DELETE | `audit_ecritures()` |
+
+---
+
+## 10. Index
+
+> **Total : ~80 index**, dont ~65 index fonctionnels + 1 index GIN trigram.
+
+<details>
+<summary>Cliquer pour voir la liste complète des index</summary>
+
+### Structure ecclésiastique
+| Index | Table | Colonnes |
+|-------|-------|----------|
+| `idx_organizations_code` | `organizations` | `code` |
+| `idx_profiles_organization` | `profiles` | `organization_id` |
+| `idx_profiles_role` | `profiles` | `role` |
+| `idx_profiles_region` | `profiles` | `id_region` |
+| `idx_profiles_district` | `profiles` | `id_district` |
+| `idx_profiles_assemblee` | `profiles` | `id_assemblee_locale` |
+| `idx_regions_organization` | `regions_eglise` | `organization_id` |
+| `idx_regions_code` | `regions_eglise` | `(organization_id, code)` |
+| `idx_districts_organization` | `districts_eglise` | `organization_id` |
+| `idx_districts_region` | `districts_eglise` | `id_region` |
+| `idx_districts_code` | `districts_eglise` | `(organization_id, code)` |
+| `idx_assemblees_organization` | `assemblees_locales` | `organization_id` |
+| `idx_assemblees_district` | `assemblees_locales` | `id_district` |
+| `idx_assemblees_code` | `assemblees_locales` | `(organization_id, code)` |
+| `idx_assemblees_pasteur` | `assemblees_locales` | `id_fidele_pasteur_responsable` |
+| `idx_familles_organization` | `familles` | `organization_id` |
+| `idx_familles_assemblee` | `familles` | `id_assemblee_locale` |
+| `idx_familles_deleted` | `familles` | `deleted_at` |
+| `idx_membres_organization` | `membres` | `organization_id` |
+| `idx_membres_assemblee` | `membres` | `id_assemblee_locale` |
+| `idx_membres_famille` | `membres` | `id_famille` |
+| `idx_membres_statut` | `membres` | `statut` |
+| `idx_membres_role` | `membres` | `role` |
+| `idx_membres_full_name` | `membres` | `full_name` |
+| `idx_membres_phone` | `membres` | `phone` |
+| `idx_membres_email` | `membres` | `email` |
+| `idx_membres_full_name_trgm` | `membres` | `full_name` (GIN trigram) |
+| `idx_membres_deleted` | `membres` | `deleted_at` |
+| `idx_programmes_*` | `programmes` | `organization_id`, `id_assemblee_locale`, `type`, `date`, composite, `deleted_at` |
+
+### Comptabilité
+| Index | Table | Colonnes |
+|-------|-------|----------|
+| `idx_comptes_*` | `comptes_comptables` | `organization_id`, composite, `nature`, `id_compte_parent`, `actif` |
+| `idx_journaux_*` | `journaux_comptables` | `organization_id`, composite, `type` |
+| `idx_centres_*` | `centres_analytiques` | `organization_id`, `id_assemblee_locale`, composite, `type` |
+| `idx_tiers_*` | `tiers` | `organization_id`, `id_assemblee_locale`, `type`, `id_fidele_lie`, `deleted_at` |
+| `idx_ecritures_*` | `ecritures_comptables` | `organization_id`, `id_assemblee_locale`, `id_journal`, `date`, `statut`, composite, `created_by`, `deleted_at` |
+| `idx_lignes_*` | `lignes_ecritures` | `id_ecriture`, `id_compte_comptable`, `id_centre_analytique`, `id_tiers` |
+| `idx_budgets_*` | `budgets_comptables` | `organization_id`, `id_assemblee_locale`, `exercice`, `id_centre_analytique`, `deleted_at` |
+| `idx_lignes_budgets_*` | `lignes_budgets` | `id_budget`, `id_compte_comptable` |
+| `idx_immobilisations_*` | `immobilisations_comptables` | `organization_id`, `id_assemblee_locale`, `type`, `date_acquisition`, `est_sortie`, `deleted_at` |
+| `idx_rapports_*` | `rapports_mensuels_eab` | `organization_id`, `id_assemblee_locale`, `(annee, mois)`, composite |
+| `idx_releves_*` | `releves_bancaires` | `organization_id`, `id_assemblee_locale`, `date_releve`, `id_journal_banque` |
+
+### Améliorations (00007)
+| Index | Table | Colonnes |
+|-------|-------|----------|
+| `idx_exercices_organization` | `exercices_comptables` | `organization_id` |
+| `idx_exercices_annee` | `exercices_comptables` | `annee` |
+| `idx_exercices_dates` | `exercices_comptables` | `(date_debut, date_fin)` |
+| `idx_sequences_organization` | `sequences_pieces` | `organization_id` |
+| `idx_sequences_journal` | `sequences_pieces` | `id_journal` |
+| `idx_audit_organization` | `audit_logs` | `organization_id` |
+| `idx_audit_user` | `audit_logs` | `user_id` |
+| `idx_audit_table` | `audit_logs` | `table_name` |
+| `idx_audit_record` | `audit_logs` | `record_id` |
+| `idx_audit_action` | `audit_logs` | `action` |
+| `idx_audit_created` | `audit_logs` | `created_at` |
+
+</details>
+
+---
+
+## 11. Vues
+
+| Vue | Description |
+|-----|-------------|
+| `membres_actifs` | `SELECT * FROM membres WHERE deleted_at IS NULL` |
+| `ecritures_actives` | `SELECT * FROM ecritures_comptables WHERE deleted_at IS NULL` |
+| `vue_soldes_comptes` | Solde de chaque compte actif (D-C ou C-D selon nature) |
+| `vue_tableau_bord_financier` | Résumé mensuel par assemblée : produits, charges, résultat |
+
+---
+
+## 12. Storage Buckets
+
+| Bucket | Visibilité | Usage |
+|--------|------------|-------|
+| `member-photos` | Privé | Photos de profil des membres |
+| `documents` | Privé | Pièces justificatives, rapports |
+| `organization-assets` | Public | Logos, images de l'organisation |
+
+### Politiques Storage (`storage.objects`)
+
+| Politique | Bucket | Opération | Condition |
+|-----------|--------|-----------|-----------|
+| Users can upload/view/update/delete member photos | `member-photos` | INSERT/SELECT/UPDATE/DELETE | Dossier = org ID |
+| Users can upload/view/update/delete documents | `documents` | INSERT/SELECT/UPDATE/DELETE | Dossier = org ID |
+| Anyone can view organization assets | `organization-assets` | SELECT | Aucune |
+| Admins can upload/update/delete organization assets | `organization-assets` | INSERT/UPDATE/DELETE | Admin + dossier = org ID |
+
+---
+
+## 13. Extensions
+
+| Extension | Description |
+|-----------|-------------|
+| `uuid-ossp` | Génération de UUID v4 |
+| `pg_trgm` | Recherche floue par trigrammes (sur `membres.full_name`) |
+
+---
+
+## 14. Diagramme de dépendances
+
+```mermaid
+erDiagram
+    organizations ||--o{ profiles : "utilisateurs"
+    organizations ||--o{ regions_eglise : "régions"
+    organizations ||--o{ comptes_comptables : "plan comptable"
+    organizations ||--o{ exercices_comptables : "exercices"
+    organizations ||--o{ audit_logs : "audit"
+
+    regions_eglise ||--o{ districts_eglise : "districts"
+    districts_eglise ||--o{ assemblees_locales : "assemblées"
+    
+    assemblees_locales ||--o{ familles : "familles"
+    assemblees_locales ||--o{ membres : "membres"
+    assemblees_locales ||--o{ programmes : "programmes"
+    assemblees_locales ||--o{ ecritures_comptables : "écritures"
+    assemblees_locales ||--o{ budgets_comptables : "budgets"
+    assemblees_locales ||--o{ immobilisations_comptables : "immobilisations"
+    assemblees_locales ||--o{ rapports_mensuels_eab : "rapports"
+    assemblees_locales ||--o{ releves_bancaires : "relevés"
+    
+    familles ||--o{ membres : "membres"
+    membres ||--o| assemblees_locales : "pasteur"
+    
+    journaux_comptables ||--o{ ecritures_comptables : "écritures"
+    ecritures_comptables ||--o{ lignes_ecritures : "lignes"
+    lignes_ecritures }o--|| comptes_comptables : "imputation"
+    
+    budgets_comptables ||--o{ lignes_budgets : "lignes"
+    lignes_budgets }o--|| comptes_comptables : "prévision"
+    
+    journaux_comptables ||--o{ sequences_pieces : "numérotation"
+```
+
+---
+
+## 15. Journal des modifications
+
+| Date | Auteur | Description |
+|------|--------|-------------|
+| 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : recréation avec vérification du type `role_utilisateur`, recréation du trigger `on_auth_user_created`. Création de l'organisation initiale `EAB-001` dans `organizations`. Promotion du profil `georgesbusiness54@gmail.com` en `admin_national` avec rattachement à l'organisation. |
+| 2026-02-22 | Système | Création initiale à partir des migrations 00001-00007 |
+
+---
+
+> [!IMPORTANT]
+> **Processus de mise à jour obligatoire** :
+> 1. Avant toute modification backend → **lire ce fichier**
+> 2. Après toute modification backend → **mettre à jour ce fichier** + ajouter une entrée au journal
+> 3. En cas de doute → exécuter les scripts d'introspection (`docs/scripts_introspection.md`)
