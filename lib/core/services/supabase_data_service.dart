@@ -72,7 +72,7 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('familles')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('nom', ascending: true);
 
     return (response as List)
@@ -87,9 +87,16 @@ class SupabaseDataService implements DataService {
         .select()
         .order('full_name', ascending: true);
 
-    return (response as List)
-        .map((json) => ProfilUtilisateur.fromJson(_snakeToCamel(json)))
-        .toList();
+    return (response as List).map((json) {
+      final camel = _snakeToCamel(json);
+      // Map Supabase 'fullName' → model 'nom'
+      camel['nom'] = camel['fullName'] ?? camel['nom'] ?? '';
+      // Convert role enum snake_case → camelCase
+      if (camel['role'] is String) {
+        camel['role'] = _snakeValueToCamel(camel['role'] as String);
+      }
+      return ProfilUtilisateur.fromJson(camel);
+    }).toList();
   }
 
   // ============================================================================
@@ -101,12 +108,28 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('membres')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('full_name', ascending: true);
 
-    return (response as List)
-        .map((json) => Member.fromJson(_snakeToCamel(json)))
-        .toList();
+    return (response as List).map((json) {
+      final camel = _snakeToCamel(json);
+      // Supabase 'fullName' maps directly (model also uses fullName) ✓
+      // Synthesize required English fields from French Supabase columns
+      camel['birthDate'] = camel['dateNaissance'] ?? camel['birthDate'];
+      camel['maritalStatus'] = _mapStatutMatrimonialToEnglish(
+        camel['statutMatrimonial'] as String?,
+      );
+      // Convert enum values from snake_case to camelCase
+      if (camel['statut'] is String) {
+        camel['statut'] = _snakeValueToCamel(camel['statut'] as String);
+      }
+      if (camel['role'] is String) {
+        camel['role'] = _snakeValueToCamel(camel['role'] as String);
+      }
+      // Map baptism date
+      camel['baptismDate'] = camel['dateBapteme'] ?? camel['baptismDate'];
+      return Member.fromJson(camel);
+    }).toList();
   }
 
   @override
@@ -140,12 +163,20 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('programmes')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('date', ascending: false);
 
-    return (response as List)
-        .map((json) => Program.fromJson(_snakeToCamel(json)))
-        .toList();
+    return (response as List).map((json) {
+      final camel = _snakeToCamel(json);
+      // Convert enum values from snake_case to camelCase
+      if (camel['type'] is String) {
+        camel['type'] = _snakeValueToCamel(camel['type'] as String);
+      }
+      if (camel['typeVisite'] is String) {
+        camel['typeVisite'] = _snakeValueToCamel(camel['typeVisite'] as String);
+      }
+      return Program.fromJson(camel);
+    }).toList();
   }
 
   @override
@@ -244,7 +275,7 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('tiers')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('nom', ascending: true);
 
     return (response as List)
@@ -257,7 +288,7 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('ecritures_comptables')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('date', ascending: false);
 
     final ecritures = <EcritureComptable>[];
@@ -287,7 +318,7 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('budgets_comptables')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('exercice', ascending: false);
 
     return (response as List)
@@ -309,7 +340,7 @@ class SupabaseDataService implements DataService {
     final response = await _client
         .from('immobilisations_comptables')
         .select()
-        .is_('deleted_at', null)
+        .isFilter('deleted_at', null)
         .order('libelle', ascending: true);
 
     return (response as List)
@@ -378,5 +409,37 @@ class SupabaseDataService implements DataService {
       RegExp(r'[A-Z]'),
       (match) => '_${match.group(0)!.toLowerCase()}',
     );
+  }
+
+  /// Convertit une valeur enum snake_case vers camelCase
+  /// Ex: 'evangelisation_masse' → 'evangelisationMasse'
+  ///     'admin_national' → 'adminNational'
+  String _snakeValueToCamel(String input) {
+    final parts = input.split('_');
+    if (parts.length == 1) return input;
+    return parts.first +
+        parts.skip(1).map((part) {
+          if (part.isEmpty) return part;
+          return part[0].toUpperCase() + part.substring(1);
+        }).join();
+  }
+
+  /// Mappe les valeurs françaises de statut_matrimonial vers les enums anglais
+  /// du modèle Member (MaritalStatus: single, married, divorced, widowed)
+  String _mapStatutMatrimonialToEnglish(String? statut) {
+    switch (statut) {
+      case 'celibataire':
+        return 'single';
+      case 'marie':
+        return 'married';
+      case 'divorce':
+      case 'separe':
+        return 'divorced';
+      case 'veuf':
+      case 'veuve':
+        return 'widowed';
+      default:
+        return 'single';
+    }
   }
 }

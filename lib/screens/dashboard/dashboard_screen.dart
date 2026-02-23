@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
-import '../../models/accounting_entry.dart';
+import '../../models/ecriture_comptable.dart';
 import '../../models/program.dart';
-import '../../providers/accounting_provider.dart';
+import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/members_provider.dart';
 import '../../providers/programs_provider.dart';
@@ -22,16 +22,16 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final membersAsync = ref.watch(membersProvider);
     final programsAsync = ref.watch(programsProvider);
-    final entriesAsync = ref.watch(accountingEntriesProvider);
+    final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
-    final entries = entriesAsync.value ?? [];
+    final ecritures = ecrituresAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
     final isLoading = membersAsync.isLoading ||
         programsAsync.isLoading ||
-        entriesAsync.isLoading ||
+        ecrituresAsync.isLoading ||
         assembleesAsync.isLoading;
 
     final filteredMembers = assembleeActiveId == null
@@ -44,6 +44,11 @@ class DashboardScreen extends ConsumerWidget {
         : programs
             .where((p) => p.idAssembleeLocale == assembleeActiveId)
             .toList();
+    final filteredEcritures = assembleeActiveId == null
+        ? ecritures
+        : ecritures
+            .where((e) => e.idAssembleeLocale == assembleeActiveId)
+            .toList();
 
     final activeAssemblee =
         assemblees.where((a) => a.id == assembleeActiveId).toList();
@@ -51,12 +56,16 @@ class DashboardScreen extends ConsumerWidget {
         ? 'Toutes les assemblees'
         : 'Assemblee active : ${activeAssemblee.isNotEmpty ? activeAssemblee.first.nom : assembleeActiveId}';
 
-    final totalIncome = entries
-        .where((e) => e.type == AccountingType.income)
-        .fold<double>(0, (p, e) => p + e.amount);
-    final totalExpense = entries
-        .where((e) => e.type == AccountingType.expense)
-        .fold<double>(0, (p, e) => p + e.amount);
+    // Compute income (credits) and expenses (debits) from ecritures' lignes
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (final ecriture in filteredEcritures) {
+      for (final ligne in ecriture.lignes) {
+        totalIncome += ligne.credit ?? 0;
+        totalExpense += ligne.debit ?? 0;
+      }
+    }
+
     final maleCount =
         filteredMembers.where((m) => m.gender == Gender.male).length;
     final femaleCount =
@@ -73,7 +82,7 @@ class DashboardScreen extends ConsumerWidget {
         )
         .length;
 
-    final monthly = _monthlyCashflow(entries);
+    final monthly = _monthlyCashflow(filteredEcritures);
     final programStats = _programDistribution(filteredPrograms);
     final maritalStats = _maritalDistribution(filteredMembers);
 
@@ -83,7 +92,7 @@ class DashboardScreen extends ConsumerWidget {
       body: isLoading &&
               members.isEmpty &&
               programs.isEmpty &&
-              entries.isEmpty
+              ecritures.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Padding(
@@ -130,7 +139,7 @@ class DashboardScreen extends ConsumerWidget {
                                     title: 'Recettes du mois',
                                     value: currencyFormatter.format(totalIncome),
                                     subtitle:
-                                        'Sur ${entries.length} ecritures',
+                                        'Sur ${filteredEcritures.length} ecritures',
                                     icon: Icons.trending_up,
                                     color: Colors.green[700],
                                   ),
@@ -360,17 +369,22 @@ class DashboardScreen extends ConsumerWidget {
     }
   }
 
-  Map<int, _CashflowPoint> _monthlyCashflow(List<AccountingEntry> entries) {
+  Map<int, _CashflowPoint> _monthlyCashflow(List<EcritureComptable> ecritures) {
     final Map<int, _CashflowPoint> map = {};
-    for (final e in entries) {
-      final key = DateTime(e.date.year, e.date.month).millisecondsSinceEpoch;
+    for (final ecriture in ecritures) {
+      final key = DateTime(ecriture.date.year, ecriture.date.month).millisecondsSinceEpoch;
       final existing =
-          map[key] ?? _CashflowPoint(DateTime(e.date.year, e.date.month), 0, 0);
-      if (e.type == AccountingType.income) {
-        map[key] = existing.copyWith(income: existing.income + e.amount);
-      } else {
-        map[key] = existing.copyWith(expense: existing.expense + e.amount);
+          map[key] ?? _CashflowPoint(DateTime(ecriture.date.year, ecriture.date.month), 0, 0);
+      double creditSum = 0;
+      double debitSum = 0;
+      for (final ligne in ecriture.lignes) {
+        creditSum += ligne.credit ?? 0;
+        debitSum += ligne.debit ?? 0;
       }
+      map[key] = existing.copyWith(
+        income: existing.income + creditSum,
+        expense: existing.expense + debitSum,
+      );
     }
     final sorted = map.values.toList()
       ..sort((a, b) => a.month.compareTo(b.month));
