@@ -231,6 +231,45 @@ INSERT INTO programmes (id, organization_id, id_assemblee_locale, type, date, lo
     ('00000000-0000-0000-0010-000000000005', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000001', 'baptemes', '2025-03-23', 'Plage de Fidjrossè', 'Baptêmes du premier trimestre', 35, 48, 8, 10, 0, 0);
 
 -- ============================================================================
+-- RAPPORTS MENSUELS EAB
+-- ============================================================================
+
+INSERT INTO rapports_mensuels_eab (id, organization_id, id_assemblee_locale, annee, mois, stats_membres, stats_activites, stats_finances, resume_activites, projets_realisations, projets_mois_suivant, observations) VALUES
+    ('00000000-0000-0000-0011-000000000001', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000001', 2025, 2,
+     '{"total": 45, "hommes": 20, "femmes": 25, "nouveaux": 2, "baptises": 1}'::jsonb,
+     '{"cultes": 4, "reunions_priere": 4, "evangelisations": 1, "total_presents": 520}'::jsonb,
+     '{"dimes": 250000, "offrandes": 180000, "dons": 50000, "charges": 120000}'::jsonb,
+     'Mois actif avec 4 cultes dominicaux et une séance d''évangélisation de quartier.', 
+     'Organisation d''une croisade d''évangélisation prévue mi-mars.',
+     'Préparation des baptêmes du premier trimestre.',
+     'Bonne dynamique spirituelle observée.'),
+    ('00000000-0000-0000-0011-000000000002', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000002', 2025, 2,
+     '{"total": 30, "hommes": 12, "femmes": 18, "nouveaux": 1, "baptises": 0}'::jsonb,
+     '{"cultes": 4, "reunions_priere": 4, "evangelisations": 0, "total_presents": 310}'::jsonb,
+     '{"dimes": 180000, "offrandes": 120000, "dons": 30000, "charges": 85000}'::jsonb,
+     'Mois régulier avec les activités habituelles.',
+     'Rénovation partielle de la salle de culte.',
+     'Planification d''un séminaire de formation pour les diacres.',
+     'RAS'),
+    ('00000000-0000-0000-0011-000000000003', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000001', 2025, 3,
+     '{"total": 47, "hommes": 21, "femmes": 26, "nouveaux": 3, "baptises": 5}'::jsonb,
+     '{"cultes": 5, "reunions_priere": 4, "evangelisations": 1, "baptemes": 1, "total_presents": 680}'::jsonb,
+     '{"dimes": 280000, "offrandes": 200000, "dons": 75000, "charges": 150000}'::jsonb,
+     'Mois marqué par la croisade d''évangélisation et les baptêmes du trimestre.',
+     'Croisade d''évangélisation avec 20 conversions. Baptêmes de 5 nouveaux membres.',
+     'Préparation de la Pâque et planification du camp de jeunes.',
+     'Forte croissance ce mois-ci.');
+
+-- ============================================================================
+-- RELEVÉS BANCAIRES
+-- ============================================================================
+
+INSERT INTO releves_bancaires (id, organization_id, id_assemblee_locale, id_journal_banque, date_releve, solde_initial, solde_final) VALUES
+    ('00000000-0000-0000-0012-000000000001', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000001', '00000000-0000-0000-0007-000000000002', '2025-02-28', 1500000, 1720000),
+    ('00000000-0000-0000-0012-000000000002', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000001', '00000000-0000-0000-0007-000000000002', '2025-03-31', 1720000, 1890000),
+    ('00000000-0000-0000-0012-000000000003', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0003-000000000002', '00000000-0000-0000-0007-000000000002', '2025-02-28', 800000, 950000);
+
+-- ============================================================================
 -- FIN DU SEED
 -- ============================================================================
 
