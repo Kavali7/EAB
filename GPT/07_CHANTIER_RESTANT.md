@@ -13,19 +13,23 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 **Pourquoi** : Le design actuel est fonctionnel mais n'est pas à la hauteur d'un produit SaaS commercial. Les tableaux sont bruts (PaginatedDataTable par défaut), les formulaires sont des Dialog trop petits, et il n'y a pas de micro-animations.
 
 **Travail** :
+
+- [x] UI Kit centralisé créé (`lib/ui/`) — 13 composants réutilisables ✅
 - [ ] Adopter une police Google Fonts (Inter ou Poppins)
-- [ ] Refondre le composant de tableau (en-têtes sticky, tri, filtres, actions hover, vue card mobile)
-- [ ] Transformer les formulaires Dialog en écrans/fullscreen bottom sheets
-- [ ] Ajouter des skeleton loading pour les chargements
-- [ ] Créer des empty states avec illustrations
+- [x] Refondre le composant de tableau → `EabTable` (en-têtes, tri, pagination, états) ✅
+- [x] Transformer les formulaires Dialog → `EabDialog` + `EabButton` ✅
+- [x] Ajouter des skeleton loading → `SkeletonLoader` ✅
+- [x] Créer des empty states → `EmptyState` + `ErrorState` ✅
 - [ ] Ajouter des micro-animations (transitions de page, hover effects, feedback tactile)
 - [ ] Repenser les couleurs : garder navy/doré mais ajouter richesse (dégradés, ombres)
+- [x] Features Membres et Programmes migrées vers `features/` avec UI Kit ✅
 
 ### C2. Refonte du Tableau de Bord
 
 **Pourquoi** : Le dashboard est l'écran d'accueil — il doit impressionner et informer.
 
 **Travail** :
+
 - [ ] Cartes KPI riches avec icônes, couleurs, tendance ↑↓ et pourcentage vs mois précédent
 - [ ] Résumé financier du mois : Recettes / Dépenses / Résultat avec mini-graphes sparkline
 - [ ] Alertes et rappels (écritures en brouillon, budget dépassé, rapport en retard)
@@ -38,6 +42,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 **Pourquoi** : L'app doit fonctionner pour n'importe quelle église, pas seulement EAB.
 
 **Travail** :
+
 - [ ] Onboarding : écran de création d'organisation (nom, logo, couleurs)
 - [ ] Thème dynamique par organisation (couleur primaire, logo dans le sidebar)
 - [ ] Nom de l'organisation dans l'AppBar au lieu de "EAB"
@@ -50,6 +55,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 **Pourquoi** : Les trésoriers ont besoin d'imprimer et partager les rapports.
 
 **Travail** :
+
 - [ ] Export du rapport mensuel EAB en PDF professionnel (mise en page esthétique avec logo)
 - [ ] Export de la balance des comptes en PDF
 - [ ] Export du grand livre en PDF
@@ -64,6 +70,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### H1. Gestion des Exercices Comptables
 
 **Travail** :
+
 - [ ] Écran de gestion des exercices : création, ouverture, clôture
 - [ ] Clôture d'exercice : vérifier que toutes les écritures sont validées
 - [ ] Génération automatique de l'écriture de résultat
@@ -73,6 +80,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### H2. Amortissements Automatiques
 
 **Travail** :
+
 - [ ] Tableau d'amortissement par immobilisation (linéaire / dégressif)
 - [ ] Calcul automatique de la dotation annuelle
 - [ ] Génération de l'écriture d'amortissement en fin d'exercice
@@ -82,6 +90,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### H3. Rapports Financiers Avancés
 
 **Travail** :
+
 - [ ] Compte de résultat (charges vs produits, par nature)
 - [ ] Bilan simplifié (actif circulant / immo vs passif / fonds propres)
 - [ ] Tableau des flux de trésorerie
@@ -92,6 +101,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### H4. Tableau de Bord Financier Avancé
 
 **Travail** :
+
 - [ ] Graphique d'évolution annuelle des recettes / dépenses
 - [ ] Répartition des charges par nature (camembert)
 - [ ] Répartition des produits par nature
@@ -102,6 +112,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### H5. Recherche Globale
 
 **Travail** :
+
 - [ ] Barre de recherche dans l'AppBar
 - [ ] Recherche sur membres, programmes, écritures
 - [ ] Résultats groupés par catégorie
@@ -114,6 +125,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M1. Journal d'Audit (Frontend)
 
 **Travail** :
+
 - [ ] Écran de consultation du journal d'audit (`audit_log`)
 - [ ] Filtres : par action, date, utilisateur, table, enregistrement
 - [ ] Vue chronologique des modifications d'une entité
@@ -121,6 +133,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M2. Fiches Individuelles
 
 **Travail** :
+
 - [ ] Fiche membre détaillée (profil complet, historique, famille, timeline)
 - [ ] Fiche assemblée (statistiques, membres, programmes, finances)
 - [ ] Fiche compte comptable (mouvements, solde, graphique)
@@ -128,6 +141,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M3. Notifications et Alertes
 
 **Travail** :
+
 - [ ] Système de notifications in-app
 - [ ] Alertes configurables : budget dépassé, rapport en retard, écriture en attente
 - [ ] Badge de notification sur l'icône dans le sidebar
@@ -135,6 +149,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M4. Gestion des Familles (enrichie)
 
 **Travail** :
+
 - [ ] Vue famille avec arbre généalogique simplifié
 - [ ] Lien automatique des enfants aux parents
 - [ ] Statistiques familiales
@@ -142,6 +157,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M5. Calendrier des Activités
 
 **Travail** :
+
 - [ ] Vue calendrier mensuelle/hebdomadaire des programmes
 - [ ] Planification d'activités futures
 - [ ] Rappels avant événement
@@ -149,6 +165,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 ### M6. Gestion des Tiers Enrichie
 
 **Travail** :
+
 - [ ] Fiche tiers avec historique des opérations
 - [ ] Balance par tiers (dû par les tiers / dû aux tiers)
 - [ ] Relances automatiques

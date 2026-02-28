@@ -9,7 +9,7 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/accounting/accounting_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../features/members/presentation/members_screen_v2.dart';
-import '../screens/programs/programs_screen.dart';
+import '../features/programs/presentation/programs_screen_v2.dart';
 import '../screens/church_structure/church_structure_screen.dart';
 import '../screens/accounting/accounting_settings_screen.dart';
 import '../screens/accounting/accounting_budgets_screen.dart';
@@ -52,7 +52,7 @@ class ChurchApp extends StatelessWidget {
         // App
         '/': (_) => const DashboardScreen(),
         '/members': (_) => const MembersScreenV2(),
-        '/programs': (_) => const ProgramsScreen(),
+        '/programs': (_) => const ProgramsScreenV2(),
         '/accounting': (_) => const AccountingScreen(),
         '/structure': (_) => const ChurchStructureScreen(),
         '/accounting-settings': (_) => const AccountingSettingsScreen(),
