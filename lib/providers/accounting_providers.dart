@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/utils/case_converters.dart';
 import '../models/centre_analytique.dart';
 import '../models/compte_comptable.dart';
 import '../models/ecriture_comptable.dart';
@@ -21,24 +22,8 @@ import 'church_structure_providers.dart';
 /// Client Supabase raccourci pour persistance
 SupabaseClient get _db => Supabase.instance.client;
 
-/// Convertit les clés d'un Map de camelCase vers snake_case pour Supabase
-Map<String, dynamic> _toSnake(Map<String, dynamic> json) {
-  return json.map((key, value) {
-    final newKey = key.replaceAllMapped(
-      RegExp(r'[A-Z]'),
-      (m) => '_${m.group(0)!.toLowerCase()}',
-    );
-    if (value is Map<String, dynamic>) {
-      return MapEntry(newKey, _toSnake(value));
-    } else if (value is List) {
-      return MapEntry(
-        newKey,
-        value.map((e) => e is Map<String, dynamic> ? _toSnake(e) : e).toList(),
-      );
-    }
-    return MapEntry(newKey, value);
-  });
-}
+// Note : les helpers de conversion snake_case/camelCase sont dans
+// lib/core/utils/case_converters.dart (camelToSnake, snakeToCamel, etc.)
 
 // ============================================================================
 // PORTÉE COMPTABLE
@@ -75,7 +60,7 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   }
 
   Future<void> ajouterCompte(CompteComptable compte) async {
-    final json = _toSnake(compte.toJson());
+    final json = camelToSnake(compte.toJson());
     json.remove('id');
     await _db.from('comptes_comptables').insert(json);
     final actuelle = state.value ?? [];
@@ -83,7 +68,7 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   }
 
   Future<void> mettreAJourCompte(CompteComptable compte) async {
-    final json = _toSnake(compte.toJson());
+    final json = camelToSnake(compte.toJson());
     await _db.from('comptes_comptables').update(json).eq('id', compte.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((c) => c.id == compte.id);
@@ -111,7 +96,7 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   }
 
   Future<void> ajouterJournal(JournalComptable journal) async {
-    final json = _toSnake(journal.toJson());
+    final json = camelToSnake(journal.toJson());
     json.remove('id');
     await _db.from('journaux_comptables').insert(json);
     final actuelle = state.value ?? [];
@@ -119,7 +104,7 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   }
 
   Future<void> mettreAJourJournal(JournalComptable journal) async {
-    final json = _toSnake(journal.toJson());
+    final json = camelToSnake(journal.toJson());
     await _db.from('journaux_comptables').update(json).eq('id', journal.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((j) => j.id == journal.id);
@@ -148,7 +133,7 @@ class CentresAnalytiquesNotifier
   }
 
   Future<void> ajouterCentre(CentreAnalytique centre) async {
-    final json = _toSnake(centre.toJson());
+    final json = camelToSnake(centre.toJson());
     json.remove('id');
     await _db.from('centres_analytiques').insert(json);
     final actuelle = state.value ?? [];
@@ -156,7 +141,7 @@ class CentresAnalytiquesNotifier
   }
 
   Future<void> mettreAJourCentre(CentreAnalytique centre) async {
-    final json = _toSnake(centre.toJson());
+    final json = camelToSnake(centre.toJson());
     await _db.from('centres_analytiques').update(json).eq('id', centre.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((c) => c.id == centre.id);
@@ -182,7 +167,7 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   }
 
   Future<void> ajouterTiers(Tiers t) async {
-    final json = _toSnake(t.toJson());
+    final json = camelToSnake(t.toJson());
     json.remove('id');
     await _db.from('tiers').insert(json);
     final actuelle = state.value ?? [];
@@ -190,7 +175,7 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   }
 
   Future<void> mettreAJourTiers(Tiers t) async {
-    final json = _toSnake(t.toJson());
+    final json = camelToSnake(t.toJson());
     await _db.from('tiers').update(json).eq('id', t.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((x) => x.id == t.id);
@@ -219,7 +204,7 @@ class BudgetsComptablesNotifier
   }
 
   Future<void> ajouterBudget(BudgetComptable budget) async {
-    final json = _toSnake(budget.toJson());
+    final json = camelToSnake(budget.toJson());
     json.remove('id');
     await _db.from('budgets_comptables').insert(json);
     final actuelle = state.value ?? [];
@@ -227,7 +212,7 @@ class BudgetsComptablesNotifier
   }
 
   Future<void> mettreAJourBudget(BudgetComptable budget) async {
-    final json = _toSnake(budget.toJson());
+    final json = camelToSnake(budget.toJson());
     await _db.from('budgets_comptables').update(json).eq('id', budget.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((b) => b.id == budget.id);
@@ -252,7 +237,7 @@ class LignesBudgetsNotifier
   }
 
   Future<void> ajouterLigne(LigneBudgetComptable ligne) async {
-    final json = _toSnake(ligne.toJson());
+    final json = camelToSnake(ligne.toJson());
     json.remove('id');
     await _db.from('lignes_budgets').insert(json);
     final actuelle = state.value ?? [];
@@ -260,7 +245,7 @@ class LignesBudgetsNotifier
   }
 
   Future<void> mettreAJourLigne(LigneBudgetComptable ligne) async {
-    final json = _toSnake(ligne.toJson());
+    final json = camelToSnake(ligne.toJson());
     await _db.from('lignes_budgets').update(json).eq('id', ligne.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((l) => l.id == ligne.id);
@@ -289,7 +274,7 @@ class ImmobilisationsComptablesNotifier
   }
 
   Future<void> ajouterImmobilisation(ImmobilisationComptable immo) async {
-    final json = _toSnake(immo.toJson());
+    final json = camelToSnake(immo.toJson());
     json.remove('id');
     await _db.from('immobilisations_comptables').insert(json);
     final actuelle = state.value ?? [];
@@ -297,7 +282,7 @@ class ImmobilisationsComptablesNotifier
   }
 
   Future<void> mettreAJourImmobilisation(ImmobilisationComptable immo) async {
-    final json = _toSnake(immo.toJson());
+    final json = camelToSnake(immo.toJson());
     await _db
         .from('immobilisations_comptables')
         .update(json)
@@ -329,7 +314,7 @@ class LignesRelevesBancairesNotifier
   }
 
   Future<void> mettreAJourLigneReleve(LigneReleveBancaire ligne) async {
-    final json = _toSnake(ligne.toJson());
+    final json = camelToSnake(ligne.toJson());
     await _db.from('releves_bancaires').update(json).eq('id', ligne.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((l) => l.id == ligne.id);
@@ -359,14 +344,14 @@ class EcrituresComptablesNotifier
 
   Future<void> ajouterEcriture(EcritureComptable ecriture) async {
     // Insérer l'écriture
-    final ecritureJson = _toSnake(ecriture.toJson());
+    final ecritureJson = camelToSnake(ecriture.toJson());
     ecritureJson.remove('id');
     ecritureJson.remove('lignes');
     await _db.from('ecritures_comptables').insert(ecritureJson);
 
     // Insérer les lignes
     for (final ligne in ecriture.lignes) {
-      final ligneJson = _toSnake(ligne.toJson());
+      final ligneJson = camelToSnake(ligne.toJson());
       ligneJson.remove('id');
       ligneJson['id_ecriture'] = ecriture.id;
       await _db.from('lignes_ecritures').insert(ligneJson);
@@ -377,7 +362,7 @@ class EcrituresComptablesNotifier
   }
 
   Future<void> mettreAJourEcriture(EcritureComptable ecriture) async {
-    final ecritureJson = _toSnake(ecriture.toJson());
+    final ecritureJson = camelToSnake(ecriture.toJson());
     ecritureJson.remove('lignes');
     await _db
         .from('ecritures_comptables')
@@ -387,7 +372,7 @@ class EcrituresComptablesNotifier
     // Supprimer anciennes lignes et réinsérer
     await _db.from('lignes_ecritures').delete().eq('id_ecriture', ecriture.id);
     for (final ligne in ecriture.lignes) {
-      final ligneJson = _toSnake(ligne.toJson());
+      final ligneJson = camelToSnake(ligne.toJson());
       ligneJson.remove('id');
       ligneJson['id_ecriture'] = ecriture.id;
       await _db.from('lignes_ecritures').insert(ligneJson);

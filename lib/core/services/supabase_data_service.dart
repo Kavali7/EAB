@@ -16,6 +16,7 @@ import '../../models/ecriture_comptable.dart';
 import '../../models/budget_comptable.dart';
 import '../../models/immobilisation_comptable.dart';
 import '../../models/releve_bancaire.dart';
+import '../utils/case_converters.dart';
 import 'data_service.dart';
 
 /// Service de données utilisant Supabase comme backend.
@@ -39,7 +40,7 @@ class SupabaseDataService implements DataService {
         .order('nom', ascending: true);
 
     return (response as List)
-        .map((json) => RegionEglise.fromJson(_snakeToCamel(json)))
+        .map((json) => RegionEglise.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -51,7 +52,7 @@ class SupabaseDataService implements DataService {
         .order('nom', ascending: true);
 
     return (response as List)
-        .map((json) => DistrictEglise.fromJson(_snakeToCamel(json)))
+        .map((json) => DistrictEglise.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -63,7 +64,7 @@ class SupabaseDataService implements DataService {
         .order('nom', ascending: true);
 
     return (response as List)
-        .map((json) => AssembleeLocale.fromJson(_snakeToCamel(json)))
+        .map((json) => AssembleeLocale.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -76,7 +77,7 @@ class SupabaseDataService implements DataService {
         .order('nom', ascending: true);
 
     return (response as List)
-        .map((json) => Famille.fromJson(_snakeToCamel(json)))
+        .map((json) => Famille.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -88,12 +89,12 @@ class SupabaseDataService implements DataService {
         .order('full_name', ascending: true);
 
     return (response as List).map((json) {
-      final camel = _snakeToCamel(json);
+      final camel = snakeToCamel(json);
       // Map Supabase 'fullName' → model 'nom'
       camel['nom'] = camel['fullName'] ?? camel['nom'] ?? '';
       // Convert role enum snake_case → camelCase
       if (camel['role'] is String) {
-        camel['role'] = _snakeValueToCamel(camel['role'] as String);
+        camel['role'] = snakeValueToCamel(camel['role'] as String);
       }
       return ProfilUtilisateur.fromJson(camel);
     }).toList();
@@ -112,19 +113,19 @@ class SupabaseDataService implements DataService {
         .order('full_name', ascending: true);
 
     return (response as List).map((json) {
-      final camel = _snakeToCamel(json);
+      final camel = snakeToCamel(json);
       // Supabase 'fullName' maps directly (model also uses fullName) ✓
       // Synthesize required English fields from French Supabase columns
       camel['birthDate'] = camel['dateNaissance'] ?? camel['birthDate'];
-      camel['maritalStatus'] = _mapStatutMatrimonialToEnglish(
+      camel['maritalStatus'] = mapStatutMatrimonialToEnglish(
         camel['statutMatrimonial'] as String?,
       );
       // Convert enum values from snake_case to camelCase
       if (camel['statut'] is String) {
-        camel['statut'] = _snakeValueToCamel(camel['statut'] as String);
+        camel['statut'] = snakeValueToCamel(camel['statut'] as String);
       }
       if (camel['role'] is String) {
-        camel['role'] = _snakeValueToCamel(camel['role'] as String);
+        camel['role'] = snakeValueToCamel(camel['role'] as String);
       }
       // Map baptism date
       camel['baptismDate'] = camel['dateBapteme'] ?? camel['baptismDate'];
@@ -134,14 +135,14 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addMember(Member member) async {
-    await _client.from('membres').insert(_camelToSnake(member.toJson()));
+    await _client.from('membres').insert(camelToSnake(member.toJson()));
   }
 
   @override
   Future<void> updateMember(Member member) async {
     await _client
         .from('membres')
-        .update(_camelToSnake(member.toJson()))
+        .update(camelToSnake(member.toJson()))
         .eq('id', member.id);
   }
 
@@ -167,13 +168,13 @@ class SupabaseDataService implements DataService {
         .order('date', ascending: false);
 
     return (response as List).map((json) {
-      final camel = _snakeToCamel(json);
+      final camel = snakeToCamel(json);
       // Convert enum values from snake_case to camelCase
       if (camel['type'] is String) {
-        camel['type'] = _snakeValueToCamel(camel['type'] as String);
+        camel['type'] = snakeValueToCamel(camel['type'] as String);
       }
       if (camel['typeVisite'] is String) {
-        camel['typeVisite'] = _snakeValueToCamel(camel['typeVisite'] as String);
+        camel['typeVisite'] = snakeValueToCamel(camel['typeVisite'] as String);
       }
       return Program.fromJson(camel);
     }).toList();
@@ -181,14 +182,14 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addProgram(Program program) async {
-    await _client.from('programmes').insert(_camelToSnake(program.toJson()));
+    await _client.from('programmes').insert(camelToSnake(program.toJson()));
   }
 
   @override
   Future<void> updateProgram(Program program) async {
     await _client
         .from('programmes')
-        .update(_camelToSnake(program.toJson()))
+        .update(camelToSnake(program.toJson()))
         .eq('id', program.id);
   }
 
@@ -240,7 +241,7 @@ class SupabaseDataService implements DataService {
         .order('numero', ascending: true);
 
     return (response as List)
-        .map((json) => CompteComptable.fromJson(_snakeToCamel(json)))
+        .map((json) => CompteComptable.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -253,7 +254,7 @@ class SupabaseDataService implements DataService {
         .order('code', ascending: true);
 
     return (response as List)
-        .map((json) => JournalComptable.fromJson(_snakeToCamel(json)))
+        .map((json) => JournalComptable.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -266,7 +267,7 @@ class SupabaseDataService implements DataService {
         .order('code', ascending: true);
 
     return (response as List)
-        .map((json) => CentreAnalytique.fromJson(_snakeToCamel(json)))
+        .map((json) => CentreAnalytique.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -279,7 +280,7 @@ class SupabaseDataService implements DataService {
         .order('nom', ascending: true);
 
     return (response as List)
-        .map((json) => Tiers.fromJson(_snakeToCamel(json)))
+        .map((json) => Tiers.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -301,11 +302,11 @@ class SupabaseDataService implements DataService {
           .eq('id_ecriture', json['id']);
 
       final lignes = (lignesResponse as List)
-          .map((l) => LigneEcritureComptable.fromJson(_snakeToCamel(l)))
+          .map((l) => LigneEcritureComptable.fromJson(snakeToCamel(l)))
           .toList();
 
       ecritures.add(EcritureComptable.fromJson({
-        ..._snakeToCamel(json),
+        ...snakeToCamel(json),
         'lignes': lignes.map((l) => l.toJson()).toList(),
       }));
     }
@@ -322,7 +323,7 @@ class SupabaseDataService implements DataService {
         .order('exercice', ascending: false);
 
     return (response as List)
-        .map((json) => BudgetComptable.fromJson(_snakeToCamel(json)))
+        .map((json) => BudgetComptable.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -331,7 +332,7 @@ class SupabaseDataService implements DataService {
     final response = await _client.from('lignes_budgets').select();
 
     return (response as List)
-        .map((json) => LigneBudgetComptable.fromJson(_snakeToCamel(json)))
+        .map((json) => LigneBudgetComptable.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -344,7 +345,7 @@ class SupabaseDataService implements DataService {
         .order('libelle', ascending: true);
 
     return (response as List)
-        .map((json) => ImmobilisationComptable.fromJson(_snakeToCamel(json)))
+        .map((json) => ImmobilisationComptable.fromJson(snakeToCamel(json)))
         .toList();
   }
 
@@ -355,91 +356,4 @@ class SupabaseDataService implements DataService {
     return [];
   }
 
-  // ============================================================================
-  // HELPERS - Conversion snake_case <-> camelCase
-  // ============================================================================
-
-  /// Convertit les clés d'un Map de snake_case vers camelCase
-  Map<String, dynamic> _snakeToCamel(Map<String, dynamic> json) {
-    return json.map((key, value) {
-      final newKey = _snakeToCamelString(key);
-      if (value is Map<String, dynamic>) {
-        return MapEntry(newKey, _snakeToCamel(value));
-      } else if (value is List) {
-        return MapEntry(
-          newKey,
-          value.map((e) => e is Map<String, dynamic> ? _snakeToCamel(e) : e).toList(),
-        );
-      }
-      return MapEntry(newKey, value);
-    });
-  }
-
-  /// Convertit les clés d'un Map de camelCase vers snake_case
-  Map<String, dynamic> _camelToSnake(Map<String, dynamic> json) {
-    return json.map((key, value) {
-      final newKey = _camelToSnakeString(key);
-      if (value is Map<String, dynamic>) {
-        return MapEntry(newKey, _camelToSnake(value));
-      } else if (value is List) {
-        return MapEntry(
-          newKey,
-          value.map((e) => e is Map<String, dynamic> ? _camelToSnake(e) : e).toList(),
-        );
-      }
-      return MapEntry(newKey, value);
-    });
-  }
-
-  /// Convertit une chaîne de snake_case vers camelCase
-  String _snakeToCamelString(String input) {
-    final parts = input.split('_');
-    if (parts.length == 1) return input;
-
-    return parts.first +
-        parts.skip(1).map((part) {
-          if (part.isEmpty) return part;
-          return part[0].toUpperCase() + part.substring(1);
-        }).join();
-  }
-
-  /// Convertit une chaîne de camelCase vers snake_case
-  String _camelToSnakeString(String input) {
-    return input.replaceAllMapped(
-      RegExp(r'[A-Z]'),
-      (match) => '_${match.group(0)!.toLowerCase()}',
-    );
-  }
-
-  /// Convertit une valeur enum snake_case vers camelCase
-  /// Ex: 'evangelisation_masse' → 'evangelisationMasse'
-  ///     'admin_national' → 'adminNational'
-  String _snakeValueToCamel(String input) {
-    final parts = input.split('_');
-    if (parts.length == 1) return input;
-    return parts.first +
-        parts.skip(1).map((part) {
-          if (part.isEmpty) return part;
-          return part[0].toUpperCase() + part.substring(1);
-        }).join();
-  }
-
-  /// Mappe les valeurs françaises de statut_matrimonial vers les enums anglais
-  /// du modèle Member (MaritalStatus: single, married, divorced, widowed)
-  String _mapStatutMatrimonialToEnglish(String? statut) {
-    switch (statut) {
-      case 'celibataire':
-        return 'single';
-      case 'marie':
-        return 'married';
-      case 'divorce':
-      case 'separe':
-        return 'divorced';
-      case 'veuf':
-      case 'veuve':
-        return 'widowed';
-      default:
-        return 'single';
-    }
-  }
 }
