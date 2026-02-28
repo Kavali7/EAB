@@ -67,15 +67,15 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 
 ## 🟠 PRIORITÉ HAUTE (phase 2)
 
-### H1. Gestion des Exercices Comptables
+### H1. Gestion des Exercices Comptables ✅
 
 **Travail** :
 
-- [ ] Écran de gestion des exercices : création, ouverture, clôture
-- [ ] Clôture d'exercice : vérifier que toutes les écritures sont validées
-- [ ] Génération automatique de l'écriture de résultat
-- [ ] Écriture d'ouverture du nouvel exercice (à-nouveaux)
-- [ ] Interdire la saisie hors période de l'exercice ouvert
+- [x] Écran de gestion des exercices : création, ouverture, clôture
+- [x] Clôture d'exercice : vérifier que toutes les écritures sont validées
+- [x] Génération automatique de l'écriture de résultat
+- [x] Écriture d'ouverture du nouvel exercice (à-nouveaux)
+- [x] Interdire la saisie hors période de l'exercice ouvert
 
 ### H2. Amortissements Automatiques
 
@@ -87,12 +87,14 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [ ] Vue consolidée des amortissements de l'exercice
 - [ ] Sortie d'immobilisation (cession, mise au rebut)
 
-### H3. Rapports Financiers Avancés
+### H3. Rapports Financiers Avancés ✅
 
 **Travail** :
 
-- [ ] Compte de résultat (charges vs produits, par nature)
-- [ ] Bilan simplifié (actif circulant / immo vs passif / fonds propres)
+- [x] Compte de résultat (charges vs produits, par nature)
+- [x] Bilan simplifié (actif circulant / immo vs passif / fonds propres)
+- [x] Balance générale (vérification D=C)
+- [x] Grand livre avec solde cumulé
 - [ ] Tableau des flux de trésorerie
 - [ ] Rapport budget vs réalisé (par compte, par mois)
 - [ ] Comparaison inter-périodes (M vs M-1, A vs A-1)
@@ -109,14 +111,14 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [ ] Alerte de dépassement budgétaire
 - [ ] Comparaison inter-assemblées (admin national)
 
-### H5. Recherche Globale
+### H5. Recherche Globale ✅
 
 **Travail** :
 
-- [ ] Barre de recherche dans l'AppBar
-- [ ] Recherche sur membres, programmes, écritures
-- [ ] Résultats groupés par catégorie
-- [ ] Raccourci clavier (Ctrl+K ou /)
+- [x] Barre de recherche dans l'AppBar + bouton loupe
+- [x] Recherche sur membres, programmes, écritures (trigrammes pg_trgm)
+- [x] Résultats groupés par catégorie avec icônes colorées
+- [x] Raccourci clavier Ctrl+K + navigation ↑↓ Enter Esc
 
 ---
 
