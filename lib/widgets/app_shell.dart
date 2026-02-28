@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
@@ -8,6 +9,7 @@ import '../models/district_eglise.dart';
 import '../models/region_eglise.dart';
 import '../providers/user_profile_providers.dart';
 import '../providers/church_structure_providers.dart';
+import '../features/search/presentation/global_search_dialog.dart';
 import 'side_navigation.dart';
 
 class AppShell extends ConsumerWidget {
@@ -140,7 +142,14 @@ class AppShell extends ConsumerWidget {
 
     final isWide = MediaQuery.of(context).size.width >= 1000;
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true):
+            () => showGlobalSearch(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       appBar: AppBar(
         title: Text(title),
         actions: [
@@ -171,6 +180,12 @@ class AppShell extends ConsumerWidget {
               ),
             ),
           ...?actions,
+          // Bouton recherche globale (Ctrl+K)
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Recherche globale (Ctrl+K)',
+            onPressed: () => showGlobalSearch(context),
+          ),
         ],
         bottom: bottom,
       ),
@@ -201,6 +216,8 @@ class AppShell extends ConsumerWidget {
         ],
       ),
       floatingActionButton: floatingActionButton,
+    ),
+    ),
     );
   }
 

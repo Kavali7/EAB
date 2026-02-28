@@ -634,3 +634,103 @@ GRANT EXECUTE ON FUNCTION report_compte_resultat(UUID, DATE, DATE) TO authentica
 GRANT EXECUTE ON FUNCTION report_bilan(UUID, DATE) TO authenticated;
 GRANT EXECUTE ON FUNCTION report_grand_livre(UUID, UUID, DATE, DATE) TO authenticated;
 
+-- ============================================================================
+-- SPRINT C : RECHERCHE GLOBALE
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION global_search(
+  p_org_id UUID,
+  p_query TEXT,
+  p_limit INTEGER DEFAULT 20
+)
+RETURNS TABLE (
+  category TEXT,
+  record_id UUID,
+  title TEXT,
+  subtitle TEXT,
+  route TEXT,
+  relevance REAL
+) AS $$
+DECLARE
+  v_pattern TEXT;
+BEGIN
+  v_pattern := '%' || LOWER(p_query) || '%';
+
+  -- Membres
+  RETURN QUERY
+  SELECT
+    'membre'::TEXT,
+    m.id,
+    m.full_name,
+    COALESCE(m.phone, m.email, m.role::TEXT),
+    '/members'::TEXT,
+    CASE
+      WHEN LOWER(m.full_name) = LOWER(p_query) THEN 1.0
+      WHEN LOWER(m.full_name) LIKE v_pattern THEN 0.8
+      ELSE similarity(m.full_name, p_query)
+    END::REAL
+  FROM membres m
+  WHERE m.organization_id = p_org_id
+    AND m.deleted_at IS NULL
+    AND (
+      LOWER(m.full_name) LIKE v_pattern
+      OR LOWER(m.phone) LIKE v_pattern
+      OR LOWER(m.email) LIKE v_pattern
+      OR similarity(m.full_name, p_query) > 0.3
+    )
+  ORDER BY relevance DESC
+  LIMIT p_limit;
+
+  -- Programmes
+  RETURN QUERY
+  SELECT
+    'programme'::TEXT,
+    p.id,
+    p.type::TEXT || ' — ' || TO_CHAR(p.date, 'DD/MM/YYYY'),
+    COALESCE(p.description, p.location),
+    '/programs'::TEXT,
+    CASE
+      WHEN LOWER(p.description) LIKE v_pattern THEN 0.7
+      WHEN LOWER(p.location) LIKE v_pattern THEN 0.6
+      ELSE 0.4
+    END::REAL
+  FROM programmes p
+  WHERE p.organization_id = p_org_id
+    AND p.deleted_at IS NULL
+    AND (
+      LOWER(p.description) LIKE v_pattern
+      OR LOWER(p.location) LIKE v_pattern
+      OR p.type::TEXT ILIKE v_pattern
+    )
+  ORDER BY relevance DESC
+  LIMIT p_limit;
+
+  -- Écritures comptables
+  RETURN QUERY
+  SELECT
+    'ecriture'::TEXT,
+    ec.id,
+    ec.libelle,
+    COALESCE(ec.reference_piece, '') || ' — ' || TO_CHAR(ec.date, 'DD/MM/YYYY'),
+    '/accounting'::TEXT,
+    CASE
+      WHEN LOWER(ec.libelle) LIKE v_pattern THEN 0.7
+      WHEN LOWER(ec.reference_piece) LIKE v_pattern THEN 0.8
+      ELSE 0.4
+    END::REAL
+  FROM ecritures_comptables ec
+  WHERE ec.organization_id = p_org_id
+    AND ec.deleted_at IS NULL
+    AND (
+      LOWER(ec.libelle) LIKE v_pattern
+      OR LOWER(ec.reference_piece) LIKE v_pattern
+    )
+  ORDER BY relevance DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- GRANTS Sprint C
+GRANT EXECUTE ON FUNCTION global_search(UUID, TEXT, INTEGER) TO authenticated;
+
+
