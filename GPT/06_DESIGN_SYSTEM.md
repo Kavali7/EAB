@@ -112,6 +112,7 @@ ThemeData buildAppTheme() {
 **Rôle** : Layout wrapper pour tous les écrans principaux de l'app.
 
 **Structure** :
+
 ```
 ┌────────────────────────────────────────────────────┐
 │ AppBar [Titre] [Profil ▼] [Assemblée active ▼]     │
@@ -128,6 +129,7 @@ ThemeData buildAppTheme() {
 ```
 
 **Props** :
+
 - `title` : Titre de la page
 - `body` : Widget du contenu principal
 - `currentRoute` : Route active pour la navigation
@@ -136,6 +138,7 @@ ThemeData buildAppTheme() {
 - `bottom` : Widget sous l'AppBar (TabBar)
 
 **Logique intégrée** :
+
 - Chargement du profil utilisateur courant
 - Calcul des assemblées autorisées selon le rôle
 - Sélection d'assemblée active dans l'AppBar
@@ -144,6 +147,7 @@ ThemeData buildAppTheme() {
 ### 4.2 `SideNavigation` — Menu latéral (125 lignes)
 
 **Structure** :
+
 ```
 ┌──────────────────────┐
 │ EAB                  │  ← Titre (navy, bold, 20px)
@@ -176,6 +180,28 @@ Carte simple avec titre + valeur numérique + couleur. Utilisée sur le dashboar
 ### 4.5 `SectionCard` — Carte de section (1KB)
 
 Container avec titre et contenu enfant, utilisé pour regrouper visuellement des sections.
+
+### 4.6 🆕 UI Kit (`lib/ui/`) — Design System Centralisé
+
+Nouveau design system introduit pour remplacer les composants ad-hoc dupliqués dans chaque écran.
+
+**Import unique** : `import 'package:eab/ui/ui.dart';`
+
+| Composant | Fichier | Description |
+| --- | --- | --- |
+| `EabButton` | `ui/components/eab_button.dart` | 5 variantes (primary/secondary/outline/danger/ghost), 3 tailles, loading state |
+| `EabTextField` | `ui/components/eab_text_field.dart` | Champ texte avec label, validation, prefix/suffix |
+| `EabNumberField` | `ui/components/eab_text_field.dart` | Champ numérique avec formatage et filtrage |
+| `EabSelectField<T>` | `ui/components/eab_select_field.dart` | Dropdown générique avec label et validation |
+| `EabDateField` | `ui/components/eab_date_field.dart` | Sélecteur de date (date picker Material, format JJ/MM/AAAA) |
+| `EabTable<T>` | `ui/components/eab_table.dart` | Tableau paginé avec tri, empty/loading/error states intégrés |
+| `EabDialog` | `ui/components/eab_dialog.dart` | Dialog modal avec `show()` et `confirm()` statiques |
+| `EabHierarchyFilter` | `ui/components/eab_hierarchy_filter.dart` | Filtres cascade Région→District→Assemblée |
+| `EmptyState` | `ui/components/eab_state_widgets.dart` | État vide avec icône, message, action |
+| `ErrorState` | `ui/components/eab_state_widgets.dart` | État erreur avec bouton "Réessayer" |
+| `SkeletonLoader` | `ui/components/eab_state_widgets.dart` | Placeholder de chargement |
+| `EabPageHeader` | `ui/layout/eab_page_header.dart` | En-tête de page (titre, sous-titre, icône, actions) |
+| `AppSpacing` | `ui/theme/app_spacing.dart` | Constantes d'espacement (xs→xxxl, page, card, input, dialog) |
 
 ---
 
@@ -217,6 +243,7 @@ showDialog(
 ```
 
 **Problèmes avec ce pattern** :
+
 - Le dialog est trop petit pour les formulaires complexes (20+ champs pour les membres)
 - Pas de sauvegarde du brouillon
 - Difficile à utiliser sur mobile
@@ -224,6 +251,7 @@ showDialog(
 ### 5.3 Pattern des filtres hiérarchiques
 
 Les filtres Région → District → Assemblée sont un pattern clé :
+
 - Le changement de région réinitialise district et assemblée
 - Le changement de district réinitialise l'assemblée
 - Le rôle utilisateur verrouille certains filtres
@@ -239,6 +267,7 @@ Les filtres Région → District → Assemblée sont un pattern clé :
 | Breakpoints | mobile (0-599), tablet (600-1023), desktop (1024-1440), XL (1441+) |
 
 **Problèmes** :
+
 - Les tableaux `PaginatedDataTable` ne sont pas responsive (trop de colonnes sur mobile)
 - Les filtres ne s'adaptent pas (toujours en Row, pas de wrap)
 - Les formulaires Dialog ne s'adaptent pas à la taille de l'écran
@@ -248,6 +277,7 @@ Les filtres Région → District → Assemblée sont un pattern clé :
 ## 7. Points critiques du design actuel
 
 ### Ce qui fonctionne ✅
+
 - La palette navy/doré est distinctive et professionnelle
 - La sidebar est claire et bien organisée
 - Le système AppShell assure une cohérence de layout
