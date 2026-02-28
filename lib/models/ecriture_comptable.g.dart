@@ -57,6 +57,14 @@ _EcritureComptable _$EcritureComptableFromJson(
       .toList(),
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
   idCentreAnalytiquePrincipal: json['idCentreAnalytiquePrincipal'] as String?,
+  statut:
+      $enumDecodeNullable(_$StatutEcritureEnumMap, json['statut']) ??
+      StatutEcriture.brouillon,
+  createdBy: json['createdBy'] as String?,
+  validatedBy: json['validatedBy'] as String?,
+  validatedAt: json['validatedAt'] == null
+      ? null
+      : DateTime.parse(json['validatedAt'] as String),
 );
 
 Map<String, dynamic> _$EcritureComptableToJson(_EcritureComptable instance) =>
@@ -69,4 +77,14 @@ Map<String, dynamic> _$EcritureComptableToJson(_EcritureComptable instance) =>
       'lignes': instance.lignes,
       'idAssembleeLocale': instance.idAssembleeLocale,
       'idCentreAnalytiquePrincipal': instance.idCentreAnalytiquePrincipal,
+      'statut': _$StatutEcritureEnumMap[instance.statut]!,
+      'createdBy': instance.createdBy,
+      'validatedBy': instance.validatedBy,
+      'validatedAt': instance.validatedAt?.toIso8601String(),
     };
+
+const _$StatutEcritureEnumMap = {
+  StatutEcriture.brouillon: 'brouillon',
+  StatutEcriture.validee: 'validee',
+  StatutEcriture.cloturee: 'cloturee',
+};
