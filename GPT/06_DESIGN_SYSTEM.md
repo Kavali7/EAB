@@ -285,32 +285,49 @@ Les filtres Région → District → Assemblée sont un pattern clé :
 
 ### Ce qui doit être amélioré 🔴
 
-| Problème | Impact | Priorité |
-| --- | --- | --- |
-| Pas de police personnalisée | Look générique | 🟠 Haute |
-| Pas de micro-animations | Interface statique | 🟡 Moyenne |
-| Tableaux PaginatedDataTable bruts | UX basique | 🔴 Critique |
-| Formulaires en Dialog | Inconfort sur mobile, trop petits | 🔴 Critique |
-| Pas de Dark Mode | Fonctionnalité attendue | 🟡 Moyenne |
-| Cards du dashboard sans icônes | Peu attractif | 🟠 Haute |
-| Pas de skeleton loading | Écrans vides pendant le chargement | 🟠 Haute |
-| Pas d'illustrations / images vides | Data empty states basiques | 🟡 Moyenne |
-| Navigation ne montre pas la position | Pas de breadcrumb | 🟡 Moyenne |
-| Pas de thème par organisation | Multi-tenant incomplet | 🔴 Critique |
+| Problème | Impact | Priorité | Statut |
+| --- | --- | --- | --- |
+| Pas de police personnalisée | Look générique | 🟠 Haute | ❌ À faire |
+| Pas de micro-animations | Interface statique | 🟡 Moyenne | ❌ À faire |
+| Tableaux PaginatedDataTable bruts | UX basique | 🔴 Critique | ✅ Résolu (`EabTable`) |
+| Formulaires en Dialog | Inconfort sur mobile | 🔴 Critique | ✅ Résolu (`EabDialog`) |
+| Pas de Dark Mode | Fonctionnalité attendue | 🟡 Moyenne | ❌ À faire |
+| Cards du dashboard sans icônes | Peu attractif | 🟠 Haute | ✅ Résolu (`KpiCard`) |
+| Pas de skeleton loading | Écrans vides | 🟠 Haute | ✅ Résolu (`SkeletonLoader`) |
+| Pas d'illustrations / empty states | Data vides basiques | 🟡 Moyenne | ✅ Résolu (`EmptyState`) |
+| Navigation ne montre pas la position | Pas de breadcrumb | 🟡 Moyenne | ❌ À faire |
+| Pas de thème par organisation | Multi-tenant incomplet | 🔴 Critique | 🔶 Fondation posée (`OrganisationBranding`) |
 
 ---
 
-## 8. Recommandations prioritaires pour le design
+## 8. UI Kit — Composants créés (`lib/ui/`)
+
+Import unique : `import 'package:eab/ui/ui.dart';`
+
+| Composant | Fichier | Description |
+| --- | --- | --- |
+| `AppSpacing` | `theme/app_spacing.dart` | Constantes d'espacement |
+| `OrganisationBranding` | `theme/organisation_branding.dart` | Config multi-tenant |
+| `EabButton` | `components/eab_button.dart` | 5 variantes, 3 tailles, loading |
+| `EabTextField` | `components/eab_text_field.dart` | Champs texte + `EabNumberField` |
+| `EabSelectField` | `components/eab_select_field.dart` | Dropdown générique |
+| `EabDateField` | `components/eab_date_field.dart` | Sélecteur de date |
+| `EabTable` | `components/eab_table.dart` | Tableau paginé, triable, états |
+| `EabDialog` | `components/eab_dialog.dart` | Dialog + `show()` + `confirm()` |
+| `EabHierarchyFilter` | `components/eab_hierarchy_filter.dart` | Filtres Région→District→Assemblée |
+| `EmptyState` | `components/eab_state_widgets.dart` | État vide avec icône |
+| `ErrorState` | `components/eab_state_widgets.dart` | État erreur avec retry |
+| `SkeletonLoader` | `components/eab_state_widgets.dart` | Chargement animé |
+| `KpiCard` | `components/kpi_card.dart` | Carte KPI avec tendance ↑↓ |
+| `QuickActionCard` | `components/kpi_card.dart` | Raccourci d'action rapide |
+| `EabPageHeader` | `layout/eab_page_header.dart` | En-tête de page réutilisable |
+
+---
+
+## 9. Recommandations restantes
 
 1. **Adopter Google Fonts** (Inter ou Poppins) pour un look premium
-2. **Refondre le Dashboard** avec des cartes riches (icônes, couleurs, micro-graphiques sparkline, tendances ↑↓)
-3. **Remplacer PaginatedDataTable** par un composant tableau personnalisé avec :
-   - En-têtes sticky
-   - Tri par colonne
-   - Filtres inline
-   - Actions sur hover
-   - Responsive (vue card sur mobile)
-4. **Transformer les formulaires Dialog en écrans dédiés** ou en bottom sheets full-screen
-5. **Ajouter des animations** : page transitions, loading shimmer, micro-feedback
-6. **Implémenter le thème dynamique par organisation** : couleur primaire, logo, nom
-7. **Ajouter un mode sombre** professionnel
+2. **Ajouter des animations** : page transitions, micro-feedback
+3. **Implémenter le thème dynamique par organisation** : alimentation depuis Supabase `organisations`
+4. **Ajouter un mode sombre** professionnel
+5. **Migrer les écrans restants** (Comptabilité, Structure église) vers le UI Kit

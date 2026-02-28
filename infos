@@ -4,8 +4,8 @@ flutter run -d chrome --web-hostname=0.0.0.0 --web-port=8080
 .\run_web_app.bat
 
 adb tcpip 5555
-adb connect 10.6.52.17
-flutter run -d 10.63.225.13
+adb connect 10.57.26.78
+flutter run -d 10.57.26.78
 
 flutter run -d 10.42.79.112
 
