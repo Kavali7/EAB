@@ -3,6 +3,7 @@
 ## 1. Présentation
 
 **EAB (Église–Administration–Budget)** est une application SaaS multi-tenant pour la gestion complète des églises évangéliques. Elle couvre :
+
 - La gestion des fidèles/membres
 - La structure ecclésiastique hiérarchique
 - La comptabilité conforme SYCEBNL
@@ -13,6 +14,7 @@
 ### Vision
 
 Créer un produit **multi-églises** : pas uniquement EAB, mais utilisable par **n'importe quelle dénomination évangélique**. Chaque église a :
+
 - Son propre logo et identité visuelle
 - Sa propre organisation (régions, districts, assemblées)
 - Ses propres membres, programmes, comptes
@@ -40,7 +42,8 @@ Créer un produit **multi-églises** : pas uniquement EAB, mais utilisable par *
 ```
 lib/
 ├── main.dart                    # Point d'entrée (Supabase.initialize)
-├── app.dart                     # MaterialApp + Routes + Theme
+├── app/                         # Point d'entrée MaterialApp
+│   └── app.dart                 # MaterialApp + Routes + Theme
 ├── core/
 │   ├── config/
 │   │   └── supabase_config.dart # URL + anon key
@@ -49,6 +52,8 @@ lib/
 │   │   ├── in_memory_data_service.dart # Mock data (87KB, dev)
 │   │   ├── supabase_data_service.dart  # Impl Supabase réelle
 │   │   └── supabase_service.dart       # Client singleton
+│   ├── utils/
+│   │   └── case_converters.dart  # Helpers snake_case ↔ camelCase centralisés
 │   ├── theme.dart              # AppColors, AppTextStyles, buildAppTheme()
 │   └── constants.dart          # Enums, labels, formatters, catégories
 ├── models/                     # 18 modèles Freezed (x3 fichiers chacun)
@@ -65,7 +70,7 @@ lib/
 │   ├── user_profile_providers.dart
 │   ├── families_provider.dart
 │   └── rapport_mensuel_eab_providers.dart (11KB)
-├── screens/                    # 7 modules d'écrans
+├── screens/                    # 7 modules d'écrans (existants, migration progressive)
 │   ├── auth/         (3 écrans : login, signup, forgot password)
 │   ├── dashboard/    (1 écran : tableau de bord)
 │   ├── members/      (1 écran : gestion des fidèles)
@@ -73,12 +78,18 @@ lib/
 │   ├── church_structure/ (1 écran : régions/districts/assemblées)
 │   ├── accounting/   (9 écrans + 1 sous-dossier widgets/)
 │   └── reports/      (2 écrans : rapport mensuel + impression)
-└── widgets/                    # 5 widgets réutilisables
-    ├── app_shell.dart          # Layout principal (AppBar + Sidebar + Body)
-    ├── side_navigation.dart    # Menu latéral (12 items)
-    ├── context_header.dart     # En-tête contextuel
-    ├── info_card.dart          # Carte statistique
-    └── section_card.dart       # Carte de section
+├── widgets/                    # 5 widgets réutilisables (existants)
+│   ├── app_shell.dart          # Layout principal (AppBar + Sidebar + Body)
+│   ├── side_navigation.dart    # Menu latéral (12 items)
+│   ├── context_header.dart     # En-tête contextuel
+│   ├── info_card.dart          # Carte statistique
+│   └── section_card.dart       # Carte de section
+├── ui/                         # 🆕 Design system (Étape 2)
+│   ├── theme/                  # Tokens, typographie, thème v2
+│   ├── components/             # EabButton, EabField, EabTable, etc.
+│   └── layout/                 # AppShell v2, PageHeader, responsive
+└── features/                   # 🆕 Modules métier isolés (Étape 3+)
+    └── (members/, programs/, accounting/, dashboard/, auth/, ...)
 ```
 
 ### Couche de données
@@ -91,7 +102,7 @@ DataService (abstract)
 └── SupabaseDataService  ← Pour la prod (vraie BDD)
 ```
 
-Le choix du service est fait via le provider `dataServiceProvider`. SupabaseDataService inclut des helpers pour la conversion snake_case ↔ camelCase entre PostgreSQL et Dart.
+Le choix du service est fait via le provider `dataServiceProvider`. Les helpers de conversion snake_case ↔ camelCase sont centralisés dans `core/utils/case_converters.dart` (partagés entre SupabaseDataService et les providers comptables).
 
 ## 4. Routes de l'application (16 routes)
 
@@ -177,6 +188,7 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 ## 8. État d'avancement actuel
 
 ### ✅ Fonctionnel
+
 - Authentification (login, signup, mot de passe oublié)
 - Structure ecclésiastique (CRUD régions, districts, assemblées)
 - Gestion des membres (CRUD complet)
@@ -191,6 +203,7 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 - Navigation responsive (sidebar desktop, drawer mobile)
 
 ### ⚠️ Partiel / À améliorer
+
 - Designs des écrans (basiques, pas premium)
 - Tableau de bord (données insuffisantes)
 - Trésorerie (vue simplifiée)
@@ -199,6 +212,7 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 - Gestion des familles (peu exploitée)
 
 ### ❌ Non implémenté
+
 - Personnalisation par église (logo, couleurs)
 - Onboarding première connexion
 - Export PDF des rapports

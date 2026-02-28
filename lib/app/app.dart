@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'core/theme.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/signup_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/accounting/accounting_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
-import 'screens/members/members_screen.dart';
-import 'screens/programs/programs_screen.dart';
-import 'screens/church_structure/church_structure_screen.dart';
-import 'screens/accounting/accounting_settings_screen.dart';
-import 'screens/accounting/accounting_budgets_screen.dart';
-import 'screens/accounting/accounting_immobilisations_screen.dart';
-import 'screens/accounting/accounting_treasury_screen.dart';
-import 'screens/accounting/accounting_reconciliation_screen.dart';
-import 'screens/accounting/accounting_reports_screen.dart';
-import 'screens/reports/rapport_mensuel_eab_screen.dart';
+import '../core/theme.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/auth/signup_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
+import '../screens/accounting/accounting_screen.dart';
+import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/members/members_screen.dart';
+import '../screens/programs/programs_screen.dart';
+import '../screens/church_structure/church_structure_screen.dart';
+import '../screens/accounting/accounting_settings_screen.dart';
+import '../screens/accounting/accounting_budgets_screen.dart';
+import '../screens/accounting/accounting_immobilisations_screen.dart';
+import '../screens/accounting/accounting_treasury_screen.dart';
+import '../screens/accounting/accounting_reconciliation_screen.dart';
+import '../screens/accounting/accounting_reports_screen.dart';
+import '../screens/reports/rapport_mensuel_eab_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
