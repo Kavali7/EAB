@@ -14,21 +14,21 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants.dart';
-import '../../../models/famille.dart';
-import '../../../models/member.dart';
-import '../../../models/region_eglise.dart';
-import '../../../models/district_eglise.dart';
-import '../../../models/assemblee_locale.dart';
-import '../../../providers/church_structure_providers.dart';
-import '../../../providers/families_provider.dart';
-import '../../../providers/members_provider.dart';
-import '../../../providers/user_profile_providers.dart';
-import '../../../widgets/app_shell.dart';
-import '../../../widgets/context_header.dart';
-import '../../../widgets/info_card.dart';
-import '../../../widgets/section_card.dart';
-import '../../../ui/ui.dart';
+import 'package:eab/core/constants.dart';
+import 'package:eab/models/famille.dart';
+import 'package:eab/models/member.dart';
+import 'package:eab/models/region_eglise.dart';
+import 'package:eab/models/district_eglise.dart';
+import 'package:eab/models/assemblee_locale.dart';
+import 'package:eab/providers/church_structure_providers.dart';
+import 'package:eab/providers/families_provider.dart';
+import 'package:eab/providers/members_provider.dart';
+import 'package:eab/providers/user_profile_providers.dart';
+import 'package:eab/widgets/app_shell.dart';
+import 'package:eab/widgets/context_header.dart';
+import 'package:eab/widgets/info_card.dart';
+import 'package:eab/widgets/section_card.dart';
+import 'package:eab/ui/ui.dart';
 import 'member_form_dialog.dart';
 
 const _roleLabels = {

@@ -5,8 +5,8 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../providers/data_service_provider.dart';
-import '../../../models/member.dart';
+import 'package:eab/providers/data_service_provider.dart';
+import 'package:eab/models/member.dart';
 import '../data/members_repository.dart';
 
 /// Repository injecté via le DataService courant.

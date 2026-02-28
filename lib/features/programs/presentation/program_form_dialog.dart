@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/constants.dart';
-import '../../../models/program.dart';
-import '../../../models/member.dart';
-import '../../../providers/members_provider.dart';
-import '../../../providers/programs_provider.dart';
-import '../../../ui/ui.dart';
+import 'package:eab/core/constants.dart';
+import 'package:eab/models/program.dart';
+import 'package:eab/models/member.dart';
+import 'package:eab/providers/members_provider.dart';
+import 'package:eab/providers/programs_provider.dart';
+import 'package:eab/ui/ui.dart';
 
 const _typeVisiteLabels = {
   TypeVisite.fidele: 'Fidèle',

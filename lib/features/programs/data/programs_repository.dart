@@ -1,8 +1,8 @@
 /// Repository pour la feature Programmes.
 library;
 
-import '../../../core/services/data_service.dart';
-import '../../../models/program.dart';
+import 'package:eab/core/services/data_service.dart';
+import 'package:eab/models/program.dart';
 
 /// Repository des programmes — couche d'accès aux données.
 class ProgramsRepository {

@@ -5,8 +5,8 @@
 /// (filtrage, recherche, pagination) sans modifier le DataService.
 library;
 
-import '../../../core/services/data_service.dart';
-import '../../../models/member.dart';
+import 'package:eab/core/services/data_service.dart';
+import 'package:eab/models/member.dart';
 
 /// Repository des membres — couche d'accès aux données.
 class MembersRepository {

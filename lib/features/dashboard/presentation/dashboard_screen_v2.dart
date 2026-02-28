@@ -13,20 +13,20 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants.dart';
-import '../../core/theme.dart';
-import '../../models/ecriture_comptable.dart';
-import '../../models/program.dart';
-import '../../providers/accounting_providers.dart';
-import '../../providers/church_structure_providers.dart';
-import '../../providers/members_provider.dart';
-import '../../providers/programs_provider.dart';
-import '../../providers/user_profile_providers.dart';
-import '../../widgets/app_shell.dart';
-import '../../widgets/context_header.dart';
-import '../../widgets/section_card.dart';
-import '../../ui/ui.dart';
-import '../../ui/components/kpi_card.dart';
+import 'package:eab/core/constants.dart';
+import 'package:eab/core/theme.dart';
+import 'package:eab/models/ecriture_comptable.dart';
+import 'package:eab/models/program.dart';
+import 'package:eab/providers/accounting_providers.dart';
+import 'package:eab/providers/church_structure_providers.dart';
+import 'package:eab/providers/members_provider.dart';
+import 'package:eab/providers/programs_provider.dart';
+import 'package:eab/providers/user_profile_providers.dart';
+import 'package:eab/widgets/app_shell.dart';
+import 'package:eab/widgets/context_header.dart';
+import 'package:eab/widgets/section_card.dart';
+import 'package:eab/ui/ui.dart';
+import 'package:eab/ui/components/kpi_card.dart';
 
 class DashboardScreenV2 extends ConsumerWidget {
   const DashboardScreenV2({super.key});
