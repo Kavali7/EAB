@@ -7,7 +7,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/accounting/accounting_screen.dart';
-import '../screens/dashboard/dashboard_screen.dart';
+import '../features/dashboard/presentation/dashboard_screen_v2.dart';
 import '../features/members/presentation/members_screen_v2.dart';
 import '../features/programs/presentation/programs_screen_v2.dart';
 import '../screens/church_structure/church_structure_screen.dart';
@@ -50,7 +50,7 @@ class ChurchApp extends StatelessWidget {
         '/signup': (_) => const SignupScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         // App
-        '/': (_) => const DashboardScreen(),
+        '/': (_) => const DashboardScreenV2(),
         '/members': (_) => const MembersScreenV2(),
         '/programs': (_) => const ProgramsScreenV2(),
         '/accounting': (_) => const AccountingScreen(),

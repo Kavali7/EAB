@@ -5,6 +5,7 @@ library;
 
 // Theme
 export 'theme/app_spacing.dart';
+export 'theme/organisation_branding.dart';
 
 // Components
 export 'components/eab_button.dart';
@@ -15,6 +16,7 @@ export 'components/eab_table.dart';
 export 'components/eab_dialog.dart';
 export 'components/eab_hierarchy_filter.dart';
 export 'components/eab_state_widgets.dart';
+export 'components/kpi_card.dart';
 
 // Layout
 export 'layout/eab_page_header.dart';
