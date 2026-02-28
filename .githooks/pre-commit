@@ -1,0 +1,60 @@
+#!/bin/sh
+# =============================================================================
+# Hook Git Pre-Commit — Protection de la documentation backend EAB
+# =============================================================================
+# Ce hook vérifie que docs/BACKEND_REFERENCE.md est mis à jour
+# lorsque des fichiers backend sont modifiés.
+# =============================================================================
+
+# Détecter les fichiers backend modifiés dans ce commit
+FICHIERS_BACKEND=$(git diff --cached --name-only | grep -E '(supabase/migrations/.*\.sql|supabase/functions/|lib/core/services/supabase_|lib/core/config/supabase_config)')
+
+# Si des fichiers backend sont modifiés
+if [ -n "$FICHIERS_BACKEND" ]; then
+    # Vérifier si BACKEND_REFERENCE.md est inclus dans le commit
+    DOC_BACKEND=$(git diff --cached --name-only | grep 'docs/BACKEND_REFERENCE.md')
+    
+    if [ -z "$DOC_BACKEND" ]; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  ⚠️  COMMIT BLOQUÉ : Documentation backend non mise à jour  ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        echo "║                                                            ║"
+        echo "║  Vous modifiez des fichiers backend SANS mettre à jour     ║"
+        echo "║  le fichier docs/BACKEND_REFERENCE.md                      ║"
+        echo "║                                                            ║"
+        echo "║  Fichiers backend détectés dans ce commit :                ║"
+        echo "$FICHIERS_BACKEND" | sed 's/^/║    → /'
+        echo "║                                                            ║"
+        echo "║  ──────────────────────────────────────────────────────     ║"
+        echo "║  ACTIONS OBLIGATOIRES :                                    ║"
+        echo "║                                                            ║"
+        echo "║  1. Ouvrir docs/BACKEND_REFERENCE.md                       ║"
+        echo "║  2. Mettre à jour les sections concernées                  ║"
+        echo "║     (tables, colonnes, FK, RLS, fonctions, triggers, etc.) ║"
+        echo "║  3. Ajouter une entrée au journal des modifications        ║"
+        echo "║     (section 15 du fichier)                                ║"
+        echo "║  4. Ajouter le fichier au commit :                         ║"
+        echo "║     git add docs/BACKEND_REFERENCE.md                      ║"
+        echo "║  5. Relancer votre commit avec un message DÉTAILLÉ :       ║"
+        echo "║     git commit -m \"feat(backend): description des changements\" ║"
+        echo "║                                                            ║"
+        echo "║  ──────────────────────────────────────────────────────     ║"
+        echo "║  RAPPEL : Les commits backend DOIVENT contenir un          ║"
+        echo "║  message détaillé décrivant EXACTEMENT ce qui a changé     ║"
+        echo "║  dans la base de données (tables, colonnes, RLS, etc.)     ║"
+        echo "║                                                            ║"
+        echo "║  Pour forcer (NON recommandé) : git commit --no-verify     ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
+        exit 1
+    else
+        echo ""
+        echo "✅ Documentation backend détectée dans le commit — OK"
+        echo "📋 RAPPEL : Assurez-vous que votre message de commit décrit"
+        echo "   en détail les changements backend effectués."
+        echo ""
+    fi
+fi
+
+exit 0

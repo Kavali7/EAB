@@ -1,3 +1,8 @@
+> [!CAUTION]
+> **⚠️ BACKEND : Avant toute modification de la base de données, des fonctions, du RLS ou du Storage Supabase,
+> consultez et mettez à jour [`docs/BACKEND_REFERENCE.md`](docs/BACKEND_REFERENCE.md).**
+> C'est la source de vérité unique du backend. Voir aussi [`AGENTS.md`](AGENTS.md).
+
 # EAB - Gestion d'Église et Comptabilité SYSCEBNL
 
 ## 📋 Présentation
@@ -82,6 +87,7 @@ flutter run
 
 ## 📚 Documentation
 
+- [**📘 Référence Backend (OBLIGATOIRE)**](docs/BACKEND_REFERENCE.md)
 - [Guide d'installation](docs/GUIDE_INSTALLATION.md)
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
 - [Comptabilité SYSCEBNL](docs/comptabilite/PLAN_COMPTABLE_SYSCEBNL.md)

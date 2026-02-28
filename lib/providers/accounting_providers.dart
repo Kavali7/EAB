@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/centre_analytique.dart';
 import '../models/compte_comptable.dart';
@@ -17,11 +18,31 @@ import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
 import 'church_structure_providers.dart';
 
-// Comptes comptables
-final comptesComptablesProvider =
-    AsyncNotifierProvider<ComptesComptablesNotifier, List<CompteComptable>>(
-  ComptesComptablesNotifier.new,
-);
+/// Client Supabase raccourci pour persistance
+SupabaseClient get _db => Supabase.instance.client;
+
+/// Convertit les clés d'un Map de camelCase vers snake_case pour Supabase
+Map<String, dynamic> _toSnake(Map<String, dynamic> json) {
+  return json.map((key, value) {
+    final newKey = key.replaceAllMapped(
+      RegExp(r'[A-Z]'),
+      (m) => '_${m.group(0)!.toLowerCase()}',
+    );
+    if (value is Map<String, dynamic>) {
+      return MapEntry(newKey, _toSnake(value));
+    } else if (value is List) {
+      return MapEntry(
+        newKey,
+        value.map((e) => e is Map<String, dynamic> ? _toSnake(e) : e).toList(),
+      );
+    }
+    return MapEntry(newKey, value);
+  });
+}
+
+// ============================================================================
+// PORTÉE COMPTABLE
+// ============================================================================
 
 final porteeComptableProvider =
     NotifierProvider<PorteeComptableNotifier, PorteeComptable>(
@@ -37,6 +58,15 @@ class PorteeComptableNotifier extends Notifier<PorteeComptable> {
   }
 }
 
+// ============================================================================
+// COMPTES COMPTABLES
+// ============================================================================
+
+final comptesComptablesProvider =
+    AsyncNotifierProvider<ComptesComptablesNotifier, List<CompteComptable>>(
+  ComptesComptablesNotifier.new,
+);
+
 class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   @override
   Future<List<CompteComptable>> build() async {
@@ -45,11 +75,16 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   }
 
   Future<void> ajouterCompte(CompteComptable compte) async {
+    final json = _toSnake(compte.toJson());
+    json.remove('id');
+    await _db.from('comptes_comptables').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, compte]);
   }
 
   Future<void> mettreAJourCompte(CompteComptable compte) async {
+    final json = _toSnake(compte.toJson());
+    await _db.from('comptes_comptables').update(json).eq('id', compte.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((c) => c.id == compte.id);
     if (index == -1) return;
@@ -59,7 +94,10 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   }
 }
 
-// Journaux comptables
+// ============================================================================
+// JOURNAUX COMPTABLES
+// ============================================================================
+
 final journauxComptablesProvider =
     AsyncNotifierProvider<JournauxComptablesNotifier, List<JournalComptable>>(
   JournauxComptablesNotifier.new,
@@ -73,11 +111,16 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   }
 
   Future<void> ajouterJournal(JournalComptable journal) async {
+    final json = _toSnake(journal.toJson());
+    json.remove('id');
+    await _db.from('journaux_comptables').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, journal]);
   }
 
   Future<void> mettreAJourJournal(JournalComptable journal) async {
+    final json = _toSnake(journal.toJson());
+    await _db.from('journaux_comptables').update(json).eq('id', journal.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((j) => j.id == journal.id);
     if (index == -1) return;
@@ -87,7 +130,10 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   }
 }
 
-// Centres analytiques
+// ============================================================================
+// CENTRES ANALYTIQUES
+// ============================================================================
+
 final centresAnalytiquesProvider = AsyncNotifierProvider<
     CentresAnalytiquesNotifier, List<CentreAnalytique>>(
   CentresAnalytiquesNotifier.new,
@@ -102,11 +148,16 @@ class CentresAnalytiquesNotifier
   }
 
   Future<void> ajouterCentre(CentreAnalytique centre) async {
+    final json = _toSnake(centre.toJson());
+    json.remove('id');
+    await _db.from('centres_analytiques').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, centre]);
   }
 
   Future<void> mettreAJourCentre(CentreAnalytique centre) async {
+    final json = _toSnake(centre.toJson());
+    await _db.from('centres_analytiques').update(json).eq('id', centre.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((c) => c.id == centre.id);
     if (index == -1) return;
@@ -116,7 +167,10 @@ class CentresAnalytiquesNotifier
   }
 }
 
-// Tiers
+// ============================================================================
+// TIERS
+// ============================================================================
+
 final tiersProvider =
     AsyncNotifierProvider<TiersNotifier, List<Tiers>>(TiersNotifier.new);
 
@@ -128,11 +182,16 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   }
 
   Future<void> ajouterTiers(Tiers t) async {
+    final json = _toSnake(t.toJson());
+    json.remove('id');
+    await _db.from('tiers').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, t]);
   }
 
   Future<void> mettreAJourTiers(Tiers t) async {
+    final json = _toSnake(t.toJson());
+    await _db.from('tiers').update(json).eq('id', t.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((x) => x.id == t.id);
     if (index == -1) return;
@@ -142,7 +201,10 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   }
 }
 
-// Budgets
+// ============================================================================
+// BUDGETS
+// ============================================================================
+
 final budgetsComptablesProvider =
     AsyncNotifierProvider<BudgetsComptablesNotifier, List<BudgetComptable>>(
   BudgetsComptablesNotifier.new,
@@ -157,11 +219,16 @@ class BudgetsComptablesNotifier
   }
 
   Future<void> ajouterBudget(BudgetComptable budget) async {
+    final json = _toSnake(budget.toJson());
+    json.remove('id');
+    await _db.from('budgets_comptables').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, budget]);
   }
 
   Future<void> mettreAJourBudget(BudgetComptable budget) async {
+    final json = _toSnake(budget.toJson());
+    await _db.from('budgets_comptables').update(json).eq('id', budget.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((b) => b.id == budget.id);
     if (index == -1) return;
@@ -185,11 +252,16 @@ class LignesBudgetsNotifier
   }
 
   Future<void> ajouterLigne(LigneBudgetComptable ligne) async {
+    final json = _toSnake(ligne.toJson());
+    json.remove('id');
+    await _db.from('lignes_budgets').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, ligne]);
   }
 
   Future<void> mettreAJourLigne(LigneBudgetComptable ligne) async {
+    final json = _toSnake(ligne.toJson());
+    await _db.from('lignes_budgets').update(json).eq('id', ligne.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((l) => l.id == ligne.id);
     if (index == -1) return;
@@ -199,7 +271,10 @@ class LignesBudgetsNotifier
   }
 }
 
-// Immobilisations
+// ============================================================================
+// IMMOBILISATIONS
+// ============================================================================
+
 final immobilisationsComptablesProvider = AsyncNotifierProvider<
     ImmobilisationsComptablesNotifier, List<ImmobilisationComptable>>(
   ImmobilisationsComptablesNotifier.new,
@@ -214,11 +289,19 @@ class ImmobilisationsComptablesNotifier
   }
 
   Future<void> ajouterImmobilisation(ImmobilisationComptable immo) async {
+    final json = _toSnake(immo.toJson());
+    json.remove('id');
+    await _db.from('immobilisations_comptables').insert(json);
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, immo]);
   }
 
   Future<void> mettreAJourImmobilisation(ImmobilisationComptable immo) async {
+    final json = _toSnake(immo.toJson());
+    await _db
+        .from('immobilisations_comptables')
+        .update(json)
+        .eq('id', immo.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((i) => i.id == immo.id);
     if (index == -1) return;
@@ -228,7 +311,10 @@ class ImmobilisationsComptablesNotifier
   }
 }
 
-// Releves bancaires
+// ============================================================================
+// RELEVÉS BANCAIRES
+// ============================================================================
+
 final lignesRelevesBancairesProvider = AsyncNotifierProvider<
     LignesRelevesBancairesNotifier, List<LigneReleveBancaire>>(
   LignesRelevesBancairesNotifier.new,
@@ -243,6 +329,8 @@ class LignesRelevesBancairesNotifier
   }
 
   Future<void> mettreAJourLigneReleve(LigneReleveBancaire ligne) async {
+    final json = _toSnake(ligne.toJson());
+    await _db.from('releves_bancaires').update(json).eq('id', ligne.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((l) => l.id == ligne.id);
     if (index == -1) return;
@@ -252,7 +340,10 @@ class LignesRelevesBancairesNotifier
   }
 }
 
-// Ecritures comptables
+// ============================================================================
+// ÉCRITURES COMPTABLES
+// ============================================================================
+
 final ecrituresComptablesProvider = AsyncNotifierProvider<
     EcrituresComptablesNotifier, List<EcritureComptable>>(
   EcrituresComptablesNotifier.new,
@@ -267,11 +358,41 @@ class EcrituresComptablesNotifier
   }
 
   Future<void> ajouterEcriture(EcritureComptable ecriture) async {
+    // Insérer l'écriture
+    final ecritureJson = _toSnake(ecriture.toJson());
+    ecritureJson.remove('id');
+    ecritureJson.remove('lignes');
+    await _db.from('ecritures_comptables').insert(ecritureJson);
+
+    // Insérer les lignes
+    for (final ligne in ecriture.lignes) {
+      final ligneJson = _toSnake(ligne.toJson());
+      ligneJson.remove('id');
+      ligneJson['id_ecriture'] = ecriture.id;
+      await _db.from('lignes_ecritures').insert(ligneJson);
+    }
+
     final actuelle = state.value ?? [];
     state = AsyncData([...actuelle, ecriture]);
   }
 
   Future<void> mettreAJourEcriture(EcritureComptable ecriture) async {
+    final ecritureJson = _toSnake(ecriture.toJson());
+    ecritureJson.remove('lignes');
+    await _db
+        .from('ecritures_comptables')
+        .update(ecritureJson)
+        .eq('id', ecriture.id);
+
+    // Supprimer anciennes lignes et réinsérer
+    await _db.from('lignes_ecritures').delete().eq('id_ecriture', ecriture.id);
+    for (final ligne in ecriture.lignes) {
+      final ligneJson = _toSnake(ligne.toJson());
+      ligneJson.remove('id');
+      ligneJson['id_ecriture'] = ecriture.id;
+      await _db.from('lignes_ecritures').insert(ligneJson);
+    }
+
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((e) => e.id == ecriture.id);
     if (index == -1) return;
@@ -281,11 +402,20 @@ class EcrituresComptablesNotifier
   }
 
   Future<void> supprimerEcriture(String idEcriture) async {
+    // Soft delete
+    await _db
+        .from('ecritures_comptables')
+        .update({'deleted_at': DateTime.now().toIso8601String()})
+        .eq('id', idEcriture);
     final actuelle = state.value ?? [];
     final maj = actuelle.where((e) => e.id != idEcriture).toList();
     state = AsyncData(maj);
   }
 }
+
+// ============================================================================
+// ÉCRITURES FILTRÉES PAR PORTÉE
+// ============================================================================
 
 /// Ecritures filtrees par portee comptable et assemblees autorisees.
 final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
