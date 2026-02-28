@@ -56,3 +56,18 @@ enum PorteeComptable {
   region,
   national,
 }
+
+/// Statut d'une écriture comptable.
+enum StatutEcriture {
+  brouillon,
+  validee,
+  cloturee,
+}
+
+/// Statut d'un exercice comptable.
+enum StatutExercice {
+  brouillon,
+  ouvert,
+  cloture,
+}
+

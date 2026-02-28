@@ -9,7 +9,7 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-02-23
+- **Dernière mise à jour** : 2026-02-28
 - **Fichiers de migration** : `supabase/migrations/00001` → `00008`
 
 ---
@@ -54,6 +54,7 @@
 | `type_immobilisation` | `terrain`, `batiment`, `mobilier`, `materiel_informatique`, `materiel_sono`, `vehicule`, `autre` | 00002 |
 | `statut_ecriture` | `brouillon`, `validee`, `cloturee` | 00002 |
 | `action_audit` | `INSERT`, `UPDATE`, `DELETE`, `SOFT_DELETE`, `LOGIN`, `LOGOUT`, `VALIDATION`, `CLOTURE` | 00007 |
+| `statut_exercice` | `brouillon`, `ouvert`, `cloture` | 00008 |
 
 ---
 
@@ -504,13 +505,17 @@
 | `date_debut` | DATE | NON | — | Début exercice |
 | `date_fin` | DATE | NON | — | Fin exercice |
 | `libelle` | TEXT | OUI | — | Libellé |
-| `est_ouvert` | BOOLEAN | NON | `TRUE` | Exercice ouvert |
-| `est_cloture` | BOOLEAN | NON | `FALSE` | Exercice clôturé |
+| `statut` | `statut_exercice` | NON | `'brouillon'` | Statut (brouillon/ouvert/cloture) |
+| `est_ouvert` | BOOLEAN | NON | `TRUE` | Exercice ouvert (legacy) |
+| `est_cloture` | BOOLEAN | NON | `FALSE` | Exercice clôturé (legacy) |
 | `cloture_par` | UUID | OUI | — | FK → `profiles(id)` SET NULL |
 | `cloture_at` | TIMESTAMPTZ | OUI | — | Date de clôture |
+| `opening_entry_id` | UUID | OUI | — | FK → `ecritures_comptables(id)` SET NULL |
+| `closing_entry_id` | UUID | OUI | — | FK → `ecritures_comptables(id)` SET NULL |
+| `deleted_at` | TIMESTAMPTZ | OUI | — | Soft delete |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-**RLS** : ✅ — **UNIQUE** : `(organization_id, annee)`
+**RLS** : ✅ — **UNIQUE** : `(organization_id, annee)` — **CHECK** : `date_debut <= date_fin` — **Index partiel** : 1 exercice ouvert max par org
 
 ---
 
@@ -671,7 +676,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `audit_membres()` | plpgsql | DEFINER | Trigger audit sur `membres` |
 | `audit_ecritures()` | plpgsql | DEFINER | Trigger audit sur `ecritures_comptables` |
 | `calculate_amortissement(UUID, DATE)` | plpgsql | DEFINER STABLE | Calcul amortissement linéaire |
-| `cloturer_exercice(UUID)` | plpgsql | DEFINER | Clôture exercice (admin uniquement) |
+| `cloturer_exercice(UUID)` | plpgsql | DEFINER | Clôture exercice : vérifie brouillons, génère écriture résultat (6/7→131) + à-nouveaux (1-5), passe statut cloturee (admin) |
+| `open_exercice(UUID)` | plpgsql | DEFINER | Ouvre exercice brouillon→ouvert (admin, unicité index) |
+| `get_exercice_ouvert(UUID)` | plpgsql | DEFINER STABLE | Retourne exercice ouvert ou NULL |
+| `can_post_in_exercice(UUID, DATE)` | plpgsql | DEFINER STABLE | Vérifie si date dans plage exercice ouvert |
 
 ---
 
@@ -757,6 +765,8 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_exercices_organization` | `exercices_comptables` | `organization_id` |
 | `idx_exercices_annee` | `exercices_comptables` | `annee` |
 | `idx_exercices_dates` | `exercices_comptables` | `(date_debut, date_fin)` |
+| `idx_exercices_statut` | `exercices_comptables` | `statut` |
+| `ux_exercice_ouvert_par_org` | `exercices_comptables` | `organization_id` WHERE statut='ouvert' (UNIQUE partiel) |
 | `idx_sequences_organization` | `sequences_pieces` | `organization_id` |
 | `idx_sequences_journal` | `sequences_pieces` | `id_journal` |
 | `idx_audit_organization` | `audit_logs` | `organization_id` |
@@ -850,6 +860,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-02-28 | Agent IA | **Migration 00008** : `statut_exercice` enum, colonnes `statut`/`opening_entry_id`/`closing_entry_id`/`deleted_at` sur `exercices_comptables`, CHECK `date_debut<=date_fin`, index unique partiel 1 ouvert/org, RPCs `open_exercice`, `get_exercice_ouvert`, `can_post_in_exercice`. `cloturer_exercice` enrichi : génère écriture résultat (classes 6/7→131) + à-nouveaux (classes 1-5). |
 | 2026-02-23 | Agent IA | **Fix affichage tableau de bord** : correction des mappings JSON dans `SupabaseDataService` — `ProfilUtilisateur` (fullName→nom, role snake→camel), `Member` (dateNaissance→birthDate, statutMatrimonial→maritalStatus FR→EN, dateBapteme→baptismDate), `Program` (type/typeVisite snake→camel). Ajout helpers `_snakeValueToCamel()` et `_mapStatutMatrimonialToEnglish()`. Remplacement de `accountingEntriesProvider` (retournait `[]`) par `ecrituresComptablesProvider` dans le dashboard. **Convention** : `_snakeToCamel()` convertit les clés JSON uniquement ; les valeurs enum et les champs renommés doivent être mappés manuellement dans chaque méthode `get*()`. |
 | 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recréation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Création organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Désactivation confirmation email dans Auth. |
 | 2026-02-22 | Système | Création initiale à partir des migrations 00001-00007 |

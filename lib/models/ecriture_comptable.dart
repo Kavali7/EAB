@@ -34,6 +34,12 @@ abstract class EcritureComptable with _$EcritureComptable {
     // Rattachement a une assemblee / centre principal
     String? idAssembleeLocale,
     String? idCentreAnalytiquePrincipal,
+    // Statut de l'ecriture (brouillon / validee / cloturee)
+    @Default(StatutEcriture.brouillon) StatutEcriture statut,
+    // Validation
+    String? createdBy,
+    String? validatedBy,
+    DateTime? validatedAt,
     // Pour plus tard : etat de validation, auteur, etc.
   }) = _EcritureComptable;
 
