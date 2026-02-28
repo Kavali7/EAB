@@ -680,6 +680,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `open_exercice(UUID)` | plpgsql | DEFINER | Ouvre exercice brouillon→ouvert (admin, unicité index) |
 | `get_exercice_ouvert(UUID)` | plpgsql | DEFINER STABLE | Retourne exercice ouvert ou NULL |
 | `can_post_in_exercice(UUID, DATE)` | plpgsql | DEFINER STABLE | Vérifie si date dans plage exercice ouvert |
+| `report_balance_generale(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Balance générale : débits, crédits, soldes par compte |
+| `report_compte_resultat(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Compte de résultat : produits (cl.7) - charges (cl.6) |
+| `report_bilan(UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan simplifié SYCEBNL : actif (cl.2-5) / passif (cl.1,4) |
+| `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumulé |
 
 ---
 

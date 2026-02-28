@@ -368,3 +368,269 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION open_exercice(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_exercice_ouvert(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION can_post_in_exercice(UUID, DATE) TO authenticated;
+
+-- ============================================================================
+-- SPRINT B : ÉTATS FINANCIERS SYCEBNL
+-- ============================================================================
+
+-- ============================================================================
+-- RPC : Balance générale
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION report_balance_generale(
+  p_org_id UUID,
+  p_date_debut DATE DEFAULT NULL,
+  p_date_fin DATE DEFAULT NULL
+)
+RETURNS TABLE (
+  compte_id UUID,
+  numero TEXT,
+  intitule TEXT,
+  nature TEXT,
+  niveau INTEGER,
+  total_debit DECIMAL(15,2),
+  total_credit DECIMAL(15,2),
+  solde_debiteur DECIMAL(15,2),
+  solde_crediteur DECIMAL(15,2)
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    c.id,
+    c.numero,
+    c.intitule,
+    c.nature::TEXT,
+    c.niveau,
+    COALESCE(SUM(l.debit), 0)::DECIMAL(15,2) AS total_debit,
+    COALESCE(SUM(l.credit), 0)::DECIMAL(15,2) AS total_credit,
+    CASE
+      WHEN COALESCE(SUM(l.debit), 0) > COALESCE(SUM(l.credit), 0)
+      THEN (COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0))::DECIMAL(15,2)
+      ELSE 0::DECIMAL(15,2)
+    END AS solde_debiteur,
+    CASE
+      WHEN COALESCE(SUM(l.credit), 0) > COALESCE(SUM(l.debit), 0)
+      THEN (COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0))::DECIMAL(15,2)
+      ELSE 0::DECIMAL(15,2)
+    END AS solde_crediteur
+  FROM comptes_comptables c
+  LEFT JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  LEFT JOIN ecritures_comptables e ON e.id = l.id_ecriture
+    AND e.statut IN ('validee', 'cloturee')
+    AND e.deleted_at IS NULL
+    AND (p_date_debut IS NULL OR e.date >= p_date_debut)
+    AND (p_date_fin IS NULL OR e.date <= p_date_fin)
+  WHERE c.organization_id = p_org_id
+    AND c.actif = TRUE
+  GROUP BY c.id, c.numero, c.intitule, c.nature, c.niveau
+  HAVING COALESCE(SUM(l.debit), 0) != 0 OR COALESCE(SUM(l.credit), 0) != 0
+  ORDER BY c.numero;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================================================
+-- RPC : Compte de résultat (Produits - Charges, SYCEBNL)
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION report_compte_resultat(
+  p_org_id UUID,
+  p_date_debut DATE DEFAULT NULL,
+  p_date_fin DATE DEFAULT NULL
+)
+RETURNS TABLE (
+  section TEXT,
+  compte_id UUID,
+  numero TEXT,
+  intitule TEXT,
+  montant DECIMAL(15,2)
+) AS $$
+BEGIN
+  -- Produits (classe 7)
+  RETURN QUERY
+  SELECT
+    'produits'::TEXT AS section,
+    c.id,
+    c.numero,
+    c.intitule,
+    (COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0))::DECIMAL(15,2) AS montant
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.nature = 'produit'
+    AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee')
+    AND e.deleted_at IS NULL
+    AND (p_date_debut IS NULL OR e.date >= p_date_debut)
+    AND (p_date_fin IS NULL OR e.date <= p_date_fin)
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0) != 0
+  ORDER BY c.numero;
+
+  -- Charges (classe 6)
+  RETURN QUERY
+  SELECT
+    'charges'::TEXT AS section,
+    c.id,
+    c.numero,
+    c.intitule,
+    (COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0))::DECIMAL(15,2) AS montant
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.nature = 'charge'
+    AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee')
+    AND e.deleted_at IS NULL
+    AND (p_date_debut IS NULL OR e.date >= p_date_debut)
+    AND (p_date_fin IS NULL OR e.date <= p_date_fin)
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0) != 0
+  ORDER BY c.numero;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================================================
+-- RPC : Bilan simplifié (SYCEBNL)
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION report_bilan(
+  p_org_id UUID,
+  p_date_fin DATE DEFAULT CURRENT_DATE
+)
+RETURNS TABLE (
+  section TEXT,
+  sous_section TEXT,
+  compte_id UUID,
+  numero TEXT,
+  intitule TEXT,
+  solde DECIMAL(15,2)
+) AS $$
+BEGIN
+  -- ACTIF - Immobilisations (classe 2)
+  RETURN QUERY
+  SELECT
+    'actif'::TEXT, 'immobilisations'::TEXT,
+    c.id, c.numero, c.intitule,
+    (COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0))::DECIMAL(15,2)
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.numero LIKE '2%' AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee') AND e.deleted_at IS NULL
+    AND e.date <= p_date_fin
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0) != 0
+  ORDER BY c.numero;
+
+  -- ACTIF - Actif circulant (classes 3, 4 actif, 5)
+  RETURN QUERY
+  SELECT
+    'actif'::TEXT, 'circulant'::TEXT,
+    c.id, c.numero, c.intitule,
+    (COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0))::DECIMAL(15,2)
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.numero ~ '^[345]' AND c.nature = 'actif' AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee') AND e.deleted_at IS NULL
+    AND e.date <= p_date_fin
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.debit), 0) - COALESCE(SUM(l.credit), 0) != 0
+  ORDER BY c.numero;
+
+  -- PASSIF - Fonds propres (classe 1)
+  RETURN QUERY
+  SELECT
+    'passif'::TEXT, 'fonds_propres'::TEXT,
+    c.id, c.numero, c.intitule,
+    (COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0))::DECIMAL(15,2)
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.numero LIKE '1%' AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee') AND e.deleted_at IS NULL
+    AND e.date <= p_date_fin
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0) != 0
+  ORDER BY c.numero;
+
+  -- PASSIF - Dettes (classe 4 passif)
+  RETURN QUERY
+  SELECT
+    'passif'::TEXT, 'dettes'::TEXT,
+    c.id, c.numero, c.intitule,
+    (COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0))::DECIMAL(15,2)
+  FROM comptes_comptables c
+  JOIN lignes_ecritures l ON l.id_compte_comptable = c.id
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  WHERE c.organization_id = p_org_id
+    AND c.numero LIKE '4%' AND c.nature = 'passif' AND c.actif = TRUE
+    AND e.statut IN ('validee', 'cloturee') AND e.deleted_at IS NULL
+    AND e.date <= p_date_fin
+  GROUP BY c.id, c.numero, c.intitule
+  HAVING COALESCE(SUM(l.credit), 0) - COALESCE(SUM(l.debit), 0) != 0
+  ORDER BY c.numero;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- ============================================================================
+-- RPC : Grand livre (mouvements par compte)
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION report_grand_livre(
+  p_org_id UUID,
+  p_compte_id UUID DEFAULT NULL,
+  p_date_debut DATE DEFAULT NULL,
+  p_date_fin DATE DEFAULT NULL
+)
+RETURNS TABLE (
+  compte_numero TEXT,
+  compte_intitule TEXT,
+  ecriture_date DATE,
+  ecriture_libelle TEXT,
+  reference_piece TEXT,
+  journal_code TEXT,
+  ligne_libelle TEXT,
+  debit DECIMAL(15,2),
+  credit DECIMAL(15,2),
+  solde_cumule DECIMAL(15,2)
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    c.numero,
+    c.intitule,
+    e.date,
+    e.libelle,
+    e.reference_piece,
+    j.code,
+    l.libelle,
+    COALESCE(l.debit, 0)::DECIMAL(15,2),
+    COALESCE(l.credit, 0)::DECIMAL(15,2),
+    SUM(COALESCE(l.debit, 0) - COALESCE(l.credit, 0))
+      OVER (PARTITION BY c.id ORDER BY e.date, e.id ROWS UNBOUNDED PRECEDING)::DECIMAL(15,2) AS solde_cumule
+  FROM lignes_ecritures l
+  JOIN ecritures_comptables e ON e.id = l.id_ecriture
+  JOIN comptes_comptables c ON c.id = l.id_compte_comptable
+  JOIN journaux_comptables j ON j.id = e.id_journal
+  WHERE c.organization_id = p_org_id
+    AND e.statut IN ('validee', 'cloturee')
+    AND e.deleted_at IS NULL
+    AND (p_compte_id IS NULL OR c.id = p_compte_id)
+    AND (p_date_debut IS NULL OR e.date >= p_date_debut)
+    AND (p_date_fin IS NULL OR e.date <= p_date_fin)
+  ORDER BY c.numero, e.date, e.id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- GRANTS Sprint B
+GRANT EXECUTE ON FUNCTION report_balance_generale(UUID, DATE, DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION report_compte_resultat(UUID, DATE, DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION report_bilan(UUID, DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION report_grand_livre(UUID, UUID, DATE, DATE) TO authenticated;
+
