@@ -45,9 +45,11 @@ class AppShell extends ConsumerWidget {
           (p) => p.id == 'profil_tresorier_cotonou_centre',
           orElse: () => profils.first,
         );
-        ref
-            .read(profilUtilisateurCourantProvider.notifier)
-            .setProfil(defaultProfil);
+        Future(() {
+          ref
+              .read(profilUtilisateurCourantProvider.notifier)
+              .setProfil(defaultProfil);
+        });
       }
     });
 
@@ -58,9 +60,11 @@ class AppShell extends ConsumerWidget {
       regionsAsync.value ?? const [],
     );
     if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
-      ref
-          .read(assembleeActiveIdProvider.notifier)
-          .setAssemblee(assembleesAutorisees.first.id);
+      Future(() {
+        ref
+            .read(assembleeActiveIdProvider.notifier)
+            .setAssemblee(assembleesAutorisees.first.id);
+      });
     }
 
     final profileAction = profilsAsync.when<List<Widget>>(
