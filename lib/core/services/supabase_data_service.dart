@@ -25,8 +25,10 @@ import 'data_service.dart';
 class SupabaseDataService implements DataService {
   SupabaseDataService();
 
-  /// Client Supabase singleton
-  SupabaseClient get _client => Supabase.instance.client;
+  SupabaseClient get client => Supabase.instance.client;
+
+  /// Client Supabase singleton (alias privé)
+  SupabaseClient get _client => client;
 
   // ============================================================================
   // STRUCTURE ECCLÉSIASTIQUE

@@ -1,7 +1,7 @@
 /// Repository pour la feature Exercices Comptables.
 library;
 
-import 'package:eab/core/services/data_service.dart';
+import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:eab/models/exercice_comptable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

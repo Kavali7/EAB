@@ -64,10 +64,9 @@ class _GlobalSearchDialogState extends ConsumerState<_GlobalSearchDialog> {
   }
 
   Future<void> _search(String query) async {
-    final profile = ref.read(currentUserProfileProvider).value;
+    final profile = ref.read(profilUtilisateurCourantProvider);
     if (profile == null) return;
-    final orgId = profile.organizationId;
-    if (orgId == null || orgId.isEmpty) return;
+    final orgId = profile.id;
 
     setState(() => _isSearching = true);
     try {
@@ -169,8 +168,7 @@ class _GlobalSearchDialogState extends ConsumerState<_GlobalSearchDialog> {
                   padding: EdgeInsets.all(32),
                   child: EmptyState(
                     icon: Icons.search_off,
-                    title: 'Aucun résultat',
-                    subtitle: 'Essayez un autre terme de recherche.',
+                    message: 'Aucun résultat. Essayez un autre terme de recherche.',
                   ),
                 )
               else if (_results.isNotEmpty)

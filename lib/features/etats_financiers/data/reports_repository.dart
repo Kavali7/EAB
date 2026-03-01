@@ -6,7 +6,7 @@ library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:eab/core/services/data_service.dart';
+import 'package:eab/core/services/supabase_data_service.dart';
 
 /// Ligne de la balance générale.
 class LigneBalance {

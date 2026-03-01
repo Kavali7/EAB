@@ -60,10 +60,9 @@ class _EtatsFinanciersScreenState
   }
 
   Future<void> _loadAll() async {
-    final profile = ref.read(currentUserProfileProvider).value;
+    final profile = ref.read(profilUtilisateurCourantProvider);
     if (profile == null) return;
-    final orgId = profile.organizationId;
-    if (orgId == null || orgId.isEmpty) return;
+    final orgId = profile.id;
 
     setState(() => _isLoading = true);
     final repo = ref.read(reportsRepositoryProvider);
@@ -182,8 +181,7 @@ class _EtatsFinanciersScreenState
     if (_balance.isEmpty) {
       return const EmptyState(
         icon: Icons.account_balance,
-        title: 'Aucune donnée',
-        subtitle: 'Aucune écriture validée pour cette période.',
+        message: 'Aucune écriture validée pour cette période.',
       );
     }
 
@@ -254,8 +252,7 @@ class _EtatsFinanciersScreenState
     if (_resultat.isEmpty) {
       return const EmptyState(
         icon: Icons.trending_up,
-        title: 'Aucune donnée',
-        subtitle: 'Aucune écriture de charges ou produits pour cette période.',
+        message: 'Aucune écriture de charges ou produits pour cette période.',
       );
     }
 
@@ -361,8 +358,7 @@ class _EtatsFinanciersScreenState
     if (_bilan.isEmpty) {
       return const EmptyState(
         icon: Icons.balance,
-        title: 'Aucune donnée',
-        subtitle: 'Aucun solde de bilan pour cette période.',
+        message: 'Aucun solde de bilan pour cette période.',
       );
     }
 
@@ -447,8 +443,7 @@ class _EtatsFinanciersScreenState
     if (_grandLivre.isEmpty) {
       return const EmptyState(
         icon: Icons.menu_book,
-        title: 'Aucune donnée',
-        subtitle: 'Aucun mouvement pour cette période.',
+        message: 'Aucun mouvement pour cette période.',
       );
     }
 

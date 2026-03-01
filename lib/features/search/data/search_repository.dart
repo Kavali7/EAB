@@ -1,7 +1,7 @@
 /// Repository pour la recherche globale (Ctrl+K).
 library;
 
-import 'package:eab/core/services/data_service.dart';
+import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Résultat de recherche globale.

@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/providers/data_service_provider.dart';
 import 'package:eab/models/exercice_comptable.dart';
+import 'package:eab/models/compta_enums.dart';
+import 'package:eab/core/services/supabase_data_service.dart';
 import '../data/exercices_repository.dart';
 
 /// Repository injecté via le DataService courant.
 final exercicesRepositoryProvider = Provider<ExercicesRepository>((ref) {
-  final ds = ref.watch(dataServiceProvider);
+  final ds = ref.watch(dataServiceProvider) as SupabaseDataService;
   return ExercicesRepository(ds);
 });
 
