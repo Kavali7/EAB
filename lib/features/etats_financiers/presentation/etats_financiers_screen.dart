@@ -5,11 +5,15 @@
 /// Boutons export PDF / Excel (préparés, à implémenter).
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 
 import 'package:eab/core/constants.dart';
+import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
 import 'package:eab/widgets/section_card.dart';
@@ -17,6 +21,7 @@ import 'package:eab/ui/ui.dart';
 import 'package:eab/providers/user_profile_providers.dart';
 import '../application/reports_providers.dart';
 import '../data/reports_repository.dart';
+import '../services/export_service.dart';
 
 final _currencyFmt = NumberFormat('#,##0', 'fr_FR');
 
@@ -83,13 +88,66 @@ class _EtatsFinanciersScreenState
         _grandLivre = results[3] as List<LigneGrandLivre>;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) context.showError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onExport(String format) {
+    final profile = ref.read(profilUtilisateurCourantProvider);
+    final orgName = profile?.nom ?? 'Organisation';
+    final dateFmt = DateFormat('dd/MM/yyyy');
+    final periode =
+        '${dateFmt.format(_dateDebut!)} — ${dateFmt.format(_dateFin!)}';
+
+    if (format == 'pdf') {
+      _exportPdf(orgName, periode);
+    } else {
+      _exportCsv();
+    }
+  }
+
+  void _exportPdf(String orgName, String periode) {
+    final tabNames = ['Balance', 'Résultat', 'Bilan', 'Grand Livre'];
+    final tab = _tabCtrl.index;
+
+    final doc = switch (tab) {
+      0 => PdfExportService.buildBalancePdf(
+          orgName: orgName, periode: periode, lignes: _balance),
+      1 => PdfExportService.buildResultatPdf(
+          orgName: orgName, periode: periode, lignes: _resultat),
+      2 => PdfExportService.buildBilanPdf(
+          orgName: orgName,
+          dateFin: DateFormat('dd/MM/yyyy').format(_dateFin!),
+          lignes: _bilan),
+      3 => PdfExportService.buildGrandLivrePdf(
+          orgName: orgName, periode: periode, lignes: _grandLivre),
+      _ => null,
+    };
+
+    if (doc != null) {
+      PdfExportService.preview(context, doc, '${tabNames[tab]} — $orgName');
+    }
+  }
+
+  void _exportCsv() {
+    final tab = _tabCtrl.index;
+    final csv = switch (tab) {
+      0 => CsvExportService.balanceToCsv(_balance),
+      1 => CsvExportService.resultatToCsv(_resultat),
+      3 => CsvExportService.grandLivreToCsv(_grandLivre),
+      _ => null,
+    };
+
+    if (csv != null) {
+      // Share via printing (save as file)
+      Printing.sharePdf(
+        bytes: Uint8List.fromList(csv.codeUnits),
+        filename: 'export_${DateTime.now().millisecondsSinceEpoch}.csv',
+      );
+    } else {
+      context.showSuccess('Export CSV non disponible pour cet onglet.');
     }
   }
 
@@ -134,6 +192,16 @@ class _EtatsFinanciersScreenState
                       size: EabButtonSize.small,
                       isLoading: _isLoading,
                       onPressed: _loadAll,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.download),
+                      tooltip: 'Exporter',
+                      onSelected: _onExport,
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(value: 'pdf', child: Text('📄 Export PDF')),
+                        const PopupMenuItem(value: 'csv', child: Text('📊 Export CSV (Excel)')),
+                      ],
                     ),
                   ],
                 ),
