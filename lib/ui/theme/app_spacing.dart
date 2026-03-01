@@ -16,24 +16,24 @@ abstract final class AppSpacing {
   static const double xxxl = 48;
 
   // Page padding
-  static const double pagePadding = 16;
+  static const double pagePadding = 24;
   static const double pageHorizontal = 24;
   static const double pageVertical = 20;
 
   // Intercomposants
-  static const double cardGap = 12;
-  static const double sectionGap = 24;
+  static const double cardGap = 16;
+  static const double sectionGap = 32;
   static const double fieldGap = 12;
   static const double buttonGap = 8;
 
   // Card
   static const double cardPadding = 16;
-  static const double cardRadius = 10;
+  static const double cardRadius = 12;
 
   // Input
   static const double inputRadius = 8;
-  static const double inputPaddingH = 12;
-  static const double inputPaddingV = 10;
+  static const double inputPaddingH = 14;
+  static const double inputPaddingV = 12;
 
   // Dialog / Sheet
   static const double dialogPadding = 24;
