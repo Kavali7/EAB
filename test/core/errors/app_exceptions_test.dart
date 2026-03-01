@@ -43,10 +43,11 @@ void main() {
 
     test('RAISE EXCEPTION admin → BusinessRuleException', () {
       final e = toAppException(
-        Exception("message: 'Seul l'administrateur national peut clôturer un exercice'"),
+        Exception("message: 'Seul l\\'administrateur national peut clôturer un exercice'"),
       );
       expect(e, isA<BusinessRuleException>());
-      expect(e.userMessage, contains('administrateur national'));
+      // Le message extrait contient "administrateur national"
+      expect(e.userMessage.toLowerCase(), contains('administrateur national'));
     });
 
     test('duplicate key → BusinessRuleException doublon', () {

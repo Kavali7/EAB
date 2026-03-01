@@ -57,6 +57,9 @@ class UnknownException extends AppException {
 
 /// Convertit une exception Supabase/générique en AppException lisible.
 AppException toAppException(Object error) {
+  // Si c'est déjà une AppException, la retourner directement
+  if (error is AppException) return error;
+
   final msg = error.toString().toLowerCase();
 
   // Erreurs réseau
@@ -81,6 +84,27 @@ AppException toAppException(Object error) {
     );
   }
 
+  // Contrainte UNIQUE (avant les mots-clés métier)
+  if (msg.contains('duplicate key') || msg.contains('unique constraint')) {
+    return const BusinessRuleException(
+      'Cet enregistrement existe déjà (doublon).',
+    );
+  }
+
+  // Contrainte CHECK (avant les mots-clés métier)
+  if (msg.contains('check constraint') || msg.contains('violates check')) {
+    return const BusinessRuleException(
+      'Les données saisies ne respectent pas les règles de validation.',
+    );
+  }
+
+  // FK violée (avant les mots-clés métier)
+  if (msg.contains('foreign key') || msg.contains('violates foreign')) {
+    return const BusinessRuleException(
+      'Impossible de supprimer : cet élément est utilisé ailleurs.',
+    );
+  }
+
   // Erreurs métier Supabase (RAISE EXCEPTION dans les RPCs)
   if (msg.contains('administrateur national') ||
       msg.contains('exercice') ||
@@ -94,27 +118,6 @@ AppException toAppException(Object error) {
     return BusinessRuleException(pgMsg ?? error.toString());
   }
 
-  // Contrainte UNIQUE
-  if (msg.contains('unique') || msg.contains('duplicate key')) {
-    return const BusinessRuleException(
-      'Cet enregistrement existe déjà (doublon).',
-    );
-  }
-
-  // Contrainte CHECK
-  if (msg.contains('check constraint') || msg.contains('violates check')) {
-    return const BusinessRuleException(
-      'Les données saisies ne respectent pas les règles de validation.',
-    );
-  }
-
-  // FK violée
-  if (msg.contains('foreign key') || msg.contains('violates foreign')) {
-    return const BusinessRuleException(
-      'Impossible de supprimer : cet élément est utilisé ailleurs.',
-    );
-  }
-
   // Fallback
   return UnknownException(
     'Une erreur inattendue s\'est produite. Réessayez.',
@@ -125,6 +128,10 @@ AppException toAppException(Object error) {
 /// Tente d'extraire le message d'une exception PG/Supabase.
 String? _extractPgMessage(String raw) {
   // Le format Supabase est souvent : "PostgrestException(message: '...', ...)"
-  final match = RegExp(r"message:\s*'([^']+)'").firstMatch(raw);
-  return match?.group(1);
+  // On utilise .* (greedy) pour gérer les apostrophes français (l', d', s', etc.)
+  final match = RegExp(r"message:\s*'(.+?)'(?:\s*[,)]|$)").firstMatch(raw);
+  if (match != null) return match.group(1);
+  // Fallback : chercher le contenu entre guillemets simples
+  final fallback = RegExp(r"'(.{10,})'").firstMatch(raw);
+  return fallback?.group(1);
 }
