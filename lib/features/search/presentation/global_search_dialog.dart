@@ -64,6 +64,12 @@ class _GlobalSearchDialogState extends ConsumerState<_GlobalSearchDialog> {
   }
 
   Future<void> _search(String query) async {
+    // E) Protection : requête trop courte → vider les résultats
+    if (query.trim().length < 2) {
+      if (mounted) setState(() => _results = []);
+      return;
+    }
+
     final profile = ref.read(profilUtilisateurCourantProvider);
     if (profile == null) return;
     final orgId = profile.id;

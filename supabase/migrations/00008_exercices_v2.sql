@@ -62,6 +62,15 @@ BEGIN
     RAISE EXCEPTION 'Exercice non trouvé';
   END IF;
 
+  -- C) Vérifier que l'exercice appartient à l'org de l'utilisateur
+  IF NOT EXISTS (
+    SELECT 1 FROM membres m
+    WHERE m.user_id = auth.uid()
+      AND m.organization_id = v_exercice.organization_id
+  ) THEN
+    RAISE EXCEPTION 'Accès refusé : vous n''appartenez pas à cette organisation';
+  END IF;
+
   IF v_exercice.statut != 'brouillon' THEN
     RAISE EXCEPTION 'Seul un exercice en brouillon peut être ouvert (statut actuel: %)', v_exercice.statut;
   END IF;
@@ -161,6 +170,15 @@ BEGIN
     RAISE EXCEPTION 'Seul un exercice ouvert peut être clôturé';
   END IF;
 
+  -- C) Vérifier que l'exercice appartient à l'org de l'utilisateur
+  IF NOT EXISTS (
+    SELECT 1 FROM membres m
+    WHERE m.user_id = auth.uid()
+      AND m.organization_id = v_exercice.organization_id
+  ) THEN
+    RAISE EXCEPTION 'Accès refusé : vous n''appartenez pas à cette organisation';
+  END IF;
+
   -- Vérifier qu'il n'y a pas d'écritures en brouillon
   SELECT COUNT(*) INTO v_nb_ecritures_brouillon
   FROM ecritures_comptables e
@@ -184,16 +202,28 @@ BEGIN
     RAISE EXCEPTION 'Aucun journal d''opérations diverses trouvé';
   END IF;
 
-  -- Trouver le compte de résultat (131 - Résultat net)
+  -- Trouver le compte de résultat — priorité OHADA : 12x (Résultat de l'exercice)
+  -- Fallback : 131x (ancien usage / certaines organisations)
   SELECT id INTO v_compte_resultat_id
   FROM comptes_comptables
   WHERE organization_id = v_exercice.organization_id
-    AND numero LIKE '131%'
+    AND numero LIKE '12%'
     AND actif = TRUE
+  ORDER BY numero
   LIMIT 1;
 
   IF v_compte_resultat_id IS NULL THEN
-    RAISE EXCEPTION 'Compte de résultat (131x) non trouvé dans le plan comptable';
+    -- Fallback 131x
+    SELECT id INTO v_compte_resultat_id
+    FROM comptes_comptables
+    WHERE organization_id = v_exercice.organization_id
+      AND numero LIKE '131%'
+      AND actif = TRUE
+    LIMIT 1;
+  END IF;
+
+  IF v_compte_resultat_id IS NULL THEN
+    RAISE EXCEPTION 'Compte de résultat (12x ou 131x) non trouvé dans le plan comptable. Veuillez créer un compte 12xx ou 131x.';
   END IF;
 
   -- ══════════════════════════════════════════════════════════════
@@ -641,7 +671,7 @@ GRANT EXECUTE ON FUNCTION report_grand_livre(UUID, UUID, DATE, DATE) TO authenti
 CREATE OR REPLACE FUNCTION global_search(
   p_org_id UUID,
   p_query TEXT,
-  p_limit INTEGER DEFAULT 20
+  p_limit INTEGER DEFAULT 30
 )
 RETURNS TABLE (
   category TEXT,
@@ -654,7 +684,17 @@ RETURNS TABLE (
 DECLARE
   v_pattern TEXT;
 BEGIN
-  v_pattern := '%' || LOWER(p_query) || '%';
+  -- E) Protection : requête trop courte → aucun résultat
+  IF LENGTH(TRIM(p_query)) < 2 THEN
+    RETURN;
+  END IF;
+
+  -- Limiter à 50 max pour éviter abus
+  IF p_limit > 50 THEN
+    p_limit := 50;
+  END IF;
+
+  v_pattern := '%' || LOWER(TRIM(p_query)) || '%';
 
   -- Membres
   RETURN QUERY

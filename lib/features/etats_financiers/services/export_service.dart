@@ -114,7 +114,7 @@ class PdfExportService {
         header: (ctx) => _header(orgName, 'Compte de Résultat', periode),
         footer: (ctx) => _footer(ctx),
         build: (ctx) => [
-          // Résultat net
+          // Résultat net — lisible en N&B grâce aux signes +/- et libellés
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
             decoration: pw.BoxDecoration(
@@ -126,7 +126,7 @@ class PdfExportService {
             ),
             child: pw.Center(
               child: pw.Text(
-                '${resultat >= 0 ? "BÉNÉFICE NET" : "PERTE NETTE"} : ${_fmt.format(resultat.abs())} FCFA',
+                '${resultat >= 0 ? "(+) BÉNÉFICE NET" : "(-) PERTE NETTE"} : ${_fmt.format(resultat.abs())} FCFA',
                 style: pw.TextStyle(
                   fontSize: 14,
                   fontWeight: pw.FontWeight.bold,
@@ -232,7 +232,9 @@ class PdfExportService {
                   _cell(l.ligneLibelle ?? l.ecritureLibelle, fontSize: 7),
                   _cellNum(l.debit > 0 ? l.debit : null, fontSize: 7),
                   _cellNum(l.credit > 0 ? l.credit : null, fontSize: 7),
-                  _cellNum(l.soldeCumule, fontSize: 7, color: l.soldeCumule >= 0 ? PdfColors.green800 : PdfColors.red800),
+                  _cellNum(l.soldeCumule, fontSize: 7,
+                      color: l.soldeCumule >= 0 ? PdfColors.green800 : PdfColors.red800,
+                      prefix: l.soldeCumule >= 0 ? '+' : ''),
                 ],
               )),
             ],
@@ -308,13 +310,13 @@ class PdfExportService {
     );
   }
 
-  static pw.Widget _cellNum(double? value, {bool bold = false, double fontSize = 8, PdfColor? color}) {
+  static pw.Widget _cellNum(double? value, {bool bold = false, double fontSize = 8, PdfColor? color, String prefix = ''}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: pw.Align(
         alignment: pw.Alignment.centerRight,
         child: pw.Text(
-          value != null ? _fmt.format(value) : '',
+          value != null ? '$prefix${_fmt.format(value)}' : '',
           style: pw.TextStyle(
             fontSize: fontSize,
             fontWeight: bold ? pw.FontWeight.bold : null,
