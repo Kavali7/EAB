@@ -15,6 +15,7 @@ class SideNavigation extends ConsumerWidget {
     final orgName = orgAsync.valueOrNull?.nom ?? 'EAB';
     const items = [
       _NavItem('Tableau de bord', '/', Icons.dashboard_outlined),
+      _NavItem('Dashboard financier', '/dashboard-finance', Icons.insights),
       _NavItem('Fideles', '/members', Icons.people_alt_outlined),
       _NavItem('Programmes', '/programs', Icons.event_note_outlined),
       _NavItem('Structure de l\'Eglise', '/structure', Icons.account_tree_outlined),

@@ -21,6 +21,7 @@ import '../screens/reports/rapport_mensuel_eab_screen.dart';
 import '../features/exercices/presentation/exercices_screen.dart';
 import '../features/etats_financiers/presentation/etats_financiers_screen.dart';
 import '../features/organization/presentation/organization_settings_screen.dart';
+import '../features/dashboard_finance/dashboard_finance_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
@@ -69,6 +70,7 @@ class ChurchApp extends StatelessWidget {
         '/accounting-exercices': (_) => const ExercicesScreen(),
         '/etats-financiers': (_) => const EtatsFinanciersScreen(),
         '/organization-settings': (_) => const OrganizationSettingsScreen(),
+        '/dashboard-finance': (_) => const DashboardFinanceScreen(),
         '/reports-rapport-mensuel': (_) => const RapportMensuelEabScreen(),
       },
     );
