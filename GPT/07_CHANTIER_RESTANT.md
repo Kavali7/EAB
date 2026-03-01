@@ -24,18 +24,18 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [ ] Repenser les couleurs : garder navy/doré mais ajouter richesse (dégradés, ombres)
 - [x] Features Membres et Programmes migrées vers `features/` avec UI Kit ✅
 
-### C2. Refonte du Tableau de Bord
+### C2. Refonte du Tableau de Bord ✅
 
 **Pourquoi** : Le dashboard est l'écran d'accueil — il doit impressionner et informer.
 
 **Travail** :
 
-- [ ] Cartes KPI riches avec icônes, couleurs, tendance ↑↓ et pourcentage vs mois précédent
-- [ ] Résumé financier du mois : Recettes / Dépenses / Résultat avec mini-graphes sparkline
-- [ ] Alertes et rappels (écritures en brouillon, budget dépassé, rapport en retard)
-- [ ] Activité récente (dernières écritures, derniers membres)
-- [ ] Raccourcis d'actions rapides (nouvelle écriture, nouveau membre, rapport du mois)
-- [ ] Résumé par rôle : admin voit toutes les assemblées, trésorier voit son assemblée
+- [x] Cartes KPI riches avec icônes, couleurs, tendance ↑↓ et pourcentage vs mois précédent
+- [x] Résumé financier du mois : Recettes / Dépenses / Résultat avec mini-graphes sparkline
+- [x] Alertes et rappels (écritures en brouillon, exercice non ouvert, nouveaux convertis)
+- [x] Activité récente (dernières écritures, derniers membres)
+- [x] Raccourcis d'actions rapides (nouvelle écriture, nouveau membre, rapport du mois)
+- [x] Résumé par rôle : admin voit toutes les assemblées, trésorier voit son assemblée
 
 ### C3. Multi-Tenant Complet
 
