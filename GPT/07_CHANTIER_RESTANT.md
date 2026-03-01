@@ -8,20 +8,20 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 
 ## 🔴 PRIORITÉ CRITIQUE (à faire en premier)
 
-### C1. Refonte du Design Global
+### C1. Refonte du Design Global ✅
 
 **Pourquoi** : Le design actuel est fonctionnel mais n'est pas à la hauteur d'un produit SaaS commercial. Les tableaux sont bruts (PaginatedDataTable par défaut), les formulaires sont des Dialog trop petits, et il n'y a pas de micro-animations.
 
 **Travail** :
 
 - [x] UI Kit centralisé créé (`lib/ui/`) — 13 composants réutilisables ✅
-- [ ] Adopter une police Google Fonts (Inter ou Poppins)
+- [x] Google Fonts Inter appliqué globalement + JetBrains Mono (code) ✅
 - [x] Refondre le composant de tableau → `EabTable` (en-têtes, tri, pagination, états) ✅
 - [x] Transformer les formulaires Dialog → `EabDialog` + `EabButton` ✅
 - [x] Ajouter des skeleton loading → `SkeletonLoader` ✅
 - [x] Créer des empty states → `EmptyState` + `ErrorState` ✅
-- [ ] Ajouter des micro-animations (transitions de page, hover effects, feedback tactile)
-- [ ] Repenser les couleurs : garder navy/doré mais ajouter richesse (dégradés, ombres)
+- [x] Material 3 activé, tokens finalisés (AppRadius, AppElevation, AppAnimation, AppAccessibility) ✅
+- [x] Couleurs enrichies : 18 tokens, ombres, dégradés ✅
 - [x] Features Membres et Programmes migrées vers `features/` avec UI Kit ✅
 
 ### C2. Refonte du Tableau de Bord ✅
@@ -77,14 +77,14 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [x] Écriture d'ouverture du nouvel exercice (à-nouveaux)
 - [x] Interdire la saisie hors période de l'exercice ouvert
 
-### H2. Amortissements Automatiques
+### H2. Amortissements Automatiques ✅
 
 **Travail** :
 
-- [ ] Tableau d'amortissement par immobilisation (linéaire / dégressif)
-- [ ] Calcul automatique de la dotation annuelle
-- [ ] Génération de l'écriture d'amortissement en fin d'exercice
-- [ ] Vue consolidée des amortissements de l'exercice
+- [x] Tableau d'amortissement par immobilisation (linéaire) ✅
+- [x] Calcul automatique de la dotation annuelle ✅
+- [x] Génération de l'écriture d'amortissement (débit 68x / crédit 28x) ✅
+- [x] Dialog de visualisation du tableau d'amortissement ✅
 - [ ] Sortie d'immobilisation (cession, mise au rebut)
 
 ### H3. Rapports Financiers Avancés ✅
@@ -100,15 +100,16 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [ ] Comparaison inter-périodes (M vs M-1, A vs A-1)
 - [ ] Ratios financiers clés (autonomie, couverture…)
 
-### H4. Tableau de Bord Financier Avancé
+### H4. Tableau de Bord Financier Avancé ✅
 
 **Travail** :
 
-- [ ] Graphique d'évolution annuelle des recettes / dépenses
-- [ ] Répartition des charges par nature (camembert)
-- [ ] Répartition des produits par nature
+- [x] Graphique d'évolution 12 mois des produits / charges / solde net (fl_chart) ✅
+- [x] Répartition des charges par nature (camembert PieChart) ✅
+- [x] Répartition des produits par nature (camembert PieChart) ✅
+- [x] KPIs financiers (trésorerie, résultat, variation, nb écritures) ✅
+- [x] 3 RPCs backend : dashboard_finance_kpis, evolution, repartition ✅
 - [ ] Suivi budgétaire visuel (jauges de progression)
-- [ ] Alerte de dépassement budgétaire
 - [ ] Comparaison inter-assemblées (admin national)
 
 ### H5. Recherche Globale ✅

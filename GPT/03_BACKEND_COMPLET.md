@@ -671,7 +671,18 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `audit_membres()` | plpgsql | DEFINER | Trigger audit sur `membres` |
 | `audit_ecritures()` | plpgsql | DEFINER | Trigger audit sur `ecritures_comptables` |
 | `calculate_amortissement(UUID, DATE)` | plpgsql | DEFINER STABLE | Calcul amortissement linéaire |
-| `cloturer_exercice(UUID)` | plpgsql | DEFINER | Clôture exercice (admin uniquement) |
+| `cloturer_exercice(UUID)` | plpgsql | DEFINER | Clôture exercice : solde 6/7, résultat → 12x ou 131x, à-nouveaux 1-5, check org membership |
+| `open_exercice(UUID)` | plpgsql | DEFINER | Ouvre un exercice brouillon (admin + org membership check) |
+| `get_exercice_ouvert(UUID)` | plpgsql | DEFINER STABLE | Retourne l'exercice ouvert d'une org |
+| `can_post_in_exercice(UUID, DATE)` | plpgsql | DEFINER STABLE | Vérifie si la date est dans l'exercice ouvert |
+| `report_balance_generale(UUID, DATE?, DATE?)` | plpgsql | DEFINER STABLE | Balance générale (débits, crédits, soldes D/C) |
+| `report_compte_resultat(UUID, DATE?, DATE?)` | plpgsql | DEFINER STABLE | Compte de résultat SYCEBNL (produits classe 7, charges classe 6) |
+| `report_bilan(UUID, DATE?)` | plpgsql | DEFINER STABLE | Bilan simplifié (actif/passif, sous-sections) |
+| `report_grand_livre(UUID, UUID?, DATE?, DATE?)` | plpgsql | DEFINER STABLE | Mouvements par compte avec solde cumulé (window function) |
+| `global_search(UUID, TEXT, INT?)` | plpgsql | DEFINER STABLE | Recherche dans membres/programmes/écritures (min 2 chars, limit 30, cap 50, TRIM, trigram) |
+| `dashboard_finance_kpis(UUID)` | plpgsql | DEFINER STABLE | KPIs : trésorerie (classe 5), résultat mois, produits, charges, variation, nb écritures |
+| `dashboard_finance_evolution(UUID, INT?)` | plpgsql | DEFINER STABLE | Évolution 12 mois (produits/charges/solde par mois via generate_series) |
+| `dashboard_finance_repartition(UUID, DATE?, DATE?)` | plpgsql | DEFINER STABLE | Répartition produits+charges groupés par sous-compte 2 digits avec % |
 
 ---
 
@@ -853,6 +864,9 @@ erDiagram
 | 2026-02-23 | Agent IA | **Fix affichage tableau de bord** : correction des mappings JSON dans `SupabaseDataService` — `ProfilUtilisateur` (fullName→nom, role snake→camel), `Member` (dateNaissance→birthDate, statutMatrimonial→maritalStatus FR→EN, dateBapteme→baptismDate), `Program` (type/typeVisite snake→camel). Ajout helpers `_snakeValueToCamel()` et `_mapStatutMatrimonialToEnglish()`. Remplacement de `accountingEntriesProvider` (retournait `[]`) par `ecrituresComptablesProvider` dans le dashboard. **Convention** : `_snakeToCamel()` convertit les clés JSON uniquement ; les valeurs enum et les champs renommés doivent être mappés manuellement dans chaque méthode `get*()`. |
 | 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recréation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Création organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Désactivation confirmation email dans Auth. |
 | 2026-02-22 | Système | Création initiale à partir des migrations 00001-00007 |
+| 2026-03-01 | Agent IA | **Migration 00008** : Exercices V2 (enum `statut_exercice`, index unique exercice ouvert/org, colonnes `opening_entry_id`/`closing_entry_id`/`deleted_at`), 4 RPCs exercices (`open_exercice`, `get_exercice_ouvert`, `can_post_in_exercice`, `cloturer_exercice`), 4 RPCs états financiers (`report_balance_generale`, `report_compte_resultat`, `report_bilan`, `report_grand_livre`), RPC `global_search` avec trigram + ILIKE |
+| 2026-03-01 | Agent IA | **Migration 00009** (patch) : Compte résultat paramétrable (12x OHADA → 131x fallback), checks org membership dans `open_exercice`/`cloturer_exercice` SECURITY DEFINER, `global_search` min 2 chars + LIMIT 30 + cap 50 + TRIM |
+| 2026-03-01 | Agent IA | **Migration 00010** : Dashboard financier — 3 RPCs (`dashboard_finance_kpis`, `dashboard_finance_evolution`, `dashboard_finance_repartition`) avec GRANTs authenticated |
 
 ---
 
