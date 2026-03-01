@@ -22,6 +22,7 @@ import 'package:eab/providers/church_structure_providers.dart';
 import 'package:eab/providers/members_provider.dart';
 import 'package:eab/providers/programs_provider.dart';
 import 'package:eab/providers/user_profile_providers.dart';
+import 'package:eab/features/exercices/application/exercices_providers.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
 import 'package:eab/widgets/section_card.dart';
@@ -221,6 +222,154 @@ class DashboardScreenV2 extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Alertes ──
+                    Builder(builder: (_) {
+                      final alerts = <Widget>[];
+                      final brouillons = filteredEcritures
+                          .where((e) => e.statut?.name == 'brouillon')
+                          .length;
+                      if (brouillons > 0) {
+                        alerts.add(_alertTile(
+                          icon: Icons.edit_note,
+                          color: Colors.orange,
+                          text: '$brouillons écriture${brouillons > 1 ? "s" : ""} en brouillon',
+                          actionLabel: 'Voir',
+                          onAction: () => Navigator.pushNamed(context, '/accounting'),
+                        ));
+                      }
+
+                      final exerciceAsync = ref.watch(exerciceOuvertProvider);
+                      exerciceAsync.when(
+                        data: (ex) {
+                          if (ex == null) {
+                            alerts.add(_alertTile(
+                              icon: Icons.warning_amber,
+                              color: Colors.red,
+                              text: 'Aucun exercice ouvert — les saisies sont bloquées',
+                              actionLabel: 'Ouvrir',
+                              onAction: () => Navigator.pushNamed(context, '/accounting-exercices'),
+                            ));
+                          }
+                        },
+                        error: (_, __) {},
+                        loading: () {},
+                      );
+
+                      if (newConverts > 0) {
+                        alerts.add(_alertTile(
+                          icon: Icons.celebration,
+                          color: Colors.green,
+                          text: '$newConverts nouveau${newConverts > 1 ? "x" : ""} converti${newConverts > 1 ? "s" : ""} ces 90 derniers jours !',
+                        ));
+                      }
+
+                      if (alerts.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Alertes', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: AppSpacing.sm),
+                          ...alerts,
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
+                      );
+                    }),
+
+                    // ── Activité récente ──
+                    LayoutBuilder(builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 700;
+                      final recentEcritures = [...filteredEcritures]
+                        ..sort((a, b) => b.date.compareTo(a.date));
+                      final recentMembers = [...filteredMembers]
+                        ..sort((a, b) => (b.createdAt ?? DateTime(2000))
+                            .compareTo(a.createdAt ?? DateTime(2000)));
+
+                      return Wrap(
+                        spacing: AppSpacing.lg,
+                        runSpacing: AppSpacing.lg,
+                        children: [
+                          // Dernières écritures
+                          SizedBox(
+                            width: isWide
+                                ? constraints.maxWidth * 0.48
+                                : constraints.maxWidth,
+                            child: SectionCard(
+                              title: 'Dernières écritures',
+                              child: Column(
+                                children: [
+                                  if (recentEcritures.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text('Aucune écriture', style: TextStyle(color: Colors.grey)),
+                                    )
+                                  else
+                                    ...recentEcritures.take(5).map((e) => ListTile(
+                                      dense: true,
+                                      leading: CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: Colors.blue.withOpacity(0.1),
+                                        child: const Icon(Icons.receipt_long, size: 16, color: Colors.blue),
+                                      ),
+                                      title: Text(e.libelle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                                      subtitle: Text(
+                                        '${dateFormatter.format(e.date)} • ${e.referencePiece ?? ""}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                      trailing: e.statut?.name == 'brouillon'
+                                          ? Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.orange.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Text('Brouillon', style: TextStyle(fontSize: 10, color: Colors.orange)),
+                                            )
+                                          : null,
+                                    )),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Derniers membres
+                          SizedBox(
+                            width: isWide
+                                ? constraints.maxWidth * 0.48
+                                : constraints.maxWidth,
+                            child: SectionCard(
+                              title: 'Derniers fidèles inscrits',
+                              child: Column(
+                                children: [
+                                  if (recentMembers.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text('Aucun fidèle', style: TextStyle(color: Colors.grey)),
+                                    )
+                                  else
+                                    ...recentMembers.take(5).map((m) => ListTile(
+                                      dense: true,
+                                      leading: CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: ChurchTheme.navy.withOpacity(0.1),
+                                        child: Text(
+                                          m.fullName.isNotEmpty ? m.fullName[0].toUpperCase() : '?',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: ChurchTheme.navy),
+                                        ),
+                                      ),
+                                      title: Text(m.fullName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                                      subtitle: Text(
+                                        m.phone ?? m.email ?? '',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                    )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Graphiques ──
@@ -504,6 +653,43 @@ class DashboardScreenV2 extends ConsumerWidget {
             ],
           ),
       ],
+    );
+  }
+
+  static Widget _alertTile({
+    required IconData icon,
+    required Color color,
+    required String text,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 13, color: color.withOpacity(0.9))),
+          ),
+          if (actionLabel != null && onAction != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: color,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: const Size(0, 30),
+              ),
+              child: Text(actionLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+        ],
+      ),
     );
   }
 }
