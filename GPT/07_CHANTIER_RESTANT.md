@@ -50,17 +50,17 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [ ] Catégories de recettes/dépenses paramétrables par organisation (sortir de `constants.dart`)
 - [ ] Invitation d'utilisateurs dans une organisation existante
 
-### C4. Export PDF / Excel
+### C4. Export PDF / Excel ✅
 
 **Pourquoi** : Les trésoriers ont besoin d'imprimer et partager les rapports.
 
 **Travail** :
 
-- [ ] Export du rapport mensuel EAB en PDF professionnel (mise en page esthétique avec logo)
-- [ ] Export de la balance des comptes en PDF
-- [ ] Export du grand livre en PDF
-- [ ] Export des listes (membres, programmes) en Excel
-- [ ] Export des écritures comptables en Excel
+- [x] Export du rapport mensuel EAB en PDF professionnel (mise en page esthétique avec logo)
+- [x] Export de la balance des comptes en PDF
+- [x] Export du grand livre en PDF
+- [x] Export des listes (membres, programmes) en Excel/CSV
+- [x] Export des écritures comptables en CSV
 - [ ] Template PDF personnalisable par organisation
 
 ---
