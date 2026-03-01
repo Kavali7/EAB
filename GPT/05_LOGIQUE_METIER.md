@@ -69,7 +69,7 @@ Le Système Comptable des Entités à But Non Lucratif (SYCEBNL) est le cadre co
 
 - Une écriture doit avoir au minimum 2 lignes
 - Le total débit doit être égal au total crédit (tolérance : 0 FCFA)
-- La date doit être dans l'exercice en cours (contrainte non encore implémentée)
+- La date doit être dans l'exercice en cours (✅ implémenté via `can_post_in_exercice()` RPC)
 - Le journal doit exister
 - Les comptes doivent exister et être de niveau détail (pas un compte de regroupement)
 
@@ -80,6 +80,7 @@ Le Système Comptable des Entités à But Non Lucratif (SYCEBNL) est le cadre co
 ### 3.1 Balance des comptes
 
 Pour chaque compte, affiche :
+
 - Solde débiteur initial
 - Somme des mouvements débiteurs
 - Somme des mouvements créditeurs
@@ -88,6 +89,7 @@ Pour chaque compte, affiche :
 ### 3.2 Grand Livre
 
 Journal détaillé de toutes les écritures passées sur un compte, avec :
+
 - Date, libellé, débit, crédit, solde progressif
 
 ### 3.3 Rapport mensuel EAB
@@ -95,6 +97,7 @@ Journal détaillé de toutes les écritures passées sur un compte, avec :
 Le rapport mensuel est un document officiel de l'église, consolidant sur un mois donné :
 
 **Section Membres :**
+
 - Effectifs actifs (hommes / femmes / enfants)
 - Nouvelles conversions du mois
 - Nouveaux baptisés du mois
@@ -102,6 +105,7 @@ Le rapport mensuel est un document officiel de l'église, consolidant sur un moi
 - Transferts entrants/sortants
 
 **Section Activités :**
+
 - Nombre de cultes tenus
 - Nombre d'évangélisations (masse + porte-à-porte)
 - Nombre de baptêmes
@@ -112,6 +116,7 @@ Le rapport mensuel est un document officiel de l'église, consolidant sur un moi
 - Visites pastorales
 
 **Section Finances :**
+
 - Total des produits (classe 7) du mois
 - Total des charges (classe 6) du mois
 - Résultat du mois (Produits - Charges)
@@ -145,12 +150,13 @@ admin_national
 ### 4.3 Implémentation côté Flutter
 
 Le scope est appliqué via `_applyProfileScope()` dans chaque écran :
+
 - Le profil courant détermine les assemblées autorisées (`_assembleesAutorisees`)
 - Les filtres hiérarchiques (région/district/assemblée) sont pré-remplis et verrouillés selon le rôle
 
 ### 4.4 Implémentation côté Supabase (RLS)
 
-Toutes les tables sont protégées par des politiques RLS qui filtrent par `organization_id`. La logique de hiérarchie (région → district → assemblée) n'est pas encore pleinement appliquée côté backend — elle est principalement côté client.
+Toutes les tables sont protégées par des politiques RLS qui filtrent par `organization_id`. La logique de hiérarchie (région → district → assemblée) est implémentée via les fonctions helper `user_has_region_access()`, `user_has_district_access()`, `user_has_assemblee_access()` côté backend.
 
 ---
 
@@ -174,6 +180,7 @@ organizations (id, name, logo_url, ...)
 ### 5.2 RLS
 
 Les politiques RLS s'assurent qu'un utilisateur ne peut voir/modifier que les données de son organisation, en vérifiant :
+
 ```sql
 organization_id IN (
   SELECT organization_id FROM profiles WHERE id = auth.uid()
@@ -222,11 +229,15 @@ organization_id IN (
 - Description, type, date d'acquisition, valeur d'acquisition
 - Durée d'utilité (en années), méthode d'amortissement
 
-### 7.3 Ce qui manque
+### 7.3 ✅ Implémenté
 
-- ❌ Calcul automatique des dotations aux amortissements
-- ❌ Tableau d'amortissement linéaire/dégressif
-- ❌ Écriture d'amortissement automatique en fin d'exercice
+- ✅ Calcul automatique des dotations aux amortissements (RPC `calculate_amortissement`)
+- ✅ Tableau d'amortissement linéaire (dialog de visualisation)
+- ✅ Génération écriture d'amortissement (débit 68x / crédit 28x)
+
+### 7.4 Ce qui manque
+
+- ❌ Amortissement dégressif
 - ❌ Sortie d'immobilisation (cession, mise au rebut)
 
 ---

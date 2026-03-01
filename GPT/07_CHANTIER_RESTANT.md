@@ -2,7 +2,9 @@
 
 ## Vue d'ensemble
 
-Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les entités, comptabilité, rapports, rôles). Le chantier restant se concentre sur : (1) le polissage du design, (2) les fonctionnalités manquantes, (3) le multi-tenant complet, et (4) la compétitivité.
+Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiques (C1-C4) et haute priorité (H1-H5) largement terminées. Le chantier restant se concentre sur : (1) les items résiduels des phases 1-2, (2) les fonctionnalités de phase 3, et (3) la différenciation.
+
+> **Dernière mise à jour** : 2026-03-01
 
 ---
 
@@ -221,8 +223,8 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 
 | Phase | Items | Impact | Effort |
 | --- | --- | --- | --- |
-| **Phase 1 — Critique** | C1-C4 (Design, Dashboard, Multi-tenant, Export) | 🔴 Maximal | ~3-4 semaines |
-| **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | 🟠 Élevé | ~2-3 semaines |
+| **Phase 1 — Critique** | C1-C4 (Design, Dashboard, Multi-tenant, Export) | ✅ Terminé (sauf template PDF custom) | ~0.5 semaine (résiduel) |
+| **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | ✅ Terminé (sauf flux trésorerie, budget vs réalisé, ratios) | ~1 semaine (résiduel) |
 | **Phase 3 — Moyenne** | M1-M6 (Audit, Fiches, Notifications, Familles, Calendrier, Tiers) | 🟡 Moyen | ~2-3 semaines |
 | **Phase 4 — Basse** | B1-B6 (Analytics, Mobile, Multi-langue, Intégrations, Communication, Comptable avancé) | 🟢 Différenciation | ~4-6 semaines |
 

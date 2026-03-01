@@ -89,7 +89,15 @@ lib/
 │   ├── components/             # EabButton, EabField, EabTable, etc.
 │   └── layout/                 # AppShell v2, PageHeader, responsive
 └── features/                   # 🆕 Modules métier isolés (Étape 3+)
-    └── (members/, programs/, accounting/, dashboard/, auth/, ...)
+    ├── amortissements/          # Calcul et tableau d'amortissement
+    ├── dashboard/               # Dashboard V2 (KPIs, alertes, actions rapides)
+    ├── dashboard_finance/       # Dashboard financier avancé (3 RPCs)
+    ├── etats_financiers/        # Balance, résultat, bilan, grand livre
+    ├── exercices/               # Gestion exercices (brouillon→ouvert→clôturé)
+    ├── members/                 # Membres V2 (formulaire, filtres, UI Kit)
+    ├── organization/            # Paramètres organisation (multi-tenant)
+    ├── programs/                # Programmes V2 (UI Kit)
+    └── search/                  # Recherche globale (trigrammes pg_trgm)
 ```
 
 ### Couche de données
@@ -175,10 +183,10 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 
 ## 7. Dépendances backend (Supabase)
 
-- **8 fichiers de migration** SQL (00001 → 00008)
+- **11 fichiers de migration** SQL (00001 → 00010)
 - **Seed data** : `seed.sql` (30KB) + `reset_demo_data.sql` (4KB)
 - **22 tables** avec RLS activé sur toutes
-- **15+ fonctions PostgreSQL** (RPC)
+- **25+ fonctions PostgreSQL** (RPCs : exercices, états financiers, dashboard finance, recherche globale)
 - **5 triggers métier** + 20 triggers `updated_at`
 - **~80 index** pour la performance
 - **4 vues** (membres_actifs, ecritures_actives, soldes_comptes, tableau_bord_financier)
@@ -202,28 +210,34 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 - Tableau de bord avec graphiques (fl_chart)
 - Navigation responsive (sidebar desktop, drawer mobile)
 
+- Gestion des exercices comptables (création, ouverture, clôture avec à-nouveaux) ✅
+- Tableau de bord financier avancé (KPIs, évolution 12 mois, répartition camembert) ✅
+- Recherche globale (Ctrl+K, trigrammes pg_trgm, membres/programmes/écritures) ✅
+- États financiers SYCEBNL (balance générale, compte de résultat, bilan, grand livre) ✅
+- Amortissements (tableau linéaire, calcul dotation, génération écriture) ✅
+- Export PDF (balance, grand livre, rapport mensuel) ✅
+- Export CSV (écritures, membres, programmes) ✅
+- Dashboard V2 (KPIs riches, alertes, actions rapides) ✅
+- Paramètres organisation (multi-tenant) ✅
+
 ### ⚠️ Partiel / À améliorer
 
-- Designs des écrans (basiques, pas premium)
-- Tableau de bord (données insuffisantes)
 - Trésorerie (vue simplifiée)
 - Rapprochement bancaire (basique)
-- États & exports (pas d'export PDF/Excel)
 - Gestion des familles (peu exploitée)
+- Designs de certains écrans legacy (structures, accounting settings)
 
 ### ❌ Non implémenté
 
-- Personnalisation par église (logo, couleurs)
+- Personnalisation visuelle par église (logo, couleurs dynamiques)
 - Onboarding première connexion
-- Export PDF des rapports
-- Export Excel des données
-- Gestion des exercices comptables (ouverture/clôture)
-- Tableau de bord financier avancé
-- Notifications / alertes
-- Recherche globale
+- Template PDF personnalisable par organisation
+- Sortie d'immobilisation (cession, mise au rebut)
+- Notifications / alertes configurables
 - Mode hors-ligne
 - Multi-langue
 - Journal d'audit (UI — le backend existe)
+- Comparaison inter-périodes / inter-assemblées
 
 ## 9. Catégories financières
 

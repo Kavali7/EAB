@@ -259,7 +259,70 @@
 
 ---
 
-## 8. Widgets partagés (`widgets/`)
+## 8. Modules Feature (`features/`) — 9 modules, 30 fichiers
+
+### 8.1 Dashboard V2 (`features/dashboard/`)
+
+- **Fichier** : `presentation/dashboard_screen_v2.dart`
+- **Fonctionnalités** : KPIs riches, alertes, activité récente, actions rapides, résumé par rôle
+- **État** : ✅ Fonctionnel
+
+### 8.2 Dashboard Finance (`features/dashboard_finance/`)
+
+- **Fichiers** : `dashboard_finance_screen.dart`, `dashboard_finance_providers.dart`
+- **RPCs backend** : `dashboard_finance_kpis`, `dashboard_finance_evolution`, `dashboard_finance_repartition`
+- **Fonctionnalités** : KPIs financiers, évolution 12 mois (LineChart), répartition produits/charges (PieChart)
+- **État** : ✅ Fonctionnel
+
+### 8.3 États Financiers (`features/etats_financiers/`)
+
+- **Fichiers** : `presentation/etats_financiers_screen.dart`, `application/reports_providers.dart`, `data/reports_repository.dart`, `services/export_service.dart`
+- **RPCs backend** : `report_balance_generale`, `report_compte_resultat`, `report_bilan`, `report_grand_livre`
+- **Fonctionnalités** : Balance générale, compte de résultat SYCEBNL, bilan simplifié, grand livre avec solde cumulé, export PDF/CSV
+- **État** : ✅ Fonctionnel
+
+### 8.4 Exercices Comptables (`features/exercices/`)
+
+- **Fichiers** : `presentation/exercices_screen.dart`, `presentation/exercice_form_dialog.dart`, `application/exercices_providers.dart`, `data/exercices_repository.dart`
+- **RPCs backend** : `open_exercice`, `get_exercice_ouvert`, `can_post_in_exercice`, `cloturer_exercice`
+- **Cycle** : Brouillon → Ouvert → Clôturé (avec écriture de résultat + à-nouveaux)
+- **État** : ✅ Fonctionnel
+
+### 8.5 Amortissements (`features/amortissements/`)
+
+- **Fichiers** : `application/amortissement_providers.dart`, `presentation/tableau_amortissement_dialog.dart`, `services/amortissement_service.dart`
+- **RPC backend** : `calculate_amortissement`
+- **Fonctionnalités** : Tableau d'amortissement linéaire, calcul dotation annuelle, génération écriture 68x/28x
+- **État** : ✅ Fonctionnel
+
+### 8.6 Recherche Globale (`features/search/`)
+
+- **Fichiers** : `presentation/global_search_dialog.dart`, `application/search_providers.dart`, `data/search_repository.dart`
+- **RPC backend** : `global_search` (trigrammes pg_trgm, min 2 chars, limit 30, cap 50)
+- **Fonctionnalités** : Ctrl+K, recherche membres/programmes/écritures, résultats groupés par catégorie
+- **État** : ✅ Fonctionnel
+
+### 8.7 Membres V2 (`features/members/`)
+
+- **Fichiers** : `presentation/members_screen_v2.dart`, `presentation/member_form_dialog.dart`, `application/members_providers.dart`, `data/members_repository.dart`
+- **Fonctionnalités** : Version migrée vers le UI Kit (`EabTable`, `EabHierarchyFilter`, etc.)
+- **État** : ✅ Fonctionnel
+
+### 8.8 Programmes V2 (`features/programs/`)
+
+- **Fichiers** : `presentation/programs_screen_v2.dart`, `presentation/program_form_dialog.dart`, `application/programs_providers.dart`, `data/programs_repository.dart`
+- **Fonctionnalités** : Version migrée vers le UI Kit
+- **État** : ✅ Fonctionnel
+
+### 8.9 Organisation (`features/organization/`)
+
+- **Fichiers** : `presentation/organization_settings_screen.dart`, `application/organization_providers.dart`, `data/organization_repository.dart`, `data/organization_model.dart`
+- **Fonctionnalités** : Paramètres d'organisation, branding multi-tenant
+- **État** : ✅ Fonctionnel
+
+---
+
+## 9. Widgets partagés (`widgets/`)
 
 | Widget | Fichier | Taille | Rôle |
 | --- | --- | --- | --- |
@@ -271,7 +334,7 @@
 
 ---
 
-## 9. Layout et responsive
+## 10. Layout et responsive
 
 - **Breakpoints** (via `responsive_framework`) :
   - Mobile : 0–599px
@@ -283,7 +346,7 @@
 
 ---
 
-## 10. Résumé des tailles des écrans (indicateur de complexité)
+## 11. Résumé des tailles des écrans (indicateur de complexité)
 
 | Écran | Lignes | Taille | Complexité |
 | --- | --- | --- | --- |
@@ -294,7 +357,10 @@
 | `accounting_budgets_screen.dart` | — | 28KB | 🟠 Élevée |
 | `accounting_immobilisations_screen.dart` | — | 23KB | 🟠 Élevée |
 | `rapport_mensuel_eab_screen.dart` | — | 22KB | 🟠 Élevée |
-| `dashboard_screen.dart` | 517 | 22KB | 🟡 Moyenne |
+| `dashboard_screen_v2.dart` | — | — | 🟡 Moyenne |
+| `dashboard_finance_screen.dart` | — | — | 🟡 Moyenne |
+| `etats_financiers_screen.dart` | — | — | 🟡 Moyenne |
+| `exercices_screen.dart` | — | — | 🟡 Moyenne |
 | `accounting_reports_screen.dart` | — | 18KB | 🟡 Moyenne |
 | `supabase_data_service.dart` | 446 | 14KB | 🟡 Moyenne |
 | `accounting_reconciliation_screen.dart` | — | 12KB | 🟡 Moyenne |
