@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/theme.dart';
+import '../features/organization/application/organization_providers.dart';
 
-class SideNavigation extends StatelessWidget {
+class SideNavigation extends ConsumerWidget {
   const SideNavigation({super.key, required this.currentRoute});
 
   final String? currentRoute;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orgAsync = ref.watch(currentOrganizationProvider);
+    final orgName = orgAsync.valueOrNull?.nom ?? 'EAB';
     const items = [
       _NavItem('Tableau de bord', '/', Icons.dashboard_outlined),
       _NavItem('Fideles', '/members', Icons.people_alt_outlined),
@@ -54,6 +58,21 @@ class SideNavigation extends StatelessWidget {
         '/accounting-settings',
         Icons.tune,
       ),
+      _NavItem(
+        'Exercices comptables',
+        '/accounting-exercices',
+        Icons.calendar_today_outlined,
+      ),
+      _NavItem(
+        'États financiers',
+        '/etats-financiers',
+        Icons.bar_chart_outlined,
+      ),
+      _NavItem(
+        'Organisation',
+        '/organization-settings',
+        Icons.settings_outlined,
+      ),
     ];
 
     return Column(
@@ -62,10 +81,10 @@ class SideNavigation extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 12),
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Text(
-                  'EAB',
+                  orgName,
                   style: TextStyle(
                     color: ChurchTheme.navy,
                     fontWeight: FontWeight.w800,
