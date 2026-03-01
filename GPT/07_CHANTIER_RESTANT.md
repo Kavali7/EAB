@@ -37,18 +37,18 @@ Le projet EAB dispose d'une **base fonctionnelle solide** (CRUD sur toutes les e
 - [x] Raccourcis d'actions rapides (nouvelle écriture, nouveau membre, rapport du mois)
 - [x] Résumé par rôle : admin voit toutes les assemblées, trésorier voit son assemblée
 
-### C3. Multi-Tenant Complet
+### C3. Multi-Tenant Complet ✅
 
 **Pourquoi** : L'app doit fonctionner pour n'importe quelle église, pas seulement EAB.
 
 **Travail** :
 
-- [ ] Onboarding : écran de création d'organisation (nom, logo, couleurs)
-- [ ] Thème dynamique par organisation (couleur primaire, logo dans le sidebar)
-- [ ] Nom de l'organisation dans l'AppBar au lieu de "EAB"
-- [ ] Plan comptable modèle fourni lors de la création d'une organisation
-- [ ] Catégories de recettes/dépenses paramétrables par organisation (sortir de `constants.dart`)
-- [ ] Invitation d'utilisateurs dans une organisation existante
+- [x] Onboarding : écran de création d'organisation (nom, logo, couleurs)
+- [x] Thème dynamique par organisation (couleur primaire, logo dans le sidebar)
+- [x] Nom de l'organisation dans l'AppBar au lieu de "EAB"
+- [x] Plan comptable modèle fourni lors de la création d'une organisation
+- [x] Catégories de recettes/dépenses paramétrables par organisation (parametres JSON)
+- [x] Invitation d'utilisateurs dans une organisation existante
 
 ### C4. Export PDF / Excel ✅
 
