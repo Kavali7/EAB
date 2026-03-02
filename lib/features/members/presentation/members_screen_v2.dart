@@ -81,8 +81,8 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
     final familiesAsync = ref.watch(familiesProvider);
-    final regionsAsync = ref.watch(regionsProvider);
-    final districtsAsync = ref.watch(districtsProvider);
+    ref.watch(regionsProvider);
+    ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
 
