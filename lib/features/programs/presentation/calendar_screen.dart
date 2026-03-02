@@ -85,29 +85,40 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               const SizedBox(height: AppSpacing.cardGap),
 
               // ── Navigation mois ──
-              SectionCard(
-                title: monthLabel[0].toUpperCase() + monthLabel.substring(1),
-                icon: Icons.calendar_month,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: _previousMonth,
-                    ),
-                    TextButton(
-                      onPressed: () => setState(() {
-                        _currentMonth = DateTime(
-                            DateTime.now().year, DateTime.now().month);
-                      }),
-                      child: const Text("Aujourd'hui"),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: _nextMonth,
-                    ),
-                  ],
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        monthLabel[0].toUpperCase() + monthLabel.substring(1),
+                        style: AppTextStyles.sectionTitle,
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: _previousMonth,
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _currentMonth = DateTime(
+                              DateTime.now().year, DateTime.now().month);
+                        }),
+                        child: const Text("Aujourd'hui"),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: _nextMonth,
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 4),
+              SectionCard(
+                title: 'Grille mensuelle',
                 child: Column(
                   children: [
                     // En-têtes jours de la semaine
@@ -138,7 +149,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               // ── Liste des programmes du mois ──
               SectionCard(
                 title: '${monthPrograms.length} activité${monthPrograms.length > 1 ? "s" : ""} ce mois',
-                icon: Icons.event_note,
                 child: monthPrograms.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.all(16),

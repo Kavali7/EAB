@@ -91,11 +91,11 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
   ];
 
   void _applyFilters() {
-    ref.read(auditFilterProvider.notifier).state = AuditFilter(
+    ref.read(auditFilterProvider.notifier).setFilter(AuditFilter(
       action: _selectedAction,
       tableName: _selectedTable,
       userEmail: _searchEmail.isEmpty ? null : _searchEmail,
-    );
+    ));
   }
 
   void _clearFilters() {
@@ -104,7 +104,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
       _selectedTable = null;
       _searchEmail = '';
     });
-    ref.read(auditFilterProvider.notifier).state = const AuditFilter();
+    ref.read(auditFilterProvider.notifier).clear();
   }
 
   @override
@@ -127,7 +127,6 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
               // ── Filtres ──
               SectionCard(
                 title: 'Filtres',
-                icon: Icons.filter_list,
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -240,7 +239,6 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
 
                   return SectionCard(
                     title: '${logs.length} entrée${logs.length > 1 ? 's' : ''}',
-                    icon: Icons.history,
                     child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

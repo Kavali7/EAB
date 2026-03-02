@@ -70,10 +70,18 @@ class AuditFilter {
       );
 }
 
-/// Provider du filtre courant.
-final auditFilterProvider = StateProvider<AuditFilter>(
-  (_) => const AuditFilter(),
-);
+/// Notifier pour le filtre courant (Riverpod 3.x — pas de StateProvider).
+class AuditFilterNotifier extends Notifier<AuditFilter> {
+  @override
+  AuditFilter build() => const AuditFilter();
+
+  void setFilter(AuditFilter filter) => state = filter;
+  void clear() => state = const AuditFilter();
+}
+
+final auditFilterProvider =
+    NotifierProvider<AuditFilterNotifier, AuditFilter>(
+        AuditFilterNotifier.new);
 
 /// Provider des logs d'audit (avec filtre).
 final auditLogsProvider =
@@ -81,11 +89,8 @@ final auditLogsProvider =
   final filter = ref.watch(auditFilterProvider);
   final client = Supabase.instance.client;
 
-  var query = client
-      .from('audit_logs')
-      .select()
-      .order('created_at', ascending: false)
-      .limit(200);
+  // Filtres AVANT order/limit (Supabase exige cet ordre)
+  var query = client.from('audit_logs').select();
 
   if (filter.action != null) {
     query = query.eq('action', filter.action!);
@@ -97,6 +102,10 @@ final auditLogsProvider =
     query = query.ilike('user_email', '%${filter.userEmail!}%');
   }
 
-  final data = await query;
-  return (data as List).map((e) => AuditLogEntry.fromJson(e as Map<String, dynamic>)).toList();
+  final data =
+      await query.order('created_at', ascending: false).limit(200);
+
+  return (data as List)
+      .map((e) => AuditLogEntry.fromJson(e as Map<String, dynamic>))
+      .toList();
 });
