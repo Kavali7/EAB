@@ -15,7 +15,7 @@ import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
 import 'package:eab/widgets/section_card.dart';
 import 'package:eab/ui/ui.dart';
-import '../application/programs_providers.dart';
+import 'package:eab/providers/programs_provider.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
