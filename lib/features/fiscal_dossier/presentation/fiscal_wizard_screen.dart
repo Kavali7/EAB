@@ -14,6 +14,7 @@ import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_service.dart';
 import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/models/profil_utilisateur.dart';
 
@@ -631,14 +632,47 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   }
 
   Future<void> _exportPdf(FiscalDossier dossier) async {
-    // TODO: Implement PDF export in PR4
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export PDF — sera implémenté dans PR4.'),
-          backgroundColor: Colors.blue,
-        ),
+    setState(() => _isLoading = true);
+    try {
+      // Charger les pages template
+      final repo = ref.read(fiscalRepositoryProvider);
+      final pages = await repo.getTemplatePages(dossier.templateId);
+      final valuesMap = await repo.getValues(dossier.id);
+
+      // Convertir les valeurs en map simple fieldKey -> value
+      final flatValues = <String, dynamic>{};
+      for (final entry in valuesMap.entries) {
+        flatValues[entry.key] = entry.value.value;
+      }
+      // Merger les valeurs locales (non encore sauvegardées)
+      flatValues.addAll(_localValues);
+
+      // Déterminer le nom de l'org
+      final orgName = dossier.label ?? 'Dossier fiscal';
+
+      // Watermark si brouillon
+      final watermark = dossier.status == FiscalDossierStatus.draft
+          ? 'BROUILLON'
+          : null;
+
+      // Générer le PDF
+      final doc = FiscalPdfService.buildDossierPdf(
+        orgName: orgName,
+        pages: pages,
+        values: flatValues,
+        watermark: watermark,
       );
+
+      // Ouvrir la prévisualisation
+      await FiscalPdfService.preview(doc, 'Dossier Fiscal — $orgName');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur PDF : $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
