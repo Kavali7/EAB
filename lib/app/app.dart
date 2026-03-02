@@ -23,6 +23,7 @@ import '../features/etats_financiers/presentation/etats_financiers_screen.dart';
 import '../features/organization/presentation/organization_settings_screen.dart';
 import '../features/dashboard_finance/dashboard_finance_screen.dart';
 import '../features/audit/presentation/audit_log_screen.dart';
+import '../features/programs/presentation/calendar_screen.dart';
 
 class ChurchApp extends StatelessWidget {
   const ChurchApp({super.key});
@@ -74,6 +75,7 @@ class ChurchApp extends StatelessWidget {
         '/dashboard-finance': (_) => const DashboardFinanceScreen(),
         '/reports-rapport-mensuel': (_) => const RapportMensuelEabScreen(),
         '/audit-log': (_) => const AuditLogScreen(),
+        '/calendar': (_) => const CalendarScreen(),
       },
     );
   }

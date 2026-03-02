@@ -18,6 +18,7 @@ class SideNavigation extends ConsumerWidget {
       _NavItem('Dashboard financier', '/dashboard-finance', Icons.insights),
       _NavItem('Fideles', '/members', Icons.people_alt_outlined),
       _NavItem('Programmes', '/programs', Icons.event_note_outlined),
+      _NavItem('Calendrier', '/calendar', Icons.calendar_month_outlined),
       _NavItem('Structure de l\'Eglise', '/structure', Icons.account_tree_outlined),
       _NavItem(
         'Comptabilite',
