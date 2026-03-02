@@ -230,6 +230,36 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [x] Performance : toutes tables indexées (3-11 index chacune)
 - [x] Backups : automatiques Supabase (7 jours rétention)
 
+### R3. UX Quality — 4 Chantiers ✅
+
+**Chantier 1 — Responsive Contract** :
+
+- [x] `ResponsiveFormRow` : mobile=Column, tablet=2col, desktop=Row
+- [x] `ResponsiveLayout` : widget builder mobile/tablet/desktop
+- [x] `EabBreakpoints` : 600px / 1024px
+- [x] `organization_settings_screen` : Contact + Invitations responsive
+
+**Chantier 2 — DataGrid Standard** :
+
+- [x] `EabTable` refonte : numéro de ligne (#), zebra stripes, colonnes fixedWidth/flex
+- [x] Pagination premium (first/last page, indicateur de page)
+- [x] Scroll horizontal si colonnes dépassent la largeur
+- [x] 3 écrans mis à jour : members, programs, exercices
+
+**Chantier 3-4 — Empty States + Erreurs** :
+
+- [x] `error_handler.dart` : bouton "Réessayer" (onRetry), icônes/couleurs par type d'erreur
+- [x] `showWarning()` (SnackBar orange) en plus de showError/showSuccess
+- [x] `app_exceptions.dart` : +auth errors (JWT expired), +NOT NULL, +9 patterns RPC métier
+- [x] SnackBars arrondis avec marges
+
+### R4. Corrections de bugs ✅
+
+- [x] `main.dart` : zone mismatch Sentry — bindings+Supabase dans appRunner
+- [x] `app.dart` : auth réactive (StatefulWidget + onAuthStateChange, TOKEN_REFRESH ignoré)
+- [x] `user_profile_providers.dart` : auto-init du profil courant à la connexion
+- [x] `dashboard_finance_screen.dart` : "Veuillez vous connecter" → CircularProgressIndicator
+
 ---
 
 ## 📋 Résumé par phase
@@ -240,7 +270,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 | **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | ✅ Terminé | Complet (sauf flux trésorerie, ratios) |
 | **Phase 3 — Moyenne** | M1-M6 (Audit, Fiches, Notifications, Familles, Calendrier, Tiers) | ✅ Terminé | **Complet** |
 | **Phase 4 — Basse** | B1, B2, B3, B6 (Analytics, Mobile, EN, Comptable avancé) | 🟢 Différenciation | ~3-4 semaines |
-| **Infrastructure** | R1-R2 (Sentry, Audit SQL) | ✅ Terminé | Complet |
+| **Infrastructure** | R1-R4 (Sentry, Audit SQL, UX Quality, Bug fixes) | ✅ Terminé | Complet |
 
 ---
 
