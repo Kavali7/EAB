@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-02-28
-- **Fichiers de migration** : `supabase/migrations/00001` → `00008`
+- **Dernière mise à jour** : 2026-03-02
+- **Fichiers de migration** : `supabase/migrations/00001` → `00012`
 
 ---
 
@@ -55,6 +55,7 @@
 | `statut_ecriture` | `brouillon`, `validee`, `cloturee` | 00002 |
 | `action_audit` | `INSERT`, `UPDATE`, `DELETE`, `SOFT_DELETE`, `LOGIN`, `LOGOUT`, `VALIDATION`, `CLOTURE` | 00007 |
 | `statut_exercice` | `brouillon`, `ouvert`, `cloture` | 00008 |
+| `fiscal_dossier_status` | `draft`, `in_progress`, `ready`, `locked`, `submitted` | 00011 |
 
 ---
 
@@ -562,6 +563,166 @@
 
 ---
 
+## 4bis. Tables — Dossier Fiscal SYSCEBNL (00011)
+
+### 4bis.1 `fiscal_templates`
+
+> Templates fiscaux versionnés (globaux, read-only pour utilisateurs).
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `code` | TEXT | NON | — | Code unique (ex: `SYSCEBNL_2026`) |
+| `label` | TEXT | NON | — | Libellé |
+| `version` | INTEGER | NON | `1` | Version du template |
+| `is_active` | BOOLEAN | NON | `TRUE` | Template actif |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `code` — **Policy** : SELECT pour `authenticated`
+
+---
+
+### 4bis.2 `fiscal_template_pages`
+
+> Pages ordonnées d'un template fiscal (COVER, BILAN_ACTIF, etc.).
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `template_id` | UUID | NON | — | FK → `fiscal_templates(id)` CASCADE |
+| `code` | TEXT | NON | — | Code page (ex: BILAN_ACTIF) |
+| `title` | TEXT | NON | — | Titre affiché |
+| `page_order` | INTEGER | NON | — | Ordre d'affichage/impression |
+| `layout` | JSONB | NON | `'{}'` | Colonnes, widths, styles |
+| `rules` | JSONB | NON | `'{}'` | Validations page-level |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(template_id, code)`, `(template_id, page_order)`
+
+---
+
+### 4bis.3 `fiscal_template_fields`
+
+> Champs typés de chaque page template.
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `page_id` | UUID | NON | — | FK → `fiscal_template_pages(id)` CASCADE |
+| `field_key` | TEXT | NON | — | Clé (ex: `bilan.actif.total`) |
+| `label` | TEXT | NON | — | Label affiché |
+| `field_type` | TEXT | NON | — | Type : money/text/date/select/bool/percent/integer |
+| `field_order` | INTEGER | NON | `0` | Ordre dans la page |
+| `section` | TEXT | OUI | — | Sous-section de regroupement |
+| `required` | BOOLEAN | NON | `FALSE` | Champ obligatoire |
+| `default_value` | JSONB | OUI | — | Valeur par défaut |
+| `compute` | JSONB | OUI | — | Formule ou mapping compta |
+| `ui` | JSONB | NON | `'{}'` | Placeholder, hint, mask |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(page_id, field_key)` — **CHECK** : `field_type IN ('money','text','date','select','bool','percent','integer')`
+
+---
+
+### 4bis.4 `fiscal_account_mapping`
+
+> Règles de mapping comptes comptables → champs fiscaux pour pré-remplissage.
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `template_id` | UUID | NON | — | FK → `fiscal_templates(id)` CASCADE |
+| `field_key` | TEXT | NON | — | Clé du champ cible |
+| `rule_type` | TEXT | NON | — | Type : sum_prefixes/sum_accounts/balance_class/custom_sql |
+| `params` | JSONB | NON | `'{}'` | Paramètres de la règle |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(template_id, field_key)` — **CHECK** : `rule_type IN ('sum_prefixes','sum_accounts','balance_class','custom_sql')`
+
+---
+
+### 4bis.5 `fiscal_dossiers`
+
+> Dossiers fiscaux par organisation. Cycle : draft → in_progress → ready → locked → submitted.
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `template_id` | UUID | NON | — | FK → `fiscal_templates(id)` |
+| `exercice_id` | UUID | OUI | — | FK → `exercices_comptables(id)` |
+| `import_id` | UUID | OUI | — | FK → `imported_trial_balances(id)` SET NULL |
+| `status` | `fiscal_dossier_status` | NON | `'draft'` | Statut du dossier |
+| `label` | TEXT | OUI | — | Libellé |
+| `notes` | TEXT | OUI | — | Notes |
+| `created_by` | UUID | OUI | — | FK → `auth.users(id)` |
+| `locked_by` | UUID | OUI | — | FK → `auth.users(id)` |
+| `locked_at` | TIMESTAMPTZ | OUI | — | Date de verrouillage |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — isolation par `organization_id`. UPDATE bloqué si `status IN ('locked','submitted')`. DELETE seulement si `status = 'draft'`.
+
+---
+
+### 4bis.6 `fiscal_dossier_values`
+
+> Valeurs des champs du dossier fiscal (manuelles, calculées ou importées).
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `dossier_id` | UUID | NON | — | FK → `fiscal_dossiers(id)` CASCADE |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `field_key` | TEXT | NON | — | Clé du champ |
+| `value` | JSONB | OUI | — | Valeur stockée |
+| `source` | TEXT | NON | `'manual'` | Source : manual/computed/imported |
+| `updated_by` | UUID | OUI | — | FK → `auth.users(id)` |
+| `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(dossier_id, field_key)` — **CHECK** : `source IN ('manual','computed','imported')`
+
+---
+
+### 4bis.7 `imported_trial_balances`
+
+> En-têtes de balances CSV importées (mode "sans historique").
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `exercice_label` | TEXT | OUI | — | Libellé exercice |
+| `filename` | TEXT | OUI | — | Nom du fichier importé |
+| `total_debit` | DECIMAL(15,2) | NON | `0` | Total débits |
+| `total_credit` | DECIMAL(15,2) | NON | `0` | Total crédits |
+| `line_count` | INTEGER | NON | `0` | Nombre de lignes |
+| `created_by` | UUID | OUI | — | FK → `auth.users(id)` |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — isolation par `organization_id`
+
+---
+
+### 4bis.8 `imported_trial_balance_lines`
+
+> Lignes individuelles d'une balance importée.
+
+| Colonne | Type | Nullable | Défaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `import_id` | UUID | NON | — | FK → `imported_trial_balances(id)` CASCADE |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `account_number` | TEXT | NON | — | Numéro de compte |
+| `account_label` | TEXT | OUI | — | Libellé du compte |
+| `debit` | DECIMAL(15,2) | NON | `0` | Montant débit |
+| `credit` | DECIMAL(15,2) | NON | `0` | Montant crédit |
+| `solde` | DECIMAL(15,2) | OUI | — | Solde calculé |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — isolation par `organization_id`
+
+---
+
 ## 5. Clés étrangères — Résumé
 
 Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `profiles` (`id UUID PK REFERENCES auth.users(id)`).
@@ -865,6 +1026,8 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-03-02 | Agent IA | **Migrations 00011+00012** : Module Dossier Fiscal SYSCEBNL. 8 nouvelles tables (`fiscal_templates`, `fiscal_template_pages`, `fiscal_template_fields`, `fiscal_account_mapping`, `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances`, `imported_trial_balance_lines`). Enum `fiscal_dossier_status` (draft/in_progress/ready/locked/submitted). 17 index. 2 triggers `updated_at`. RLS activé sur 8 tables. 14 policies (templates=lecture auth, dossiers/values=isolation org avec protection status, import=isolation org). |
+| 2026-03-02 | Agent IA | **Session frontend/UX uniquement** — aucun changement backend. Côté frontend : fix zone mismatch Sentry (`main.dart` : bindings+Supabase dans `appRunner`), fix auth réactive (`app.dart` : `StatefulWidget` + `onAuthStateChange`, TOKEN_REFRESH ignoré), auto-init `profilUtilisateurCourant` dans `ProfilsUtilisateursNotifier.build()`, refonte `EabTable` (row #, zebra stripes, fixedWidth/flex), `ResponsiveFormRow`+`ResponsiveLayout`, `error_handler` enrichi (onRetry, icônes/couleurs par type, +20 patterns d'erreur RPC). |
 | 2026-02-28 | Agent IA | **Migration 00008** : `statut_exercice` enum, colonnes `statut`/`opening_entry_id`/`closing_entry_id`/`deleted_at` sur `exercices_comptables`, CHECK `date_debut<=date_fin`, index unique partiel 1 ouvert/org, RPCs `open_exercice`, `get_exercice_ouvert`, `can_post_in_exercice`. `cloturer_exercice` enrichi : génère écriture résultat (classes 6/7→131) + à-nouveaux (classes 1-5). |
 | 2026-02-23 | Agent IA | **Fix affichage tableau de bord** : correction des mappings JSON dans `SupabaseDataService` — `ProfilUtilisateur` (fullName→nom, role snake→camel), `Member` (dateNaissance→birthDate, statutMatrimonial→maritalStatus FR→EN, dateBapteme→baptismDate), `Program` (type/typeVisite snake→camel). Ajout helpers `_snakeValueToCamel()` et `_mapStatutMatrimonialToEnglish()`. Remplacement de `accountingEntriesProvider` (retournait `[]`) par `ecrituresComptablesProvider` dans le dashboard. **Convention** : `_snakeToCamel()` convertit les clés JSON uniquement ; les valeurs enum et les champs renommés doivent être mappés manuellement dans chaque méthode `get*()`. |
 | 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recréation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Création organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Désactivation confirmation email dans Auth. |
