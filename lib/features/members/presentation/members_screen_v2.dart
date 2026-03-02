@@ -308,30 +308,31 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                       sortKeyExtractor: (m) => m.fullName,
                       cellBuilder: (m) => Text(
                         m.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     EabColumn<Member>(
                       label: 'Genre',
-                      flex: 1,
+                      fixedWidth: 80,
                       cellBuilder: (m) => Text(genderLabels[m.gender] ?? ''),
                     ),
                     EabColumn<Member>(
                       label: 'Naissance',
-                      flex: 2,
+                      fixedWidth: 120,
                       sortKeyExtractor: (m) => m.birthDate,
                       cellBuilder: (m) =>
                           Text(dateFormatter.format(m.birthDate)),
                     ),
                     EabColumn<Member>(
                       label: 'Rôle',
-                      flex: 2,
+                      fixedWidth: 140,
                       cellBuilder: (m) =>
                           Text(_roleLabels[m.role] ?? m.role.name),
                     ),
                     EabColumn<Member>(
                       label: 'Statut',
-                      flex: 1,
+                      fixedWidth: 100,
                       cellBuilder: (m) =>
                           Text(_statutFideleLabels[m.statut] ?? m.statut.name),
                     ),
@@ -341,7 +342,8 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                       cellBuilder: (m) =>
                           Text(m.idFamille != null
                               ? familyById[m.idFamille!]?.nom ?? '—'
-                              : '—'),
+                              : '—',
+                              overflow: TextOverflow.ellipsis),
                     ),
                     EabColumn<Member>(
                       label: 'Assemblée',
@@ -350,11 +352,12 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                         m.idAssembleeLocale != null
                             ? assembleeById[m.idAssembleeLocale!]?.nom ?? '—'
                             : '—',
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     EabColumn<Member>(
                       label: '',
-                      flex: 1,
+                      fixedWidth: 100,
                       cellBuilder: (m) => Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

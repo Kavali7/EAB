@@ -186,12 +186,14 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                     EabColumn<Program>(
                       label: 'Type',
                       flex: 2,
-                      cellBuilder: (p) =>
-                          Text(typeProgrammeLabels[p.type] ?? ''),
+                      cellBuilder: (p) => Text(
+                        typeProgrammeLabels[p.type] ?? '',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                     EabColumn<Program>(
                       label: 'Date',
-                      flex: 2,
+                      fixedWidth: 120,
                       sortKeyExtractor: (p) => p.date,
                       cellBuilder: (p) =>
                           Text(dateFormatter.format(p.date)),
@@ -211,21 +213,30 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                         p.idAssembleeLocale != null
                             ? assembleeById[p.idAssembleeLocale!]?.nom ?? '—'
                             : '—',
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     EabColumn<Program>(
                       label: 'Participants',
-                      flex: 2,
-                      cellBuilder: (p) => Text(_formatParticipants(p)),
+                      fixedWidth: 110,
+                      numeric: true,
+                      cellBuilder: (p) => Text(
+                        _formatParticipants(p),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green[700],
+                        ),
+                      ),
                     ),
                     EabColumn<Program>(
                       label: 'Conversions',
-                      flex: 1,
+                      fixedWidth: 100,
+                      numeric: true,
                       cellBuilder: (p) => Text(_conversionsLabel(p)),
                     ),
                     EabColumn<Program>(
                       label: '',
-                      flex: 1,
+                      fixedWidth: 100,
                       cellBuilder: (p) => Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

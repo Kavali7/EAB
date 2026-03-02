@@ -155,11 +155,11 @@ class _ExercicesScreenState extends ConsumerState<ExercicesScreen> {
                   columns: [
                     EabColumn<ExerciceComptable>(
                       label: 'Année',
-                      flex: 1,
+                      fixedWidth: 80,
                       sortKeyExtractor: (e) => e.annee,
                       cellBuilder: (e) => Text(
                         '${e.annee}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                     EabColumn<ExerciceComptable>(
@@ -171,12 +171,15 @@ class _ExercicesScreenState extends ConsumerState<ExercicesScreen> {
                     ),
                     EabColumn<ExerciceComptable>(
                       label: 'Libellé',
-                      flex: 2,
-                      cellBuilder: (e) => Text(e.libelle ?? '—'),
+                      flex: 3,
+                      cellBuilder: (e) => Text(
+                        e.libelle ?? '—',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     EabColumn<ExerciceComptable>(
                       label: 'Statut',
-                      flex: 1,
+                      fixedWidth: 120,
                       cellBuilder: (e) => Chip(
                         label: Text(
                           _statutLabels[e.statut] ?? e.statut.name,
@@ -193,7 +196,7 @@ class _ExercicesScreenState extends ConsumerState<ExercicesScreen> {
                     ),
                     EabColumn<ExerciceComptable>(
                       label: 'Clôturé le',
-                      flex: 2,
+                      fixedWidth: 130,
                       cellBuilder: (e) => Text(
                         e.clotureAt != null
                             ? dateFormatter.format(e.clotureAt!)
@@ -202,7 +205,7 @@ class _ExercicesScreenState extends ConsumerState<ExercicesScreen> {
                     ),
                     EabColumn<ExerciceComptable>(
                       label: 'Actions',
-                      flex: 2,
+                      fixedWidth: 180,
                       cellBuilder: (e) => Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

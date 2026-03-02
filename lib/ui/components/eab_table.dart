@@ -1,7 +1,14 @@
-/// Tableau paginé EAB — remplace les PaginatedDataTable ad-hoc.
+/// Tableau paginé EAB — Design premium avec colonnes larges et lisibles.
 ///
-/// Fournit : tri par colonne, recherche intégrée, pagination,
-/// et gestion des états vide/chargement/erreur.
+/// Inspiré des meilleures pratiques de DataGrid :
+/// - Numéro de ligne (#)
+/// - Alternance de couleurs (zebra striping)
+/// - Colonnes à largeur fixe OU flex
+/// - Texte toujours ellipsis
+/// - Lignes spacieuses pour lisibilité (personnes âgées)
+/// - Actions compactes à droite
+/// - Tri par colonne
+/// - Pagination
 library;
 
 import 'package:flutter/material.dart';
@@ -12,10 +19,13 @@ class EabColumn<T> {
   const EabColumn({
     required this.label,
     required this.cellBuilder,
-    this.flex = 1,
+    this.flex,
+    this.fixedWidth,
     this.sortKeyExtractor,
     this.alignment = Alignment.centerLeft,
-  });
+    this.numeric = false,
+  }) : assert(flex != null || fixedWidth != null,
+            'EabColumn: flex ou fixedWidth requis');
 
   /// Label affiché dans l'en-tête.
   final String label;
@@ -23,14 +33,20 @@ class EabColumn<T> {
   /// Construit le contenu de la cellule pour une ligne donnée.
   final Widget Function(T item) cellBuilder;
 
-  /// Poids flex pour la largeur (par défaut 1).
-  final int flex;
+  /// Poids flex pour la largeur. Null si fixedWidth est défini.
+  final int? flex;
+
+  /// Largeur fixe en pixels. Utilisé pour les colonnes numériques et actions.
+  final double? fixedWidth;
 
   /// Extracteur de valeur pour le tri. Null = colonne non triable.
   final Comparable Function(T item)? sortKeyExtractor;
 
   /// Alignement du contenu dans la cellule.
   final Alignment alignment;
+
+  /// Si true, aligne le texte à droite (montants, quantités).
+  final bool numeric;
 }
 
 /// Tableau réutilisable avec pagination, tri, et gestion d'états.
@@ -46,6 +62,7 @@ class EabTable<T> extends StatefulWidget {
     this.emptyMessage = 'Aucune donnée disponible',
     this.emptyIcon = Icons.inbox_outlined,
     this.headerActions,
+    this.showRowNumbers = true,
   });
 
   /// Définition des colonnes.
@@ -74,6 +91,9 @@ class EabTable<T> extends StatefulWidget {
 
   /// Actions affichées dans l'en-tête (ex: bouton ajouter).
   final List<Widget>? headerActions;
+
+  /// Affiche la colonne numéro de ligne (#).
+  final bool showRowNumbers;
 
   @override
   State<EabTable<T>> createState() => _EabTableState<T>();
@@ -144,7 +164,8 @@ class _EabTableState<T> extends State<EabTable<T>> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+              Icon(Icons.error_outline,
+                  size: 48, color: theme.colorScheme.error),
               const SizedBox(height: AppSpacing.md),
               Text(
                 widget.errorMessage!,
@@ -182,135 +203,285 @@ class _EabTableState<T> extends State<EabTable<T>> {
       );
     }
 
-    // Tableau avec données
+    final pageItems = _pageItems;
+
+    // Tableau avec données — Design premium
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          children: [
-            // En-tête avec actions
-            if (widget.headerActions != null) ...[
-              Row(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          // En-tête avec actions
+          if (widget.headerActions != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: widget.headerActions!,
               ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            // En-tête colonnes
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppSpacing.inputRadius),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: List.generate(widget.columns.length, (i) {
-                  final col = widget.columns[i];
-                  final isSorted = _sortColumnIndex == i;
-                  return Expanded(
-                    flex: col.flex,
-                    child: InkWell(
-                      onTap: col.sortKeyExtractor != null
-                          ? () => _onSort(i)
-                          : null,
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              col.label,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (isSorted)
-                            Icon(
-                              _sortAscending
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              size: 14,
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ),
             ),
-            const Divider(height: 1),
-            // Lignes
-            ..._pageItems.map((item) => InkWell(
-                  onTap: widget.onRowTap != null
-                      ? () => widget.onRowTap!(item)
-                      : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
+
+          // Scroll horizontal si nécessaire
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.of(context).size.width - 320,
+              ),
+              child: Column(
+                children: [
+                  // ── En-tête colonnes ──
+                  Container(
                     decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade200),
+                        bottom: BorderSide(color: Colors.grey.shade300, width: 2),
                       ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
                     child: Row(
-                      children: widget.columns
-                          .map((col) => Expanded(
-                                flex: col.flex,
-                                child: Align(
-                                  alignment: col.alignment,
-                                  child: col.cellBuilder(item),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                )),
-            // Pagination
-            if (_totalPages > 1)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${widget.items.length} résultat(s) — '
-                      'Page ${_currentPage + 1} / $_totalPages',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left),
-                          onPressed: _currentPage > 0
-                              ? () => setState(() => _currentPage--)
-                              : null,
-                          iconSize: 20,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right),
-                          onPressed: _currentPage < _totalPages - 1
-                              ? () => setState(() => _currentPage++)
-                              : null,
-                          iconSize: 20,
-                        ),
+                        // Colonne #
+                        if (widget.showRowNumbers)
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              '#',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        // Colonnes data
+                        ...List.generate(widget.columns.length, (i) {
+                          final col = widget.columns[i];
+                          final isSorted = _sortColumnIndex == i;
+                          return _buildHeaderCell(
+                            col: col,
+                            isSorted: isSorted,
+                            index: i,
+                            theme: theme,
+                          );
+                        }),
                       ],
                     ),
-                  ],
+                  ),
+
+                  // ── Lignes de données ──
+                  ...List.generate(pageItems.length, (rowIndex) {
+                    final item = pageItems[rowIndex];
+                    final globalIndex =
+                        _currentPage * widget.rowsPerPage + rowIndex + 1;
+                    final isEven = rowIndex.isEven;
+
+                    return InkWell(
+                      onTap: widget.onRowTap != null
+                          ? () => widget.onRowTap!(item)
+                          : null,
+                      hoverColor: Colors.blue.shade50,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isEven ? Colors.white : Colors.grey.shade50,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.grey.shade200,
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Numéro de ligne
+                            if (widget.showRowNumbers)
+                              SizedBox(
+                                width: 48,
+                                child: Text(
+                                  '$globalIndex',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            // Cellules
+                            ...widget.columns.map((col) =>
+                                _buildDataCell(col: col, item: item)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Pagination ──
+          if (_totalPages > 1)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(12),
                 ),
               ),
-          ],
-        ),
+              child: Row(
+                children: [
+                  Text(
+                    '${widget.items.length} résultat${widget.items.length > 1 ? "s" : ""} — '
+                    'Page ${_currentPage + 1} / $_totalPages',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const Spacer(),
+                  // Boutons page
+                  _pageButton(
+                    icon: Icons.first_page,
+                    onPressed: _currentPage > 0
+                        ? () => setState(() => _currentPage = 0)
+                        : null,
+                  ),
+                  _pageButton(
+                    icon: Icons.chevron_left,
+                    onPressed: _currentPage > 0
+                        ? () => setState(() => _currentPage--)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      '${_currentPage + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _pageButton(
+                    icon: Icons.chevron_right,
+                    onPressed: _currentPage < _totalPages - 1
+                        ? () => setState(() => _currentPage++)
+                        : null,
+                  ),
+                  _pageButton(
+                    icon: Icons.last_page,
+                    onPressed: _currentPage < _totalPages - 1
+                        ? () => setState(() => _currentPage = _totalPages - 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  /// Construit une cellule d'en-tête.
+  Widget _buildHeaderCell({
+    required EabColumn<T> col,
+    required bool isSorted,
+    required int index,
+    required ThemeData theme,
+  }) {
+    final content = InkWell(
+      onTap: col.sortKeyExtractor != null ? () => _onSort(index) : null,
+      child: Row(
+        mainAxisAlignment: col.numeric
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Text(
+              col.label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: Colors.grey[700],
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (col.sortKeyExtractor != null) ...[
+            const SizedBox(width: 4),
+            Icon(
+              isSorted
+                  ? (_sortAscending
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward)
+                  : Icons.unfold_more,
+              size: 14,
+              color: isSorted ? theme.colorScheme.primary : Colors.grey[400],
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (col.fixedWidth != null) {
+      return SizedBox(width: col.fixedWidth, child: content);
+    }
+    return Expanded(flex: col.flex ?? 1, child: content);
+  }
+
+  /// Construit une cellule de données.
+  Widget _buildDataCell({
+    required EabColumn<T> col,
+    required T item,
+  }) {
+    final child = DefaultTextStyle.merge(
+      style: const TextStyle(fontSize: 14, height: 1.4),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 2,
+      child: Align(
+        alignment: col.numeric ? Alignment.centerRight : col.alignment,
+        child: col.cellBuilder(item),
+      ),
+    );
+
+    if (col.fixedWidth != null) {
+      return SizedBox(width: col.fixedWidth, child: child);
+    }
+    return Expanded(flex: col.flex ?? 1, child: child);
+  }
+
+  Widget _pageButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) =>
+      SizedBox(
+        width: 32,
+        height: 32,
+        child: IconButton(
+          icon: Icon(icon, size: 18),
+          onPressed: onPressed,
+          padding: EdgeInsets.zero,
+          style: IconButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ),
+      );
 }
