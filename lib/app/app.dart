@@ -24,6 +24,9 @@ import '../features/organization/presentation/organization_settings_screen.dart'
 import '../features/dashboard_finance/dashboard_finance_screen.dart';
 import '../features/audit/presentation/audit_log_screen.dart';
 import '../features/programs/presentation/calendar_screen.dart';
+import '../features/fiscal_dossier/presentation/fiscal_dossiers_screen.dart';
+import '../features/fiscal_dossier/presentation/fiscal_wizard_screen.dart';
+import '../features/fiscal_dossier/presentation/fiscal_import_screen.dart';
 
 class ChurchApp extends StatefulWidget {
   const ChurchApp({super.key});
@@ -113,6 +116,21 @@ class _ChurchAppState extends State<ChurchApp> {
         '/reports-rapport-mensuel': (_) => const RapportMensuelEabScreen(),
         '/audit-log': (_) => const AuditLogScreen(),
         '/calendar': (_) => const CalendarScreen(),
+        '/fiscal-dossiers': (_) => const FiscalDossiersScreen(),
+        '/fiscal-import-balance': (_) => const FiscalImportScreen(),
+      },
+      onGenerateRoute: (settings) {
+        // Route paramétrée : /fiscal-dossier/:id
+        final uri = Uri.parse(settings.name ?? '');
+        if (uri.pathSegments.length == 2 &&
+            uri.pathSegments[0] == 'fiscal-dossier') {
+          final dossierId = uri.pathSegments[1];
+          return MaterialPageRoute(
+            builder: (_) => FiscalWizardScreen(dossierId: dossierId),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }

@@ -41,6 +41,11 @@ class SideNavigation extends ConsumerWidget {
         Icons.assessment_outlined,
       ),
       _NavItem(
+        'Dossier fiscal',
+        '/fiscal-dossiers',
+        Icons.request_page_outlined,
+      ),
+      _NavItem(
         'Rapport mensuel EAB',
         '/reports-rapport-mensuel',
         Icons.description_outlined,
