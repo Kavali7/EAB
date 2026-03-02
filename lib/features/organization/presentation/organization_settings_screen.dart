@@ -248,16 +248,14 @@ class _OrganizationSettingsScreenState
                     title: 'Contact',
                     child: Column(
                       children: [
-                        Row(children: [
-                          Expanded(child: EabTextField(label: 'Adresse', controller: _adresseCtrl)),
-                          const SizedBox(width: AppSpacing.cardGap),
-                          Expanded(child: EabTextField(label: 'Téléphone', controller: _telCtrl)),
+                        ResponsiveFormRow(children: [
+                          EabTextField(label: 'Adresse', controller: _adresseCtrl),
+                          EabTextField(label: 'Téléphone', controller: _telCtrl),
                         ]),
                         const SizedBox(height: AppSpacing.md),
-                        Row(children: [
-                          Expanded(child: EabTextField(label: 'Email', controller: _emailCtrl)),
-                          const SizedBox(width: AppSpacing.cardGap),
-                          Expanded(child: EabTextField(label: 'Site web', controller: _siteCtrl)),
+                        ResponsiveFormRow(children: [
+                          EabTextField(label: 'Email', controller: _emailCtrl),
+                          EabTextField(label: 'Site web', controller: _siteCtrl),
                         ]),
                       ],
                     ),
@@ -279,46 +277,33 @@ class _OrganizationSettingsScreenState
                   // ── Invitations ──
                   SectionCard(
                     title: 'Inviter un utilisateur',
-                    child: Column(
+                    child: ResponsiveFormRow(
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: EabTextField(
-                                label: 'Email',
-                                controller: _inviteEmailCtrl,
-                                keyboardType: TextInputType.emailAddress,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              flex: 2,
-                              child: DropdownButtonFormField<String>(
-                                initialValue: _inviteRole,
-                                decoration: const InputDecoration(
-                                  labelText: 'Rôle',
-                                  border: OutlineInputBorder(),
-                                ),
-                                items: const [
-                                  DropdownMenuItem(value: 'adminNational', child: Text('Admin national')),
-                                  DropdownMenuItem(value: 'responsableRegion', child: Text('Responsable région')),
-                                  DropdownMenuItem(value: 'surintendantDistrict', child: Text('Surintendant district')),
-                                  DropdownMenuItem(value: 'tresorierAssemblee', child: Text('Trésorier assemblée')),
-                                ],
-                                onChanged: (v) => setState(() => _inviteRole = v!),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            EabButton(
-                              label: 'Inviter',
-                              variant: EabButtonVariant.primary,
-                              size: EabButtonSize.small,
-                              isLoading: _inviting,
-                              onPressed: () => _inviteUser(org.id),
-                            ),
+                        EabTextField(
+                          label: 'Email',
+                          controller: _inviteEmailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _inviteRole,
+                          decoration: const InputDecoration(
+                            labelText: 'Rôle',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'adminNational', child: Text('Admin national')),
+                            DropdownMenuItem(value: 'responsableRegion', child: Text('Responsable région')),
+                            DropdownMenuItem(value: 'surintendantDistrict', child: Text('Surintendant district')),
+                            DropdownMenuItem(value: 'tresorierAssemblee', child: Text('Trésorier assemblée')),
                           ],
+                          onChanged: (v) => setState(() => _inviteRole = v!),
+                        ),
+                        EabButton(
+                          label: 'Inviter',
+                          variant: EabButtonVariant.primary,
+                          size: EabButtonSize.small,
+                          isLoading: _inviting,
+                          onPressed: () => _inviteUser(org.id),
                         ),
                       ],
                     ),

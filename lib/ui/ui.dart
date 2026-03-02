@@ -20,3 +20,4 @@ export 'components/kpi_card.dart';
 
 // Layout
 export 'layout/eab_page_header.dart';
+export 'layout/responsive_layout.dart';
