@@ -30,6 +30,7 @@ import 'package:eab/widgets/info_card.dart';
 import 'package:eab/widgets/section_card.dart';
 import 'package:eab/ui/ui.dart';
 import 'member_form_dialog.dart';
+import 'member_detail_screen.dart';
 
 const _roleLabels = {
   RoleFidele.membre: 'Membre',
@@ -295,10 +296,10 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                   emptyIcon: Icons.people_outline,
                   items: filtered,
                   rowsPerPage: 15,
-                  onRowTap: (m) => showMemberFormV2(
-                    context,
-                    member: m,
-                    families: families,
+                  onRowTap: (m) => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MemberDetailScreen(member: m),
+                    ),
                   ),
                   columns: [
                     EabColumn<Member>(

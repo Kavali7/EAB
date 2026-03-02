@@ -143,7 +143,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                           label: 'Rapport mensuel',
                           icon: Icons.description,
                           onTap: () => Navigator.pushNamed(
-                              context, '/rapport-mensuel'),
+                              context, '/reports-rapport-mensuel'),
                           color: Colors.orange[700],
                         ),
                       ],
