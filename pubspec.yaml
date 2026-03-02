@@ -46,6 +46,7 @@ dependencies:
   printing: ^5.13.4
   csv: ^6.0.0
   google_fonts: ^6.2.1
+  sentry_flutter: ^8.13.0
 
 dev_dependencies:
   flutter_test:
