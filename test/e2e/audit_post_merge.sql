@@ -104,13 +104,11 @@ ORDER BY routine_name;
 -- 4.3 — VÉRIFICATION BACKUPS
 -- ============================================================================
 
--- ─────────────────────────────────────────────────
 -- TEST 6 : Taille de la base
--- ─────────────────────────────────────────────────
 SELECT 
-    '4.3.1 — Taille DB' as test,
+    '4.3.1 - Taille DB' as test,
     pg_size_pretty(pg_database_size(current_database())) as taille_totale,
-    '✅ Note: Backups gérés automatiquement par Supabase (plan gratuit = 7 jours)' as info;
+    'Backups geres automatiquement par Supabase (plan gratuit = 7 jours)' as info;
 
 -- ─────────────────────────────────────────────────
 -- TEST 7 : Nombre de lignes par table
@@ -128,18 +126,18 @@ ORDER BY n_live_tup DESC;
 -- 4.4 — AUDIT PERFORMANCE
 -- ============================================================================
 
--- ─────────────────────────────────────────────────
 -- TEST 8 : Index existants
--- ─────────────────────────────────────────────────
 SELECT 
-    '4.4.1 — Index' as test,
-    schemaname || '.' || tablename as table_name,
-    indexname as index_name,
-    pg_size_pretty(pg_relation_size(indexrelid)) as taille_index
-FROM pg_indexes
-JOIN pg_stat_user_indexes USING (indexrelname)
-WHERE schemaname = 'public'
-ORDER BY tablename, indexname;
+    '4.4.1 - Index' as test,
+    i.schemaname || '.' || i.tablename as table_name,
+    i.indexname as index_name,
+    pg_size_pretty(pg_relation_size(s.indexrelid)) as taille_index
+FROM pg_indexes i
+JOIN pg_stat_user_indexes s 
+    ON i.indexname = s.indexrelname 
+    AND i.schemaname = s.schemaname
+WHERE i.schemaname = 'public'
+ORDER BY i.tablename, i.indexname;
 
 -- ─────────────────────────────────────────────────
 -- TEST 9 : Tables sans index (potentiellement lentes)
