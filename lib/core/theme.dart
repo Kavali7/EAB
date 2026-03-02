@@ -2,6 +2,7 @@
 ///
 /// Version C1 : Google Fonts (Inter), tokens finalisés,
 /// micro-animations, accessibilité (focus visible, contrastes).
+library;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -74,12 +75,12 @@ class AppElevation {
 
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
         BoxShadow(
-          color: Colors.black.withOpacity(0.02),
+          color: Colors.black.withValues(alpha: 0.02),
           blurRadius: 4,
           offset: const Offset(0, 1),
         ),
@@ -87,7 +88,7 @@ class AppElevation {
 
   static List<BoxShadow> get elevatedShadow => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.08),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 16,
           offset: const Offset(0, 4),
         ),
@@ -322,7 +323,7 @@ ThemeData buildAppTheme() {
     cardTheme: CardThemeData(
       color: AppColors.surface,
       elevation: AppElevation.low,
-      shadowColor: Colors.black.withOpacity(0.06),
+      shadowColor: Colors.black.withValues(alpha: 0.06),
       shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
       margin: const EdgeInsets.symmetric(vertical: 6),
     ),
@@ -377,7 +378,7 @@ ThemeData buildAppTheme() {
     // ── Scrollbar ──
     scrollbarTheme: ScrollbarThemeData(
       thumbColor: WidgetStateProperty.all(
-        AppColors.primary.withOpacity(0.4),
+        AppColors.primary.withValues(alpha: 0.4),
       ),
       radius: const Radius.circular(8),
       thickness: WidgetStateProperty.all(6.0),

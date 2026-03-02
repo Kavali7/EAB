@@ -349,7 +349,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                                       dense: true,
                                       leading: CircleAvatar(
                                         radius: 16,
-                                        backgroundColor: ChurchTheme.navy.withOpacity(0.1),
+                                        backgroundColor: ChurchTheme.navy.withValues(alpha: 0.1),
                                         child: Text(
                                           m.fullName.isNotEmpty ? m.fullName[0].toUpperCase() : '?',
                                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: ChurchTheme.navy),
@@ -665,16 +665,16 @@ class DashboardScreenV2 extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 13, color: color.withOpacity(0.9))),
+            child: Text(text, style: TextStyle(fontSize: 13, color: color.withValues(alpha: 0.9))),
           ),
           if (actionLabel != null && onAction != null)
             TextButton(

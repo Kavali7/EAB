@@ -1,6 +1,7 @@
 /// Widget tests pour les composants UI Kit.
 ///
 /// Ces tests ne nécessitent PAS Supabase (composants purs).
+library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

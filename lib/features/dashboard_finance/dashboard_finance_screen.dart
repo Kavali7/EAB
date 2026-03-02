@@ -158,7 +158,7 @@ class _KpiRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha:0.1),
                   borderRadius: AppRadius.mdAll,
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -264,7 +264,7 @@ class _EvolutionChart extends StatelessWidget {
               color: AppColors.success,
               barWidth: 2.5,
               dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: AppColors.success.withOpacity(0.05)),
+              belowBarData: BarAreaData(show: true, color: AppColors.success.withValues(alpha:0.05)),
             ),
             // Charges (rouge)
             LineChartBarData(
@@ -273,7 +273,7 @@ class _EvolutionChart extends StatelessWidget {
               color: AppColors.error,
               barWidth: 2.5,
               dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: AppColors.error.withOpacity(0.05)),
+              belowBarData: BarAreaData(show: true, color: AppColors.error.withValues(alpha:0.05)),
             ),
             // Solde net (bleu, dashed)
             LineChartBarData(

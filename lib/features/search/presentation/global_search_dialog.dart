@@ -279,9 +279,9 @@ class _ResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       selected: isSelected,
-      selectedTileColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+      selectedTileColor: Theme.of(context).colorScheme.primary.withValues(alpha:0.08),
       leading: CircleAvatar(
-        backgroundColor: _color.withOpacity(0.1),
+        backgroundColor: _color.withValues(alpha:0.1),
         child: Icon(_icon, color: _color, size: 20),
       ),
       title: Text(
@@ -301,7 +301,7 @@ class _ResultTile extends StatelessWidget {
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          color: _color.withOpacity(0.1),
+          color: _color.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

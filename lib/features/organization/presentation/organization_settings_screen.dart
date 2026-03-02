@@ -155,7 +155,7 @@ class _OrganizationSettingsScreenState
                             // Avatar/Logo
                             CircleAvatar(
                               radius: 40,
-                              backgroundColor: org.primaryColor.withOpacity(0.1),
+                              backgroundColor: org.primaryColor.withValues(alpha: 0.1),
                               child: org.logoUrl != null
                                   ? ClipOval(
                                       child: Image.network(org.logoUrl!,
@@ -296,7 +296,7 @@ class _OrganizationSettingsScreenState
                             Expanded(
                               flex: 2,
                               child: DropdownButtonFormField<String>(
-                                value: _inviteRole,
+                                initialValue: _inviteRole,
                                 decoration: const InputDecoration(
                                   labelText: 'Rôle',
                                   border: OutlineInputBorder(),

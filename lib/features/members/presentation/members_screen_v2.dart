@@ -88,8 +88,7 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
 
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
-    final _ = regionsAsync.value ?? [];
-    final __ = districtsAsync.value ?? [];
+    // regionsAsync / districtsAsync watched pour réactivité EabHierarchyFilter
     final assemblees = assembleesAsync.value ?? [];
     final assembleeById = {for (final a in assemblees) a.id: a};
     final familyById = {for (final f in families) f.id: f};
