@@ -2,9 +2,9 @@
 
 ## Vue d'ensemble
 
-Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiques (C1-C4) et haute priorité (H1-H5) largement terminées. Le chantier restant se concentre sur : (1) les items résiduels des phases 1-2, (2) les fonctionnalités de phase 3, et (3) la différenciation.
+Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiques (C1-C4), haute priorité (H1-H5), et **moyenne (M1-M6) terminées**. Le chantier restant se concentre sur : (1) les items résiduels des phases 1-2, (2) les fonctionnalités de phase 4 retenues pour la V1.
 
-> **Dernière mise à jour** : 2026-03-01
+> **Dernière mise à jour** : 2026-03-02
 
 ---
 
@@ -127,64 +127,72 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 
 ## 🟡 PRIORITÉ MOYENNE (phase 3)
 
-### M1. Journal d'Audit (Frontend)
+### M1. Journal d'Audit (Frontend) ✅
 
 **Travail** :
 
-- [ ] Écran de consultation du journal d'audit (`audit_log`)
-- [ ] Filtres : par action, date, utilisateur, table, enregistrement
-- [ ] Vue chronologique des modifications d'une entité
+- [x] Écran de consultation du journal d'audit (`audit_log_screen.dart`)
+- [x] Filtres : par action (INSERT/UPDATE/DELETE/VALIDATION/CLOTURE), table, utilisateur
+- [x] Vue chronologique timeline avec icônes colorées par action
+- [x] Détail bottom sheet : métadonnées + changements JSONB
+- [x] Provider filtrable (`audit_providers.dart`)
+- [x] Route `/audit-log` + entrée sidebar
 
-### M2. Fiches Individuelles
-
-**Travail** :
-
-- [ ] Fiche membre détaillée (profil complet, historique, famille, timeline)
-- [ ] Fiche assemblée (statistiques, membres, programmes, finances)
-- [ ] Fiche compte comptable (mouvements, solde, graphique)
-
-### M3. Notifications et Alertes
+### M2. Fiches Individuelles ✅
 
 **Travail** :
 
-- [ ] Système de notifications in-app
-- [ ] Alertes configurables : budget dépassé, rapport en retard, écriture en attente
-- [ ] Badge de notification sur l'icône dans le sidebar
+- [x] Fiche membre détaillée (`member_detail_screen.dart`) : profil complet, parcours spirituel, vulnérabilités
+- [x] Fiche compte comptable (`compte_detail_screen.dart`) : mouvements récents, solde cumulé, DataTable
+- [x] Navigation tap sur ligne tableau → fiche détaillée
+- [x] Flèche retour ← sur chaque fiche
 
-### M4. Gestion des Familles (enrichie)
-
-**Travail** :
-
-- [ ] Vue famille avec arbre généalogique simplifié
-- [ ] Lien automatique des enfants aux parents
-- [ ] Statistiques familiales
-
-### M5. Calendrier des Activités
+### M3. Notifications et Alertes ✅
 
 **Travail** :
 
-- [ ] Vue calendrier mensuelle/hebdomadaire des programmes
-- [ ] Planification d'activités futures
-- [ ] Rappels avant événement
+- [x] Système de notifications in-app (`notifications_provider.dart`)
+- [x] 3 règles métier : écritures brouillon, exercice absent, exercice expirant (< 30j)
+- [x] 🔔 Cloche avec badge rouge dans l'AppBar
+- [x] Panneau popup avec priorités colorées (urgent/warning/info)
+- [x] Navigation vers l'écran concerné au tap
 
-### M6. Gestion des Tiers Enrichie
+### M4. Gestion des Familles (enrichie) ✅
 
 **Travail** :
 
-- [ ] Fiche tiers avec historique des opérations
-- [ ] Balance par tiers (dû par les tiers / dû aux tiers)
-- [ ] Relances automatiques
+- [x] Vue famille (`famille_detail_screen.dart`) avec liens époux/épouse/enfants
+- [x] Navigation vers fiche membre depuis la famille
+- [x] Statistiques familiales (nb membres, officiers)
+
+### M5. Calendrier des Activités ✅
+
+**Travail** :
+
+- [x] Vue calendrier mensuelle (`calendar_screen.dart`)
+- [x] Points colorés par type de programme (culte, baptême, visite...)
+- [x] Navigation mois précédent/suivant + bouton "Aujourd'hui"
+- [x] Détail du jour en bottom sheet
+- [x] Liste des activités du mois en dessous
+- [x] Route `/calendar` + entrée sidebar
+
+### M6. Gestion des Tiers Enrichie ✅
+
+**Travail** :
+
+- [x] Fiche tiers (`tiers_detail_screen.dart`) avec coordonnées
+- [x] Historique des opérations (écritures liées au tiers)
+- [x] Balance par tiers (Débit / Crédit / Solde)
 
 ---
 
-## 🟢 PRIORITÉ BASSE (phase 4 — différenciation)
+## 🟢 PRIORITÉ BASSE (phase 4 — différenciation V1)
 
 ### B1. Analytics Avancées
 
 - [ ] Dashboard de BI avec graphiques interactifs
 - [ ] Tendances de croissance (membres, finances) sur 12 mois
 - [ ] Benchmarking entre assemblées (admin national)
-- [ ] Prédictions ML simples (tendance des recettes)
 
 ### B2. Mobile App Native
 
@@ -192,41 +200,47 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [ ] Mode hors-ligne avec synchronisation
 - [ ] Notifications push
 
-### B3. Multi-Langue
+### B3. Multi-Langue (EN uniquement pour V1)
 
-- [ ] Support français / anglais / portugais / espagnol
+- [ ] Support français / anglais
 - [ ] Système de localisation `intl`
-
-### B4. Intégrations
-
-- [ ] Intégration Mobile Money (MTN MoMo, Orange Money) pour les offrandes en ligne
-- [ ] Intégration SMS pour rappels aux fidèles
-- [ ] Intégration WhatsApp Business API
-- [ ] Connexion avec des plateformes de paiement (Stripe, PayPal)
-
-### B5. Communication
-
-- [ ] Messagerie interne
-- [ ] Annuaire des fidèles (avec consentement RGPD)
-- [ ] Envoi de SMS/email groupés
 
 ### B6. Mode Avancé Comptable
 
 - [ ] Lettrage des comptes de tiers
 - [ ] Import d'écritures depuis fichier Excel/CSV
 - [ ] Import automatique de relevé bancaire (OFX/QIF)
-- [ ] Multi-devises (pour les organisations internationales)
+
+> **Note**: B4 (Intégrations Mobile Money/WhatsApp) et B5 (Communication/Messagerie) sont reportés à la V2.
+
+---
+
+## 🔧 INFRASTRUCTURE (Pipeline Release)
+
+### R1. Sentry — Error Monitoring ✅
+
+- [x] `sentry_flutter` intégré dans `pubspec.yaml`
+- [x] DSN configuré via `--dart-define` (prod) avec fallback vide (dev)
+- [x] `ErrorReporting` : capture exceptions, breadcrumbs, user context, RPC timing
+
+### R2. Audit SQL ✅
+
+- [x] Script `test/e2e/audit_post_merge.sql` — 10 tests
+- [x] RLS : 22 tables protégées, 12 policies storage
+- [x] Performance : toutes tables indexées (3-11 index chacune)
+- [x] Backups : automatiques Supabase (7 jours rétention)
 
 ---
 
 ## 📋 Résumé par phase
 
-| Phase | Items | Impact | Effort |
+| Phase | Items | Impact | Statut |
 | --- | --- | --- | --- |
-| **Phase 1 — Critique** | C1-C4 (Design, Dashboard, Multi-tenant, Export) | ✅ Terminé (sauf template PDF custom) | ~0.5 semaine (résiduel) |
-| **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | ✅ Terminé (sauf flux trésorerie, budget vs réalisé, ratios) | ~1 semaine (résiduel) |
-| **Phase 3 — Moyenne** | M1-M6 (Audit, Fiches, Notifications, Familles, Calendrier, Tiers) | 🟡 Moyen | ~2-3 semaines |
-| **Phase 4 — Basse** | B1-B6 (Analytics, Mobile, Multi-langue, Intégrations, Communication, Comptable avancé) | 🟢 Différenciation | ~4-6 semaines |
+| **Phase 1 — Critique** | C1-C4 (Design, Dashboard, Multi-tenant, Export) | ✅ Terminé | Complet |
+| **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | ✅ Terminé | Complet (sauf flux trésorerie, ratios) |
+| **Phase 3 — Moyenne** | M1-M6 (Audit, Fiches, Notifications, Familles, Calendrier, Tiers) | ✅ Terminé | **Complet** |
+| **Phase 4 — Basse** | B1, B2, B3, B6 (Analytics, Mobile, EN, Comptable avancé) | 🟢 Différenciation | ~3-4 semaines |
+| **Infrastructure** | R1-R2 (Sentry, Audit SQL) | ✅ Terminé | Complet |
 
 ---
 

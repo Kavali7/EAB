@@ -327,7 +327,7 @@
 | Widget | Fichier | Taille | Rôle |
 | --- | --- | --- | --- |
 | `AppShell` | `app_shell.dart` | 8KB | Layout principal : AppBar + Sidebar (desktop) / Drawer (mobile) + Body. Gère la sélection du profil utilisateur et de l'assemblée active dans l'AppBar. |
-| `SideNavigation` | `side_navigation.dart` | 4KB | Menu latéral avec 12 items de navigation + bouton déconnexion. |
+| `SideNavigation` | `side_navigation.dart` | 5KB | Menu latéral avec 14 items de navigation + bouton déconnexion. |
 | `ContextHeader` | `context_header.dart` | 5KB | En-tête contextuel affichant l'assemblée active avec ses informations hiérarchiques. |
 | `InfoCard` | `info_card.dart` | 2KB | Carte statistique avec titre, valeur et couleur. |
 | `SectionCard` | `section_card.dart` | 1KB | Carte de section avec titre et contenu. |
@@ -365,3 +365,100 @@
 | `supabase_data_service.dart` | 446 | 14KB | 🟡 Moyenne |
 | `accounting_reconciliation_screen.dart` | — | 12KB | 🟡 Moyenne |
 | `login_screen.dart` | 289 | 11KB | 🟢 Modérée |
+| `audit_log_screen.dart` | — | — | 🟡 Moyenne |
+| `calendar_screen.dart` | — | — | 🟡 Moyenne |
+| `member_detail_screen.dart` | — | — | 🟢 Modérée |
+| `compte_detail_screen.dart` | — | — | 🟢 Modérée |
+| `famille_detail_screen.dart` | — | — | 🟢 Modérée |
+| `tiers_detail_screen.dart` | — | — | 🟢 Modérée |
+
+---
+
+## 12. Nouveaux écrans Phase 3 (ajoutés 2026-03-02)
+
+### 12.1 `AuditLogScreen` — Journal d'audit
+
+- **Route** : `/audit-log`
+- **Fichier** : `features/audit/presentation/audit_log_screen.dart`
+- **Provider** : `auditLogsProvider` (avec `auditFilterProvider`)
+- **Fonctionnalités** :
+  - Filtres dropdowns : action (Création/Modification/Suppression/Validation/Clôture), table, email utilisateur
+  - Timeline colorée par type d'action avec icônes
+  - Détail bottom sheet (métadonnées + changements JSONB)
+  - Limité aux 200 dernières entrées
+- **Accès** : admin_national uniquement (RLS backend)
+- **État** : ✅ Fonctionnel
+
+### 12.2 `CalendarScreen` — Calendrier des activités
+
+- **Route** : `/calendar`
+- **Fichier** : `features/programs/presentation/calendar_screen.dart`
+- **Provider** : `programsProvider`
+- **Fonctionnalités** :
+  - Grille mensuelle avec points colorés par type de programme
+  - Navigation mois précédent/suivant + bouton "Aujourd'hui"
+  - Bottom sheet au tap sur un jour avec activités
+  - Liste complète des activités du mois
+  - 12 types de programmes avec icônes et couleurs dédiées
+- **État** : ✅ Fonctionnel
+
+### 12.3 `MemberDetailScreen` — Fiche membre
+
+- **Route** : Navigation push depuis tap sur ligne dans le tableau des fidèles
+- **Fichier** : `features/members/presentation/member_detail_screen.dart`
+- **Fonctionnalités** :
+  - Avatar avec initiales
+  - Informations personnelles (sexe, naissance, situation matrimoniale, contact)
+  - Parcours spirituel (conversion, baptême, main d'association, entrée)
+  - Vulnérabilités en chips colorées
+  - Badge statut coloré (actif/inactif/parti/décédé/transféré)
+  - Flèche retour ←
+- **État** : ✅ Fonctionnel
+
+### 12.4 `FamilleDetailScreen` — Fiche famille
+
+- **Route** : Navigation push
+- **Fichier** : `features/members/presentation/famille_detail_screen.dart`
+- **Provider** : `membersProvider`
+- **Fonctionnalités** :
+  - Affichage époux/épouse avec navigation vers fiche membre
+  - Liste des enfants avec navigation vers fiche membre
+  - Statistiques familiales (nb membres, officiers)
+  - Flèche retour ←
+- **État** : ✅ Fonctionnel
+
+### 12.5 `CompteDetailScreen` — Fiche compte comptable
+
+- **Route** : Navigation push
+- **Fichier** : `features/accounting/presentation/compte_detail_screen.dart`
+- **Provider** : `ecrituresComptablesProvider`
+- **Fonctionnalités** :
+  - En-tête avec numéro, nature (badge coloré), statut actif/inactif
+  - Calcul du solde cumulé (débit - crédit selon nature)
+  - DataTable des 30 derniers mouvements
+  - Flèche retour ←
+- **État** : ✅ Fonctionnel
+
+### 12.6 `TiersDetailScreen` — Fiche tiers
+
+- **Route** : Navigation push
+- **Fichier** : `features/accounting/presentation/tiers_detail_screen.dart`
+- **Provider** : `ecrituresComptablesProvider`
+- **Fonctionnalités** :
+  - Coordonnées (téléphone, email, adresse)
+  - Historique des opérations (filtré par nom du tiers dans le libellé)
+  - Balance : Débit / Crédit / Solde
+  - Badge type (fournisseur/client/employé/autre)
+  - Flèche retour ←
+- **État** : ✅ Fonctionnel
+
+### 12.7 Système de Notifications
+
+- **Fichier provider** : `features/notifications/application/notifications_provider.dart`
+- **Fichier UI** : `features/notifications/presentation/notification_panel.dart`
+- **Intégration** : Cloche 🔔 dans l'AppBar de `AppShell` avec badge rouge
+- **Règles** :
+  - Écritures en brouillon (info si < 5, warning si ≥ 5)
+  - Aucun exercice ouvert (urgent)
+  - Exercice expirant dans < 30 jours (warning)
+- **État** : ✅ Fonctionnel
