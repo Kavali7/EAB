@@ -62,11 +62,25 @@ AppException toAppException(Object error) {
 
   final msg = error.toString().toLowerCase();
 
+  // Erreurs d'authentification Supabase
+  if (msg.contains('jwt expired') ||
+      msg.contains('invalid token') ||
+      msg.contains('not authenticated') ||
+      msg.contains('session expired') ||
+      msg.contains('refresh_token_not_found')) {
+    return const PermissionException(
+      'Votre session a expiré. Veuillez vous reconnecter.',
+    );
+  }
+
   // Erreurs réseau
   if (msg.contains('socketexception') ||
       msg.contains('connection refused') ||
       msg.contains('network') ||
-      msg.contains('timeout')) {
+      msg.contains('timeout') ||
+      msg.contains('handshake') ||
+      msg.contains('dns') ||
+      msg.contains('unreachable')) {
     return NetworkException(
       'Connexion au serveur impossible. Vérifiez votre connexion internet.',
       error.toString(),
@@ -77,7 +91,8 @@ AppException toAppException(Object error) {
   if (msg.contains('rls') ||
       msg.contains('permission denied') ||
       msg.contains('policy') ||
-      msg.contains('row-level security')) {
+      msg.contains('row-level security') ||
+      msg.contains('insufficient_privilege')) {
     return PermissionException(
       'Vous n\'avez pas les droits pour effectuer cette action.',
       error.toString(),
@@ -105,6 +120,13 @@ AppException toAppException(Object error) {
     );
   }
 
+  // NOT NULL violée
+  if (msg.contains('not-null') || msg.contains('null value in column')) {
+    return const BusinessRuleException(
+      'Un champ obligatoire n\'a pas été renseigné.',
+    );
+  }
+
   // Erreurs métier Supabase (RAISE EXCEPTION dans les RPCs)
   if (msg.contains('administrateur national') ||
       msg.contains('exercice') ||
@@ -112,7 +134,16 @@ AppException toAppException(Object error) {
       msg.contains('clôturé') ||
       msg.contains('equilibre') ||
       msg.contains('journal') ||
-      msg.contains('compte de résultat')) {
+      msg.contains('compte de résultat') ||
+      msg.contains('tiers') ||
+      msg.contains('budget') ||
+      msg.contains('amortissement') ||
+      msg.contains('immobilisation') ||
+      msg.contains('rapprochement') ||
+      msg.contains('solde') ||
+      msg.contains('écriture verrouillée') ||
+      msg.contains('montant') ||
+      msg.contains('plan comptable')) {
     // Extraire le message de l'exception PostgreSQL
     final pgMsg = _extractPgMessage(error.toString());
     return BusinessRuleException(pgMsg ?? error.toString());
