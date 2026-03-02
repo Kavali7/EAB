@@ -54,7 +54,7 @@ class ContextHeader extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Profil connecte', style: AppTextStyles.secondary),
+                  Text('Profil connecte', style: AppTextStyles.secondary),
                   Text(
                     profil?.nom ?? 'Non connecte',
                     style: AppTextStyles.body,
@@ -70,7 +70,7 @@ class ContextHeader extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Assemblee active',
+                  Text('Assemblee active',
                       style: AppTextStyles.secondary),
                   Text(
                     assembleeActive != null
@@ -95,7 +95,7 @@ class ContextHeader extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Portee comptable',
+                    Text('Portee comptable',
                         style: AppTextStyles.secondary),
                     const SizedBox(height: 4),
                     Chip(

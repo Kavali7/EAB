@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/models/program.dart';
-import 'package:eab/models/member.dart';
+
 import 'package:eab/providers/members_provider.dart';
 import 'package:eab/providers/programs_provider.dart';
 import 'package:eab/ui/ui.dart';

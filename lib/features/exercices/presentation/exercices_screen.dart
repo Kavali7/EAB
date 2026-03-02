@@ -15,7 +15,7 @@ import 'package:eab/widgets/context_header.dart';
 import 'package:eab/widgets/section_card.dart';
 import 'package:eab/ui/ui.dart';
 import '../application/exercices_providers.dart';
-import '../data/exercices_repository.dart';
+
 import 'exercice_form_dialog.dart';
 
 /// Labels des statuts d'exercice.

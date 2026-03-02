@@ -8,8 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:eab/core/constants.dart';
-import 'package:eab/core/errors/error_handler.dart';
+
 import 'package:eab/models/immobilisation_comptable.dart';
 import 'package:eab/ui/ui.dart';
 import '../application/amortissement_providers.dart';

@@ -15,11 +15,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
-import 'package:eab/models/famille.dart';
+
 import 'package:eab/models/member.dart';
-import 'package:eab/models/region_eglise.dart';
-import 'package:eab/models/district_eglise.dart';
-import 'package:eab/models/assemblee_locale.dart';
+
+
+
 import 'package:eab/providers/church_structure_providers.dart';
 import 'package:eab/providers/families_provider.dart';
 import 'package:eab/providers/members_provider.dart';

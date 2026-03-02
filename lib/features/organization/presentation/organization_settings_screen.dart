@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:eab/core/constants.dart';
+
 import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/section_card.dart';

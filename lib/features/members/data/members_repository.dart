@@ -29,5 +29,5 @@ class MembersRepository {
   Future<void> update(Member member) => _dataService.updateMember(member);
 
   /// Supprime un membre par son ID.
-  Future<void> remove(String id) => _dataService.removeMember(id);
+  Future<void> remove(String id) => _dataService.deleteMember(id);
 }

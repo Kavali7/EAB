@@ -4,12 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:eab/core/constants.dart';
+
 import 'package:eab/models/compta_enums.dart';
 import 'package:eab/models/exercice_comptable.dart';
 import 'package:eab/ui/ui.dart';
 import '../application/exercices_providers.dart';
-import '../data/exercices_repository.dart';
+
 
 /// Ouvre le formulaire de création d'exercice.
 Future<void> showExerciceFormDialog(BuildContext context, WidgetRef ref) {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:eab/ui/ui.dart';
+import 'package:eab/widgets/section_card.dart';
 
 void main() {
   // ── EabButton ──
@@ -159,7 +160,7 @@ void main() {
   group('SectionCard', () {
     testWidgets('affiche le titre et le contenu', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: SectionCard(
               title: 'Détails',

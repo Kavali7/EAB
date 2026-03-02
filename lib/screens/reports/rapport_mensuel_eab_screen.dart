@@ -293,7 +293,7 @@ class _RapportMensuelEabScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Informations generales',
               style: AppTextStyles.sectionTitle,
             ),
@@ -319,7 +319,7 @@ class _RapportMensuelEabScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Statistiques des membres',
               style: AppTextStyles.sectionTitle,
             ),
@@ -336,7 +336,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Personnes vulnerables',
               style: AppTextStyles.subtitle,
             ),
@@ -352,7 +352,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Mouvements du mois',
               style: AppTextStyles.subtitle,
             ),
@@ -383,12 +383,12 @@ class _RapportMensuelEabScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Activites',
               style: AppTextStyles.sectionTitle,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Evangelisations',
               style: AppTextStyles.subtitle,
             ),
@@ -406,7 +406,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Cultes & actes',
               style: AppTextStyles.subtitle,
             ),
@@ -424,7 +424,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Visites',
               style: AppTextStyles.subtitle,
             ),
@@ -441,7 +441,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Ecole du dimanche',
               style: AppTextStyles.subtitle,
             ),
@@ -475,7 +475,7 @@ class _RapportMensuelEabScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Finances (periode du mois)',
               style: AppTextStyles.sectionTitle,
             ),
@@ -505,7 +505,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Detail produits',
               style: AppTextStyles.subtitle,
             ),
@@ -520,7 +520,7 @@ class _RapportMensuelEabScreenState
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Detail charges',
               style: AppTextStyles.subtitle,
             ),
@@ -547,7 +547,7 @@ class _RapportMensuelEabScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Synthese & Projets (saisie manuelle)',
               style: AppTextStyles.sectionTitle,
             ),

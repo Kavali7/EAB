@@ -42,7 +42,7 @@ class DashboardScreenV2 extends ConsumerWidget {
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
     final ecritures = ecrituresAsync.value ?? [];
-    final assemblees = assembleesAsync.value ?? [];
+    final _ = assembleesAsync.value ?? [];
     final isLoading = membersAsync.isLoading ||
         programsAsync.isLoading ||
         ecrituresAsync.isLoading ||
@@ -282,9 +282,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                       final isWide = constraints.maxWidth > 700;
                       final recentEcritures = [...filteredEcritures]
                         ..sort((a, b) => b.date.compareTo(a.date));
-                      final recentMembers = [...filteredMembers]
-                        ..sort((a, b) => (b.createdAt ?? DateTime(2000))
-                            .compareTo(a.createdAt ?? DateTime(2000)));
+                      final recentMembers = [...filteredMembers];
 
                       return Wrap(
                         spacing: AppSpacing.lg,

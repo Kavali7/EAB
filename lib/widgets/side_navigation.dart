@@ -12,7 +12,7 @@ class SideNavigation extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final orgAsync = ref.watch(currentOrganizationProvider);
-    final orgName = orgAsync.valueOrNull?.nom ?? 'EAB';
+    final orgName = orgAsync.value?.nom ?? 'EAB';
     const items = [
       _NavItem('Tableau de bord', '/', Icons.dashboard_outlined),
       _NavItem('Dashboard financier', '/dashboard-finance', Icons.insights),
