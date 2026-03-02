@@ -70,6 +70,11 @@ class SideNavigation extends ConsumerWidget {
         Icons.bar_chart_outlined,
       ),
       _NavItem(
+        'Journal d\'audit',
+        '/audit-log',
+        Icons.history_outlined,
+      ),
+      _NavItem(
         'Organisation',
         '/organization-settings',
         Icons.settings_outlined,
