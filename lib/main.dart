@@ -22,7 +22,8 @@ Future<void> main() async {
     (options) {
       options.dsn = const String.fromEnvironment(
         'SENTRY_DSN',
-        defaultValue: '', // Vide = Sentry désactivé (dev local)
+        defaultValue:
+            'https://dc084a943cf1a5e5398c267bca007f83@o4510972141174784.ingest.de.sentry.io/4510972535177296',
       );
       options.tracesSampleRate = 0.2;
       options.environment =
