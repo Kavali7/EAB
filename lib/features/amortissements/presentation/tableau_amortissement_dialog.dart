@@ -40,7 +40,7 @@ class _TableauAmortissementDialog extends ConsumerStatefulWidget {
 class _TableauAmortissementDialogState
     extends ConsumerState<_TableauAmortissementDialog> {
   late List<LigneAmortissement> _lignes;
-  bool _generating = false;
+
 
   @override
   void initState() {
@@ -147,7 +147,7 @@ class _TableauAmortissementDialogState
                             final isPast = l.annee < DateTime.now().year;
                             return DataRow(
                               color: isCurrent
-                                  ? WidgetStateProperty.all(Colors.blue.withOpacity(0.05))
+                                  ? WidgetStateProperty.all(Colors.blue.withValues(alpha: 0.05))
                                   : null,
                               cells: [
                                 DataCell(Row(children: [
@@ -163,7 +163,7 @@ class _TableauAmortissementDialogState
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: Colors.blue.withOpacity(0.1),
+                                        color: Colors.blue.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text('Actuel',

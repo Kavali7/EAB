@@ -27,7 +27,7 @@ import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
 import 'package:eab/widgets/section_card.dart';
 import 'package:eab/ui/ui.dart';
-import 'package:eab/ui/components/kpi_card.dart';
+
 
 class DashboardScreenV2 extends ConsumerWidget {
   const DashboardScreenV2({super.key});
@@ -228,7 +228,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                     Builder(builder: (_) {
                       final alerts = <Widget>[];
                       final brouillons = filteredEcritures
-                          .where((e) => e.statut?.name == 'brouillon')
+                          .where((e) => e.statut.name == 'brouillon')
                           .length;
                       if (brouillons > 0) {
                         alerts.add(_alertTile(
@@ -307,7 +307,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                                       dense: true,
                                       leading: CircleAvatar(
                                         radius: 16,
-                                        backgroundColor: Colors.blue.withOpacity(0.1),
+                                        backgroundColor: Colors.blue.withValues(alpha: 0.1),
                                         child: const Icon(Icons.receipt_long, size: 16, color: Colors.blue),
                                       ),
                                       title: Text(e.libelle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
@@ -315,11 +315,11 @@ class DashboardScreenV2 extends ConsumerWidget {
                                         '${dateFormatter.format(e.date)} • ${e.referencePiece ?? ""}',
                                         style: const TextStyle(fontSize: 11, color: Colors.grey),
                                       ),
-                                      trailing: e.statut?.name == 'brouillon'
+                                      trailing: e.statut.name == 'brouillon'
                                           ? Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Colors.orange.withOpacity(0.1),
+                                                color: Colors.orange.withValues(alpha: 0.1),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: const Text('Brouillon', style: TextStyle(fontSize: 10, color: Colors.orange)),

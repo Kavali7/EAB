@@ -49,14 +49,6 @@ const _statutFideleLabels = {
   StatutFidele.transfere: 'Transféré',
 };
 
-const _vulnerabiliteLabels = {
-  VulnerabiliteFidele.orphelin: 'Orphelin',
-  VulnerabiliteFidele.veuf: 'Veuf',
-  VulnerabiliteFidele.veuve: 'Veuve',
-  VulnerabiliteFidele.handicape: 'Handicapé',
-  VulnerabiliteFidele.troisiemeAge: '3e âge',
-  VulnerabiliteFidele.autre: 'Autre',
-};
 
 /// Écran de gestion des fidèles (v2).
 class MembersScreenV2 extends ConsumerStatefulWidget {
@@ -96,8 +88,8 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
 
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
-    final regions = regionsAsync.value ?? [];
-    final districts = districtsAsync.value ?? [];
+    final _ = regionsAsync.value ?? [];
+    final __ = districtsAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
     final assembleeById = {for (final a in assemblees) a.id: a};
     final familyById = {for (final f in families) f.id: f};
