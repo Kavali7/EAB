@@ -462,3 +462,44 @@
   - Aucun exercice ouvert (urgent)
   - Exercice expirant dans < 30 jours (warning)
 - **État** : ✅ Fonctionnel
+
+---
+
+## 13. Module Dossier Fiscal SYSCEBNL (`features/fiscal_dossier/`)
+
+### 13.1 `FiscalDossiersScreen` — Liste des dossiers
+
+- **Route** : `/fiscal-dossiers`
+- **Fichier** : `features/fiscal_dossier/presentation/fiscal_dossiers_screen.dart`
+- **Providers** : `fiscalDossiersProvider`, `fiscalTemplatesProvider`, `currentOrganizationProvider`
+- **Fonctionnalités** :
+  - DataTable avec statut coloré (chips), date, actions
+  - FAB "Nouveau dossier" → dialog (choix template + label)
+  - Suppression confirmée (brouillons uniquement)
+  - Navigation vers wizard au clic
+- **État** : ✅ Fonctionnel
+
+### 13.2 `FiscalWizardScreen` — Wizard multi-pages
+
+- **Route** : `/fiscal-dossier/:id` (via `onGenerateRoute`)
+- **Fichier** : `features/fiscal_dossier/presentation/fiscal_wizard_screen.dart`
+- **Providers** : `currentFiscalDossierProvider`, `fiscalTemplatePagesProvider`, `fiscalValuesProvider`, `fiscalRepositoryProvider`
+- **Fonctionnalités** :
+  - **Desktop** : sidebar pages (icônes, erreurs) + renderer Card
+  - **Mobile** : stepper avec boutons sticky Précédent/Suivant
+  - Actions header : Pré-remplir (RPC), Valider (RPC), Verrouiller (RPC + rôle), PDF (PR4)
+  - Champs groupés par section, édition locale + sauvegarde Supabase
+  - Affichage erreurs de validation par page (encadré rouge)
+  - Field widget dynamique (`FiscalFieldWidget`) : 7 types (money/text/date/select/bool/percent/integer)
+- **État** : ✅ Fonctionnel (PDF placeholder)
+
+### 13.3 `FiscalImportScreen` — Import balance CSV
+
+- **Route** : `/fiscal-import-balance`
+- **Fichier** : `features/fiscal_dossier/presentation/fiscal_import_screen.dart`
+- **Service** : `CsvImportService` (auto-détection séparateur, normalisation nombres, contrôle D=C)
+- **Fonctionnalités** :
+  - Zone de collage CSV (paste depuis Excel ou fichier)
+  - Preview DataTable avec totaux + indicateur équilibre (vert/rouge)
+  - Sauvegarde vers `imported_trial_balances` + lignes (batch 100)
+- **État** : ✅ Fonctionnel
