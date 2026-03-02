@@ -25,18 +25,55 @@ import '../features/dashboard_finance/dashboard_finance_screen.dart';
 import '../features/audit/presentation/audit_log_screen.dart';
 import '../features/programs/presentation/calendar_screen.dart';
 
-class ChurchApp extends StatelessWidget {
+class ChurchApp extends StatefulWidget {
   const ChurchApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Vérifier si l'utilisateur est connecté
-    final session = Supabase.instance.client.auth.currentSession;
-    final isLoggedIn = session != null;
+  State<ChurchApp> createState() => _ChurchAppState();
+}
 
+class _ChurchAppState extends State<ChurchApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late bool _isLoggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+
+    // Écouter les changements d'état d'auth (login, logout, token refresh)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final hasSession = data.session != null;
+
+      // Ignorer TOKEN_REFRESH pour ne pas forcer de redirect
+      if (event == AuthChangeEvent.tokenRefreshed) return;
+
+      if (event == AuthChangeEvent.signedOut && _isLoggedIn) {
+        setState(() => _isLoggedIn = false);
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      } else if (event == AuthChangeEvent.signedIn && !_isLoggedIn) {
+        setState(() => _isLoggedIn = true);
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
+      } else if (hasSession && !_isLoggedIn) {
+        // Fallback : si on a une session mais l'état dit non-connecté
+        setState(() => _isLoggedIn = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'EAB - Gestion',
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navigatorKey,
       theme: buildAppTheme(),
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(
@@ -49,7 +86,7 @@ class ChurchApp extends StatelessWidget {
           ],
         );
       },
-      initialRoute: isLoggedIn ? '/' : '/login',
+      initialRoute: _isLoggedIn ? '/' : '/login',
       routes: {
         // Auth
         '/login': (_) => const LoginScreen(),
@@ -80,4 +117,3 @@ class ChurchApp extends StatelessWidget {
     );
   }
 }
-
