@@ -27,7 +27,7 @@ class DashboardFinanceScreen extends ConsumerWidget {
       return const AppShell(
         title: 'Dashboard financier',
         currentRoute: '/dashboard-finance',
-        body: Center(child: Text('Veuillez vous connecter.')),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 

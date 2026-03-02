@@ -46,7 +46,8 @@ class AppShell extends ConsumerWidget {
           (p) => p.id == 'profil_tresorier_cotonou_centre',
           orElse: () => profils.first,
         );
-        Future(() {
+        // Synchronous set — élimine la race condition
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
               .read(profilUtilisateurCourantProvider.notifier)
               .setProfil(defaultProfil);
@@ -61,7 +62,7 @@ class AppShell extends ConsumerWidget {
       regionsAsync.value ?? const [],
     );
     if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
-      Future(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(assembleeActiveIdProvider.notifier)
             .setAssemblee(assembleesAutorisees.first.id);

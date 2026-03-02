@@ -13,7 +13,20 @@ class ProfilsUtilisateursNotifier
   @override
   Future<List<ProfilUtilisateur>> build() async {
     final dataService = ref.read(dataServiceProvider);
-    return dataService.getProfilsUtilisateurs();
+    final profils = await dataService.getProfilsUtilisateurs();
+
+    // Auto-initialiser le profil courant si pas encore défini
+    final courant = ref.read(profilUtilisateurCourantProvider);
+    if (courant == null && profils.isNotEmpty) {
+      final defaultProfil = profils.firstWhere(
+        (p) => p.id == 'profil_tresorier_cotonou_centre',
+        orElse: () => profils.first,
+      );
+      ref
+          .read(profilUtilisateurCourantProvider.notifier)
+          .setProfil(defaultProfil);
+    }
+    return profils;
   }
 }
 
