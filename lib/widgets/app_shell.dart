@@ -10,6 +10,7 @@ import '../models/region_eglise.dart';
 import '../providers/user_profile_providers.dart';
 import '../providers/church_structure_providers.dart';
 import '../features/search/presentation/global_search_dialog.dart';
+import '../features/notifications/presentation/notification_panel.dart';
 import 'side_navigation.dart';
 
 class AppShell extends ConsumerWidget {
@@ -184,6 +185,16 @@ class AppShell extends ConsumerWidget {
               ),
             ),
           ...?actions,
+          // Bouton notifications
+          Builder(
+            builder: (btnContext) => IconButton(
+              icon: const NotificationBadge(
+                child: Icon(Icons.notifications_outlined),
+              ),
+              tooltip: 'Notifications',
+              onPressed: () => showNotificationPanel(btnContext),
+            ),
+          ),
           // Bouton recherche globale (Ctrl+K)
           IconButton(
             icon: const Icon(Icons.search),
