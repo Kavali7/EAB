@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
 - **Dernière mise à jour** : 2026-03-02
-- **Fichiers de migration** : `supabase/migrations/00001` → `00013`
+- **Fichiers de migration** : `supabase/migrations/00001` → `00015`
 
 ---
 
@@ -1030,6 +1030,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-03-02 | Agent IA | **Migration 00015** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
 | 2026-03-02 | Agent IA | **Migration 00013** : 4 RPCs dossier fiscal — `prefill_fiscal_dossier` (pré-remplissage depuis écritures via mappings sum_prefixes/balance_class/sum_accounts), `prefill_fiscal_dossier_from_import` (depuis balance CSV), `validate_fiscal_dossier` (contrôles actif=passif + résultat + champs requis), `lock_fiscal_dossier` (verrouillage avec validation + contrôle rôle admin/resp_region). Toutes SECURITY DEFINER + vérification org. |
 | 2026-03-02 | Agent IA | **Migrations 00011+00012** : Module Dossier Fiscal SYSCEBNL. 8 nouvelles tables (`fiscal_templates`, `fiscal_template_pages`, `fiscal_template_fields`, `fiscal_account_mapping`, `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances`, `imported_trial_balance_lines`). Enum `fiscal_dossier_status` (draft/in_progress/ready/locked/submitted). 17 index. 2 triggers `updated_at`. RLS activé sur 8 tables. 14 policies (templates=lecture auth, dossiers/values=isolation org avec protection status, import=isolation org). |
 | 2026-03-02 | Agent IA | **Session frontend/UX uniquement** — aucun changement backend. Côté frontend : fix zone mismatch Sentry (`main.dart` : bindings+Supabase dans `appRunner`), fix auth réactive (`app.dart` : `StatefulWidget` + `onAuthStateChange`, TOKEN_REFRESH ignoré), auto-init `profilUtilisateurCourant` dans `ProfilsUtilisateursNotifier.build()`, refonte `EabTable` (row #, zebra stripes, fixedWidth/flex), `ResponsiveFormRow`+`ResponsiveLayout`, `error_handler` enrichi (onRetry, icônes/couleurs par type, +20 patterns d'erreur RPC). |
