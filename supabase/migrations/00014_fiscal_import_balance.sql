@@ -1,0 +1,21 @@
+-- =============================================================================
+-- Migration 00014 : Import Balance — DÉJÀ INCLUS DANS 00011
+-- =============================================================================
+-- NOTE : Ce fichier est un placeholder.
+--
+-- Les tables d'import balance CSV ont été créées directement dans
+-- la migration 00011_fiscal_tables.sql (section 4) :
+--
+--   - imported_trial_balances       (en-têtes)
+--   - imported_trial_balance_lines  (lignes détail)
+--   - 4 index de performance
+--   - FK fiscal_dossiers.import_id → imported_trial_balances
+--
+-- Le RLS et les policies correspondantes sont dans 00012_fiscal_rls.sql.
+--
+-- Ce fichier ne contient aucune instruction SQL à exécuter.
+-- Il existe uniquement pour documenter la continuité de la numérotation.
+-- =============================================================================
+
+-- Rien à exécuter. Tout est déjà en place via 00011 + 00012.
+SELECT 'Migration 00014 — placeholder. Tables import balance déjà créées dans 00011.' AS info;
