@@ -71,6 +71,21 @@ class Organization {
         'parametres': parametres,
       };
 
+  /// JSON sans 'id' — pour les appels UPDATE Supabase.
+  Map<String, dynamic> toUpdateJson() => {
+        'nom': nom,
+        'description': description,
+        'logo_url': logoUrl,
+        'couleur_primaire': couleurPrimaire,
+        'couleur_secondaire': couleurSecondaire,
+        'adresse': adresse,
+        'telephone': telephone,
+        'email': email,
+        'site_web': siteWeb,
+        'devise': devise,
+        'parametres': parametres,
+      };
+
   /// Parse la couleur primaire hexadécimale en Color Flutter.
   Color get primaryColor {
     if (couleurPrimaire == null || couleurPrimaire!.isEmpty) {

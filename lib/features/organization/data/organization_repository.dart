@@ -24,7 +24,7 @@ class OrganizationRepository {
   Future<void> updateOrganization(Organization org) async {
     await _dataService.client
         .from('organizations')
-        .update(org.toJson())
+        .update(org.toUpdateJson())
         .eq('id', org.id);
   }
 
