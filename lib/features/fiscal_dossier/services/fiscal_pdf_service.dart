@@ -39,17 +39,23 @@ class FiscalPdfService {
     await initializeDateFormatting('fr_FR');
 
     // Charger une police Google qui supporte les accents français
-    final fontRegular = await PdfGoogleFonts.robotoRegular();
-    final fontBold = await PdfGoogleFonts.robotoBold();
+    // Fallback : police par défaut si pas de réseau
+    pw.Font? fontRegular;
+    pw.Font? fontBold;
+    try {
+      fontRegular = await PdfGoogleFonts.robotoRegular();
+      fontBold = await PdfGoogleFonts.robotoBold();
+    } catch (_) {
+      // Pas de réseau — on continue avec la police par défaut
+    }
 
     final doc = pw.Document(
       title: 'Dossier Fiscal SYSCEBNL — $orgName',
       author: orgName,
       creator: 'EAB — Gestion Comptable',
-      theme: pw.ThemeData.withFont(
-        base: fontRegular,
-        bold: fontBold,
-      ),
+      theme: fontRegular != null
+          ? pw.ThemeData.withFont(base: fontRegular, bold: fontBold)
+          : null,
     );
 
     final generatedAt = DateTime.now();
