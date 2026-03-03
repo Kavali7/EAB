@@ -202,6 +202,8 @@ Nouveau design system introduit pour remplacer les composants ad-hoc dupliqués 
 | `SkeletonLoader` | `ui/components/eab_state_widgets.dart` | Placeholder de chargement |
 | `EabPageHeader` | `ui/layout/eab_page_header.dart` | En-tête de page (titre, sous-titre, icône, actions) |
 | `AppSpacing` | `ui/theme/app_spacing.dart` | Constantes d'espacement (xs→xxxl, page, card, input, dialog) |
+| `FiscalFieldWidget` | `features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart` | Rendu dynamique de 7 types de champs fiscaux (money, text, date, select, bool, percent, integer) |
+| `FiscalPdfService` | `features/fiscal_dossier/services/fiscal_pdf_service.dart` | Génération PDF 5 pages (COVER watermark, IDENTITY, BILAN_ACTIF/PASSIF, RESULTAT) |
 
 ---
 

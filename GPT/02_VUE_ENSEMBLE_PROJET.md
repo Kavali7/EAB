@@ -97,6 +97,7 @@ lib/
     ├── members/                 # Membres V2 (formulaire, filtres, UI Kit)
     ├── organization/            # Paramètres organisation (multi-tenant)
     ├── programs/                # Programmes V2 (UI Kit)
+    ├── fiscal_dossier/          # Dossier fiscal SYSCEBNL (wizard, PDF, import CSV)
     └── search/                  # Recherche globale (trigrammes pg_trgm)
 ```
 
@@ -131,8 +132,11 @@ Le choix du service est fait via le provider `dataServiceProvider`. Les helpers 
 | `/accounting-reconciliation` | AccountingReconciliationScreen | Rapprochement bancaire |
 | `/accounting-reports` | AccountingReportsScreen | États & exports |
 | `/reports-rapport-mensuel` | RapportMensuelEabScreen | Rapport mensuel EAB |
+| `/fiscal-dossiers` | FiscalDossiersScreen | Dossier fiscal (liste) |
+| `/fiscal-dossier/:id` | FiscalWizardScreen | Dossier fiscal (wizard) |
+| `/fiscal-import-balance` | FiscalImportScreen | Import balance CSV |
 
-### Navigation latérale (12 items)
+### Navigation latérale (15 items)
 
 1. Tableau de bord
 2. Fidèles
@@ -143,11 +147,13 @@ Le choix du service est fait via le provider `dataServiceProvider`. Les helpers 
 7. Rapprochement bancaire
 8. États & exports
 9. Rapport mensuel EAB
-10. Budgets
-11. Immobilisations
-12. Paramétrage comptable
-
-## 5. Modèles de données (18 entités Freezed)
+10. Dossier fiscal
+11. Budgets
+12. Immobilisations
+13. Paramétrage comptable
+14. Exercices comptables
+15. États financiers
+## 5. Modèles de données (27+ entités)
 
 | Modèle | Table Supabase | Champs clés |
 | --- | --- | --- |
@@ -169,6 +175,15 @@ Le choix du service est fait via le provider `dataServiceProvider`. Les helpers 
 | `ImmobilisationComptable` | `immobilisations_comptables` | id, type, dateAcquisition, valeurAcquisition, dureeUtilite |
 | `RapportMensuelEab` | `rapports_mensuels_eab` | id, annee, mois, statsMembres, statsActivites, statsFinances |
 | `ReleveBancaire` | `releves_bancaires` | id, dateReleve, soldeInitial, soldeFinal |
+| `FiscalTemplate` | `fiscal_templates` | id, code, label, version, isActive |
+| `FiscalTemplatePage` | `fiscal_template_pages` | id, templateId, code, title, pageOrder |
+| `FiscalTemplateField` | `fiscal_template_fields` | id, pageId, fieldKey, label, fieldType, section |
+| `FiscalDossier` | `fiscal_dossiers` | id, organizationId, templateId, status, label |
+| `FiscalDossierValue` | `fiscal_dossier_values` | id, dossierId, fieldKey, value, source |
+| `FiscalValidationResult` | (RPC result) | ok, errorCount, errors[] |
+| `ImportedTrialBalance` | `imported_trial_balances` | id, organizationId, exerciceLabel, totals |
+| `ImportedTrialBalanceLine` | `imported_trial_balance_lines` | id, accountNumber, debit, credit |
+| `CsvImportResult` | (local) | lines[], totalDebit, totalCredit, isBalanced |
 
 ## 6. Système de rôles (4 niveaux)
 
@@ -219,6 +234,9 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 - Export CSV (écritures, membres, programmes) ✅
 - Dashboard V2 (KPIs riches, alertes, actions rapides) ✅
 - Paramètres organisation (multi-tenant) ✅
+- Dossier fiscal SYSCEBNL (wizard multi-pages, 5 pages template, pré-remplissage, validation, verrouillage) ✅
+- Import balance CSV (paste, prévisualisation, contrôle D=C) ✅
+- Export PDF dossier fiscal (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT) ✅
 
 ### ⚠️ Partiel / À améliorer
 

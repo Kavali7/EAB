@@ -296,3 +296,58 @@ L'application pré-définit **190 catégories de recettes** et **183 catégories
 | `mobile_money` | Mobile Money |
 | `microfinance` | Microfinance |
 | `autre` | Autre |
+
+---
+
+## 12. Dossier Fiscal SYSCEBNL
+
+### 12.1 Cycle de vie d'un dossier fiscal
+
+```
+draft → in_progress → ready → locked → submitted
+```
+
+- **draft** : Créé, aucun champ rempli
+- **in_progress** : Au moins un champ modifié/pré-rempli
+- **ready** : Validation réussie (actif=passif, champs requis OK)
+- **locked** : Verrouillé par un admin/responsable (immuable)
+- **submitted** : Déposé aux impôts (statut final)
+
+### 12.2 Moteur de templates
+
+- Templates versionnés (`SYSCEBNL_2026`) avec pages ordonnées
+- Chaque page contient des champs typés (money, text, date, select, bool, percent, integer)
+- Champs groupés par section, avec ordre, labels, et propriétés UI
+- Mapping comptes→champs : règles `sum_prefixes`, `balance_class`, `sum_accounts`, `custom_sql`
+
+### 12.3 Pré-remplissage automatique
+
+- **Depuis comptabilité** : RPC `prefill_fiscal_dossier` utilise les mappings pour agréger les soldes des écritures comptables validées
+- **Depuis import CSV** : RPC `prefill_fiscal_dossier_from_import` utilise une balance importée
+
+### 12.4 Import CSV
+
+- Auto-détection séparateur (`;`, `,`, `\t`)
+- Normalisation nombres (espaces, `.` milliers, `,` décimales)
+- Contrôle Débit = Crédit (tolérance 0.01)
+- Batch insert par lots de 100 lignes
+
+### 12.5 Validation (RPC `validate_fiscal_dossier`)
+
+- Contrôle actif = passif (bilan)
+- Contrôle résultat net cohérent
+- Vérification champs requis remplis
+- Retour structuré : `{ok, error_count, errors[{page_code, field_key, message}]}`
+
+### 12.6 Verrouillage (RPC `lock_fiscal_dossier`)
+
+- Exige rôle `admin_national` ou `responsable_region`
+- Valide automatiquement avant verrouillage (bloquant si erreurs)
+- Enregistre `locked_by` + `locked_at`
+
+### 12.7 Génération PDF
+
+- **5 pages** : COVER (badge SYSCEBNL, watermark BROUILLON si draft), IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT
+- Header cohérent (org + titre) + footer (date génération + pagination i/N)
+- Formatage dynamique par type de champ
+- Pages financières avec sections colorées et tableaux champs/valeurs
