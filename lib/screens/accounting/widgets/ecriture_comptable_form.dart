@@ -113,9 +113,10 @@ class _EcritureComptableFormDialogState
         comptesAsync.hasError ||
         centresAsync.hasError ||
         tiersAsync.hasError) {
+      final errMsg = journauxAsync.error ?? comptesAsync.error ?? centresAsync.error ?? tiersAsync.error;
       return AlertDialog(
         title: const Text('Erreur'),
-        content: const Text('Impossible de charger les donnees comptables.'),
+        content: Text('Impossible de charger les donnees comptables.\n\nDétail : $errMsg'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
