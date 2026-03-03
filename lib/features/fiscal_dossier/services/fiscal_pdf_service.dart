@@ -14,29 +14,42 @@ library;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:printing/printing.dart';
 
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 
-final _fmt = NumberFormat('#,##0', 'fr_FR');
-final _dateFmt = DateFormat('dd/MM/yyyy', 'fr_FR');
+// Lazy-initialized formatters (safely after locale init)
+NumberFormat get _fmt => NumberFormat('#,##0', 'fr_FR');
+DateFormat get _dateFmt => DateFormat('dd/MM/yyyy', 'fr_FR');
 
 class FiscalPdfService {
   // ═══════════════════════════════════════════════════════════════════════
   // Point d'entrée : génère le PDF complet du dossier fiscal.
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Génère le document PDF complet.
-  static pw.Document buildDossierPdf({
+  /// Génère le document PDF complet (async pour charger les polices Unicode).
+  static Future<pw.Document> buildDossierPdf({
     required String orgName,
     required List<FiscalTemplatePage> pages,
     required Map<String, dynamic> values,
     String? watermark,
-  }) {
+  }) async {
+    // Sécurité : initialiser la locale fr_FR si pas encore fait
+    await initializeDateFormatting('fr_FR');
+
+    // Charger une police Google qui supporte les accents français
+    final fontRegular = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+
     final doc = pw.Document(
       title: 'Dossier Fiscal SYSCEBNL — $orgName',
       author: orgName,
       creator: 'EAB — Gestion Comptable',
+      theme: pw.ThemeData.withFont(
+        base: fontRegular,
+        bold: fontBold,
+      ),
     );
 
     final generatedAt = DateTime.now();

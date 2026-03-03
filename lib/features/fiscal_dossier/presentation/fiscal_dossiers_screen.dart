@@ -1,7 +1,7 @@
 /// Écran de liste des dossiers fiscaux.
 ///
 /// Route : /fiscal-dossiers
-/// Fonctionnalités : liste DataGrid, création, suppression, navigation wizard.
+/// Fonctionnalités : liste EabTable harmonisé, création, suppression, navigation wizard.
 library;
 
 import 'package:flutter/material.dart';
@@ -51,12 +51,69 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
             const SizedBox(height: AppSpacing.lg),
             Expanded(
               child: dossiersAsync.when(
-                data: (dossiers) => dossiers.isEmpty
-                    ? const EmptyState(
-                        message: 'Aucun dossier fiscal.',
-                        icon: Icons.folder_off_outlined,
-                      )
-                    : _buildTable(dossiers),
+                data: (dossiers) => EabTable<FiscalDossier>(
+                  items: dossiers,
+                  emptyMessage: 'Aucun dossier fiscal.',
+                  emptyIcon: Icons.folder_off_outlined,
+                  onRowTap: (d) => Navigator.of(context).pushNamed(
+                    '/fiscal-dossier/${d.id}',
+                  ),
+                  columns: [
+                    EabColumn<FiscalDossier>(
+                      label: 'Label',
+                      flex: 3,
+                      sortKeyExtractor: (d) => d.label ?? '',
+                      cellBuilder: (d) => Text(
+                        d.label ?? 'Dossier sans titre',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    EabColumn<FiscalDossier>(
+                      label: 'Statut',
+                      fixedWidth: 130,
+                      sortKeyExtractor: (d) => d.status.index,
+                      cellBuilder: (d) => _statusChip(d.status),
+                    ),
+                    EabColumn<FiscalDossier>(
+                      label: 'Créé le',
+                      fixedWidth: 110,
+                      sortKeyExtractor: (d) => d.createdAt,
+                      cellBuilder: (d) => Text(
+                        DateFormat('dd/MM/yyyy').format(d.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    EabColumn<FiscalDossier>(
+                      label: 'Actions',
+                      fixedWidth: 100,
+                      cellBuilder: (d) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            tooltip: 'Ouvrir le wizard',
+                            onPressed: () {
+                              Navigator.of(context).pushNamed(
+                                '/fiscal-dossier/${d.id}',
+                              );
+                            },
+                          ),
+                          if (d.status == FiscalDossierStatus.draft)
+                            IconButton(
+                              icon: Icon(Icons.delete_outline,
+                                  size: 20, color: AppColors.error),
+                              tooltip: 'Supprimer',
+                              onPressed: () => _confirmDelete(d),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => ErrorState(
                   message: 'Erreur : $e',
@@ -66,65 +123,6 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTable(List<FiscalDossier> dossiers) {
-    final dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
-    return SingleChildScrollView(
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(
-          AppColors.primary.withValues(alpha: 0.06),
-        ),
-        columns: const [
-          DataColumn(label: Text('#')),
-          DataColumn(label: Text('Label')),
-          DataColumn(label: Text('Statut')),
-          DataColumn(label: Text('Créé le')),
-          DataColumn(label: Text('Actions')),
-        ],
-        rows: dossiers.asMap().entries.map((e) {
-          final i = e.key;
-          final d = e.value;
-          return DataRow(
-            color: WidgetStateProperty.all(
-              i.isEven ? Colors.white : const Color(0xFFF9FAFB),
-            ),
-            cells: [
-              DataCell(Text('${i + 1}')),
-              DataCell(
-                Text(
-                  d.label ?? 'Dossier sans titre',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              DataCell(_statusChip(d.status)),
-              DataCell(Text(dateFormat.format(d.createdAt))),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    tooltip: 'Ouvrir le wizard',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(
-                        '/fiscal-dossier/${d.id}',
-                      );
-                    },
-                  ),
-                  if (d.status == FiscalDossierStatus.draft)
-                    IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          size: 20, color: AppColors.error),
-                      tooltip: 'Supprimer',
-                      onPressed: () => _confirmDelete(d),
-                    ),
-                ],
-              )),
-            ],
-          );
-        }).toList(),
       ),
     );
   }
@@ -199,6 +197,7 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
                   DropdownButtonFormField<String>(
                     value: selectedTemplateId,
                     decoration: const InputDecoration(labelText: 'Template'),
+                    isExpanded: true,
                     items: templates
                         .map((t) => DropdownMenuItem(
                               value: t.id,

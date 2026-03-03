@@ -656,7 +656,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           : null;
 
       // Générer le PDF
-      final doc = FiscalPdfService.buildDossierPdf(
+      final doc = await FiscalPdfService.buildDossierPdf(
         orgName: orgName,
         pages: pages,
         values: flatValues,
