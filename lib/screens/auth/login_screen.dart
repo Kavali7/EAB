@@ -117,9 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Formulaire
                 Card(
-                  elevation: 2,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade200),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
