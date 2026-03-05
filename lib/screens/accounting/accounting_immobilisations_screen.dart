@@ -10,6 +10,7 @@ import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 
 class AccountingImmobilisationsScreen extends ConsumerStatefulWidget {
   const AccountingImmobilisationsScreen({super.key});
@@ -43,8 +44,9 @@ class _AccountingImmobilisationsScreenState
             Expanded(
               child: immobilisationsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, st) => const Center(
-                  child: Text('Erreur lors du chargement des immobilisations'),
+                error: (err, st) => ErrorRetryWidget(
+                  message: 'Erreur lors du chargement des immobilisations : $err',
+                  onRetry: () => ref.invalidate(immobilisationsComptablesProvider),
                 ),
                 data: (immobilisations) {
                   final assemblees = assembleesAsync.asData?.value ?? [];

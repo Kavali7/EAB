@@ -14,6 +14,7 @@ import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 import '../../core/theme.dart';
 
 class AccountingBudgetsScreen extends ConsumerStatefulWidget {
@@ -93,8 +94,18 @@ class _AccountingBudgetsScreenState
         centresAsync.hasError ||
         assembleesAsync.hasError ||
         districtsAsync.hasError) {
-      return const Center(
-        child: Text('Erreur lors du chargement des donnees budgets'),
+      final err = budgetsAsync.error ?? lignesBudgetsAsync.error ?? comptesAsync.error ??
+          centresAsync.error ?? assembleesAsync.error ?? districtsAsync.error;
+      return ErrorRetryWidget(
+        message: 'Erreur lors du chargement des données budgets : $err',
+        onRetry: () {
+          ref.invalidate(budgetsComptablesProvider);
+          ref.invalidate(lignesBudgetsProvider);
+          ref.invalidate(comptesComptablesProvider);
+          ref.invalidate(centresAnalytiquesProvider);
+          ref.invalidate(assembleesLocalesProvider);
+          ref.invalidate(districtsProvider);
+        },
       );
     }
 

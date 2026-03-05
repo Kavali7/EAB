@@ -18,6 +18,7 @@ import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 import 'widgets/ecriture_comptable_form.dart';
 
 class AccountingScreen extends ConsumerStatefulWidget {
@@ -212,11 +213,18 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                   child: isJournalLoading
                       ? const Center(child: CircularProgressIndicator())
                       : hasJournalError
-                          ? Center(
-                              child: Text(
-                                'Erreur lors du chargement des donnees comptables.',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
+                          ? ErrorRetryWidget(
+                              message: 'Erreur lors du chargement des données comptables : '
+                                  '${ecrituresAsync.error ?? journauxAsync.error ?? comptesAsync.error ?? centresAsync.error ?? tiersAsync.error ?? assembleesAsync.error ?? districtsAsync.error}',
+                              onRetry: () {
+                                ref.invalidate(ecrituresComptablesProvider);
+                                ref.invalidate(journauxComptablesProvider);
+                                ref.invalidate(comptesComptablesProvider);
+                                ref.invalidate(centresAnalytiquesProvider);
+                                ref.invalidate(tiersProvider);
+                                ref.invalidate(assembleesLocalesProvider);
+                                ref.invalidate(districtsProvider);
+                              },
                             )
                           : Card(
                               child: ecrituresJournal.isEmpty
@@ -633,8 +641,9 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
   ) {
     return comptesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Center(
-        child: Text('Impossible de charger le plan de comptes.'),
+      error: (err, __) => ErrorRetryWidget(
+        message: 'Impossible de charger le plan de comptes : $err',
+        onRetry: () => ref.invalidate(comptesComptablesProvider),
       ),
       data: (comptes) {
         final comptesParId = {for (final c in comptes) c.id: c};

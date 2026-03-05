@@ -16,6 +16,7 @@ import '../../providers/programs_provider.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 
 class ChurchStructureScreen extends ConsumerStatefulWidget {
   const ChurchStructureScreen({super.key});
@@ -58,12 +59,21 @@ class _ChurchStructureScreenState extends ConsumerState<ChurchStructureScreen> {
         assembleesAsync.hasError ||
         membersAsync.hasError ||
         programsAsync.hasError) {
+      final err = regionsAsync.error ??
+          districtsAsync.error ??
+          assembleesAsync.error ??
+          membersAsync.error ??
+          programsAsync.error;
       return Scaffold(
-        body: Center(
-          child: Text(
-            'Erreur lors du chargement des donnees',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+        body: ErrorRetryWidget(
+          message: 'Erreur lors du chargement des données : $err',
+          onRetry: () {
+            ref.invalidate(regionsProvider);
+            ref.invalidate(districtsProvider);
+            ref.invalidate(assembleesLocalesProvider);
+            ref.invalidate(membersProvider);
+            ref.invalidate(programsProvider);
+          },
         ),
       );
     }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/error_reporting.dart';
 import '../models/assemblee_locale.dart';
 import '../models/district_eglise.dart';
 import '../models/region_eglise.dart';
@@ -12,8 +13,13 @@ final regionsProvider =
 class RegionsNotifier extends AsyncNotifier<List<RegionEglise>> {
   @override
   Future<List<RegionEglise>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getRegions();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getRegions();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'regionsProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterRegion(RegionEglise region) async {
@@ -38,8 +44,13 @@ final districtsProvider =
 class DistrictsNotifier extends AsyncNotifier<List<DistrictEglise>> {
   @override
   Future<List<DistrictEglise>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getDistricts();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getDistricts();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'districtsProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterDistrict(DistrictEglise district) async {
@@ -65,8 +76,13 @@ class AssembleesLocalesNotifier
     extends AsyncNotifier<List<AssembleeLocale>> {
   @override
   Future<List<AssembleeLocale>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getAssembleesLocales();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getAssembleesLocales();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'assembleesLocalesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterAssemblee(AssembleeLocale assemblee) async {

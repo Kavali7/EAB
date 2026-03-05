@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/data_service.dart';
+import '../core/services/error_reporting.dart';
 import '../models/program.dart';
 import 'data_service_provider.dart';
 
@@ -13,8 +14,13 @@ class ProgramsNotifier extends AsyncNotifier<List<Program>> {
 
   @override
   Future<List<Program>> build() async {
-    _service = ref.read(dataServiceProvider);
-    return _service.getPrograms();
+    try {
+      _service = ref.read(dataServiceProvider);
+      return _service.getPrograms();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'programsProvider'});
+      rethrow;
+    }
   }
 
   Future<void> addProgram(Program program) async {

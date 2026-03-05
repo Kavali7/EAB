@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/data_service.dart';
+import '../core/services/error_reporting.dart';
 import '../models/member.dart';
 import 'data_service_provider.dart';
 
@@ -13,8 +14,13 @@ class MembersNotifier extends AsyncNotifier<List<Member>> {
 
   @override
   Future<List<Member>> build() async {
-    _service = ref.read(dataServiceProvider);
-    return _service.getMembers();
+    try {
+      _service = ref.read(dataServiceProvider);
+      return _service.getMembers();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'membersProvider'});
+      rethrow;
+    }
   }
 
   Future<void> addMember(Member member) async {

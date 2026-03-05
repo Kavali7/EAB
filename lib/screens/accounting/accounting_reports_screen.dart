@@ -7,6 +7,7 @@ import '../../models/tiers.dart';
 import '../../models/compta_enums.dart';
 import '../../providers/accounting_providers.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 import 'accounting_balance_print_screen.dart';
 import 'accounting_ledger_print_screen.dart';
 
@@ -59,8 +60,10 @@ class _AccountingReportsScreenState
         padding: const EdgeInsets.all(16.0),
         child: comptesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) =>
-              const Center(child: Text('Erreur chargement plan de comptes')),
+          error: (err, st) => ErrorRetryWidget(
+            message: 'Erreur chargement plan de comptes : $err',
+            onRetry: () => ref.invalidate(comptesComptablesProvider),
+          ),
           data: (comptes) {
             final tiers = tiersAsync.asData?.value ?? [];
             return Column(

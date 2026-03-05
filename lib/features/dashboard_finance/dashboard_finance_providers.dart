@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:eab/core/services/error_reporting.dart';
 import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:eab/providers/data_service_provider.dart';
 
@@ -148,14 +149,29 @@ final dashboardFinanceRepoProvider = Provider<DashboardFinanceRepository>((ref) 
   return DashboardFinanceRepository(ds);
 });
 
-final financeKpisProvider = FutureProvider.family<FinanceKpis, String>((ref, orgId) {
-  return ref.read(dashboardFinanceRepoProvider).fetchKpis(orgId);
+final financeKpisProvider = FutureProvider.family<FinanceKpis, String>((ref, orgId) async {
+  try {
+    return await ref.read(dashboardFinanceRepoProvider).fetchKpis(orgId);
+  } catch (e, st) {
+    ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'financeKpisProvider'});
+    rethrow;
+  }
 });
 
-final financeEvolutionProvider = FutureProvider.family<List<EvolutionMensuelle>, String>((ref, orgId) {
-  return ref.read(dashboardFinanceRepoProvider).fetchEvolution(orgId);
+final financeEvolutionProvider = FutureProvider.family<List<EvolutionMensuelle>, String>((ref, orgId) async {
+  try {
+    return await ref.read(dashboardFinanceRepoProvider).fetchEvolution(orgId);
+  } catch (e, st) {
+    ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'financeEvolutionProvider'});
+    rethrow;
+  }
 });
 
-final financeRepartitionProvider = FutureProvider.family<List<RepartitionCategorie>, String>((ref, orgId) {
-  return ref.read(dashboardFinanceRepoProvider).fetchRepartition(orgId);
+final financeRepartitionProvider = FutureProvider.family<List<RepartitionCategorie>, String>((ref, orgId) async {
+  try {
+    return await ref.read(dashboardFinanceRepoProvider).fetchRepartition(orgId);
+  } catch (e, st) {
+    ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'financeRepartitionProvider'});
+    rethrow;
+  }
 });

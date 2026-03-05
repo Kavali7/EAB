@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
 import 'core/config/supabase_config.dart';
+import 'core/provider_error_observer.dart';
 import 'core/services/error_reporting.dart';
 
 Future<void> main() async {
@@ -44,7 +45,10 @@ Future<void> main() async {
       runApp(
         DefaultAssetBundle(
           bundle: SentryAssetBundle(),
-          child: const ProviderScope(child: ChurchApp()),
+          child: ProviderScope(
+            observers: [ProviderErrorObserver()],
+            child: const ChurchApp(),
+          ),
         ),
       );
     },

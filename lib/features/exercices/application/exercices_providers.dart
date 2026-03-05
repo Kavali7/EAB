@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:eab/core/services/error_reporting.dart';
 import 'package:eab/providers/data_service_provider.dart';
 import 'package:eab/models/exercice_comptable.dart';
 import 'package:eab/models/compta_enums.dart';
@@ -18,8 +19,13 @@ final exercicesRepositoryProvider = Provider<ExercicesRepository>((ref) {
 /// Liste des exercices (chargée une fois, invalidable).
 final exercicesListProvider =
     FutureProvider<List<ExerciceComptable>>((ref) async {
-  final repo = ref.watch(exercicesRepositoryProvider);
-  return repo.fetchAll();
+  try {
+    final repo = ref.watch(exercicesRepositoryProvider);
+    return repo.fetchAll();
+  } catch (e, st) {
+    ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'exercicesListProvider'});
+    rethrow;
+  }
 });
 
 /// Exercice ouvert actuellement (null si aucun).

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/services/error_reporting.dart';
 import '../core/utils/case_converters.dart';
 import '../models/centre_analytique.dart';
 import '../models/compte_comptable.dart';
@@ -55,8 +56,13 @@ final comptesComptablesProvider =
 class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   @override
   Future<List<CompteComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getComptesComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getComptesComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'comptesComptablesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterCompte(CompteComptable compte) async {
@@ -91,8 +97,13 @@ final journauxComptablesProvider =
 class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   @override
   Future<List<JournalComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getJournauxComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getJournauxComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'journauxComptablesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterJournal(JournalComptable journal) async {
@@ -128,8 +139,13 @@ class CentresAnalytiquesNotifier
     extends AsyncNotifier<List<CentreAnalytique>> {
   @override
   Future<List<CentreAnalytique>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getCentresAnalytiques();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getCentresAnalytiques();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'centresAnalytiquesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterCentre(CentreAnalytique centre) async {
@@ -162,8 +178,13 @@ final tiersProvider =
 class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   @override
   Future<List<Tiers>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getTiers();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getTiers();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'tiersProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterTiers(Tiers t) async {
@@ -199,8 +220,13 @@ class BudgetsComptablesNotifier
     extends AsyncNotifier<List<BudgetComptable>> {
   @override
   Future<List<BudgetComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getBudgetsComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getBudgetsComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'budgetsComptablesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterBudget(BudgetComptable budget) async {
@@ -232,8 +258,13 @@ class LignesBudgetsNotifier
     extends AsyncNotifier<List<LigneBudgetComptable>> {
   @override
   Future<List<LigneBudgetComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getLignesBudgetsComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getLignesBudgetsComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'lignesBudgetsProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterLigne(LigneBudgetComptable ligne) async {
@@ -269,8 +300,13 @@ class ImmobilisationsComptablesNotifier
     extends AsyncNotifier<List<ImmobilisationComptable>> {
   @override
   Future<List<ImmobilisationComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getImmobilisationsComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getImmobilisationsComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'immobilisationsComptablesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterImmobilisation(ImmobilisationComptable immo) async {
@@ -309,8 +345,13 @@ class LignesRelevesBancairesNotifier
     extends AsyncNotifier<List<LigneReleveBancaire>> {
   @override
   Future<List<LigneReleveBancaire>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getLignesRelevesBancaires();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getLignesRelevesBancaires();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'lignesRelevesBancairesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> mettreAJourLigneReleve(LigneReleveBancaire ligne) async {
@@ -338,8 +379,13 @@ class EcrituresComptablesNotifier
     extends AsyncNotifier<List<EcritureComptable>> {
   @override
   Future<List<EcritureComptable>> build() async {
-    final dataService = ref.read(dataServiceProvider);
-    return dataService.getEcrituresComptables();
+    try {
+      final dataService = ref.read(dataServiceProvider);
+      return dataService.getEcrituresComptables();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'ecrituresComptablesProvider'});
+      rethrow;
+    }
   }
 
   Future<void> ajouterEcriture(EcritureComptable ecriture) async {

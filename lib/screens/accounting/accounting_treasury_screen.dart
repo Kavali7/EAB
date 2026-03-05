@@ -7,6 +7,7 @@ import '../../models/profil_utilisateur.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../widgets/context_header.dart';
+import '../../widgets/error_retry_widget.dart';
 
 class AccountingTreasuryScreen extends ConsumerStatefulWidget {
   const AccountingTreasuryScreen({super.key});
@@ -118,8 +119,9 @@ class _AccountingTreasuryScreenState
             Expanded(
               child: comptesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, st) => const Center(
-                  child: Text('Erreur chargement plan de comptes'),
+                error: (err, st) => ErrorRetryWidget(
+                  message: 'Erreur chargement plan de comptes : $err',
+                  onRetry: () => ref.invalidate(comptesComptablesProvider),
                 ),
                 data: (comptes) {
                   return _buildContent(

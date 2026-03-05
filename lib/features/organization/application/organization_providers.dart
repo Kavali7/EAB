@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:eab/core/services/error_reporting.dart';
 import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:eab/providers/data_service_provider.dart';
 import '../data/organization_model.dart';
@@ -23,8 +24,13 @@ final currentOrganizationProvider =
 class CurrentOrganizationNotifier extends AsyncNotifier<Organization?> {
   @override
   Future<Organization?> build() async {
-    final repo = ref.read(organizationRepositoryProvider);
-    return repo.fetchCurrentOrganization();
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      return repo.fetchCurrentOrganization();
+    } catch (e, st) {
+      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'currentOrganizationProvider'});
+      rethrow;
+    }
   }
 
   /// Recharge les données de l'organisation.

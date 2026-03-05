@@ -4,6 +4,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:eab/core/services/error_reporting.dart';
+
 /// Modèle d'une entrée d'audit.
 class AuditLogEntry {
   const AuditLogEntry({
@@ -86,26 +88,31 @@ final auditFilterProvider =
 /// Provider des logs d'audit (avec filtre).
 final auditLogsProvider =
     FutureProvider.autoDispose<List<AuditLogEntry>>((ref) async {
-  final filter = ref.watch(auditFilterProvider);
-  final client = Supabase.instance.client;
+  try {
+    final filter = ref.watch(auditFilterProvider);
+    final client = Supabase.instance.client;
 
-  // Filtres AVANT order/limit (Supabase exige cet ordre)
-  var query = client.from('audit_logs').select();
+    // Filtres AVANT order/limit (Supabase exige cet ordre)
+    var query = client.from('audit_logs').select();
 
-  if (filter.action != null) {
-    query = query.eq('action', filter.action!);
+    if (filter.action != null) {
+      query = query.eq('action', filter.action!);
+    }
+    if (filter.tableName != null) {
+      query = query.eq('table_name', filter.tableName!);
+    }
+    if (filter.userEmail != null) {
+      query = query.ilike('user_email', '%${filter.userEmail!}%');
+    }
+
+    final data =
+        await query.order('created_at', ascending: false).limit(200);
+
+    return (data as List)
+        .map((e) => AuditLogEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  } catch (e, st) {
+    ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'auditLogsProvider'});
+    rethrow;
   }
-  if (filter.tableName != null) {
-    query = query.eq('table_name', filter.tableName!);
-  }
-  if (filter.userEmail != null) {
-    query = query.ilike('user_email', '%${filter.userEmail!}%');
-  }
-
-  final data =
-      await query.order('created_at', ascending: false).limit(200);
-
-  return (data as List)
-      .map((e) => AuditLogEntry.fromJson(e as Map<String, dynamic>))
-      .toList();
 });
