@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
+import '../providers/accounting_providers.dart';
+import '../providers/church_structure_providers.dart';
+import '../providers/families_provider.dart';
+import '../providers/members_provider.dart';
+import '../providers/programs_provider.dart';
+import '../providers/user_profile_providers.dart';
+import '../features/organization/application/organization_providers.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
@@ -28,14 +36,14 @@ import '../features/fiscal_dossier/presentation/fiscal_dossiers_screen.dart';
 import '../features/fiscal_dossier/presentation/fiscal_wizard_screen.dart';
 import '../features/fiscal_dossier/presentation/fiscal_import_screen.dart';
 
-class ChurchApp extends StatefulWidget {
+class ChurchApp extends ConsumerStatefulWidget {
   const ChurchApp({super.key});
 
   @override
-  State<ChurchApp> createState() => _ChurchAppState();
+  ConsumerState<ChurchApp> createState() => _ChurchAppState();
 }
 
-class _ChurchAppState extends State<ChurchApp> {
+class _ChurchAppState extends ConsumerState<ChurchApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
   late bool _isLoggedIn;
 
@@ -59,6 +67,10 @@ class _ChurchAppState extends State<ChurchApp> {
           (route) => false,
         );
       } else if (event == AuthChangeEvent.signedIn && !_isLoggedIn) {
+        // Invalider TOUS les providers pour forcer le rechargement
+        // avec la nouvelle session authentifiée
+        _invalidateAllProviders();
+
         setState(() => _isLoggedIn = true);
         _navigatorKey.currentState?.pushNamedAndRemoveUntil(
           '/',
@@ -66,9 +78,35 @@ class _ChurchAppState extends State<ChurchApp> {
         );
       } else if (hasSession && !_isLoggedIn) {
         // Fallback : si on a une session mais l'état dit non-connecté
+        _invalidateAllProviders();
         setState(() => _isLoggedIn = true);
       }
     });
+  }
+
+  /// Invalide tous les providers data pour forcer le rechargement
+  /// après un changement d'état d'authentification.
+  void _invalidateAllProviders() {
+    ref.invalidate(profilsUtilisateursProvider);
+    ref.invalidate(membersProvider);
+    ref.invalidate(programsProvider);
+    ref.invalidate(familiesProvider);
+    ref.invalidate(regionsProvider);
+    ref.invalidate(districtsProvider);
+    ref.invalidate(assembleesLocalesProvider);
+    ref.invalidate(ecrituresComptablesProvider);
+    ref.invalidate(journauxComptablesProvider);
+    ref.invalidate(comptesComptablesProvider);
+    ref.invalidate(centresAnalytiquesProvider);
+    ref.invalidate(tiersProvider);
+    ref.invalidate(budgetsComptablesProvider);
+    ref.invalidate(lignesBudgetsProvider);
+    ref.invalidate(immobilisationsComptablesProvider);
+    ref.invalidate(currentOrganizationProvider);
+    // Réinitialiser le profil courant et l'assemblée active
+    // (invalidate appelle build() qui retourne null)
+    ref.invalidate(profilUtilisateurCourantProvider);
+    ref.invalidate(assembleeActiveIdProvider);
   }
 
   @override

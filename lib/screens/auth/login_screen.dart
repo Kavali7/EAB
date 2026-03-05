@@ -38,10 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/');
-      }
+      // Navigation gérée par app.dart via onAuthStateChange — pas de navigation ici
     } on AuthException catch (e) {
       setState(() {
         _errorMessage = _translateAuthError(e.message);
