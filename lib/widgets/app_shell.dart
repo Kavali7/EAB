@@ -46,10 +46,7 @@ class AppShell extends ConsumerWidget {
           (p) => p.id == 'profil_tresorier_cotonou_centre',
           orElse: () => profils.first,
         );
-        // Auto-sélectionner le profil dès que les données arrivent.
-        // Pas de addPostFrameCallback — le provider le gère déjà dans build(),
-        // mais ce fallback couvre le cas où app_shell se reconstruit après.
-        Future.microtask(() {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
               .read(profilUtilisateurCourantProvider.notifier)
               .setProfil(defaultProfil);
@@ -64,7 +61,7 @@ class AppShell extends ConsumerWidget {
       regionsAsync.value ?? const [],
     );
     if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
-      Future.microtask(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(assembleeActiveIdProvider.notifier)
             .setAssemblee(assembleesAutorisees.first.id);

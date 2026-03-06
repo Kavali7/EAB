@@ -225,109 +225,127 @@ class _EabTableState<T> extends State<EabTable<T>> {
             ),
 
           // Scroll horizontal si nécessaire
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.of(context).size.width - 320,
-              ),
-              child: Column(
-                children: [
-                  // ── En-tête colonnes ──
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade300, width: 2),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        // Colonne #
-                        if (widget.showRowNumbers)
-                          SizedBox(
-                            width: 48,
-                            child: Text(
-                              '#',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculer la largeur minimale du contenu basée sur les colonnes
+              double totalFixedWidth = widget.showRowNumbers ? 48 : 0;
+              int totalFlex = 0;
+              for (final col in widget.columns) {
+                if (col.fixedWidth != null) {
+                  totalFixedWidth += col.fixedWidth!;
+                } else {
+                  totalFlex += col.flex ?? 1;
+                }
+              }
+              totalFixedWidth += 32; // padding horizontal
+              // Donner au minimum 120px par flex unit, ou la largeur parent
+              final flexWidth = totalFlex * 120.0;
+              final contentWidth = (totalFixedWidth + flexWidth)
+                  .clamp(constraints.maxWidth, double.infinity);
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: contentWidth,
+                  child: Column(
+                    children: [
+                      // ── En-tête colonnes ──
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey.shade300, width: 2),
                           ),
-                        // Colonnes data
-                        ...List.generate(widget.columns.length, (i) {
-                          final col = widget.columns[i];
-                          final isSorted = _sortColumnIndex == i;
-                          return _buildHeaderCell(
-                            col: col,
-                            isSorted: isSorted,
-                            index: i,
-                            theme: theme,
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-
-                  // ── Lignes de données ──
-                  ...List.generate(pageItems.length, (rowIndex) {
-                    final item = pageItems[rowIndex];
-                    final globalIndex =
-                        _currentPage * widget.rowsPerPage + rowIndex + 1;
-                    final isEven = rowIndex.isEven;
-
-                    return InkWell(
-                      onTap: widget.onRowTap != null
-                          ? () => widget.onRowTap!(item)
-                          : null,
-                      hoverColor: Colors.blue.shade50,
-                      child: Container(
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
                         ),
-                        decoration: BoxDecoration(
-                          color: isEven ? Colors.white : Colors.grey.shade50,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Colors.grey.shade200,
-                              width: 0.5,
-                            ),
-                          ),
-                        ),
                         child: Row(
                           children: [
-                            // Numéro de ligne
+                            // Colonne #
                             if (widget.showRowNumbers)
                               SizedBox(
                                 width: 48,
                                 child: Text(
-                                  '$globalIndex',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[500],
-                                    fontSize: 13,
+                                  '#',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.grey[600],
                                   ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
-                            // Cellules
-                            ...widget.columns.map((col) =>
-                                _buildDataCell(col: col, item: item)),
+                            // Colonnes data
+                            ...List.generate(widget.columns.length, (i) {
+                              final col = widget.columns[i];
+                              final isSorted = _sortColumnIndex == i;
+                              return _buildHeaderCell(
+                                col: col,
+                                isSorted: isSorted,
+                                index: i,
+                                theme: theme,
+                              );
+                            }),
                           ],
                         ),
                       ),
-                    );
-                  }),
-                ],
-              ),
-            ),
+
+                      // ── Lignes de données ──
+                      ...List.generate(pageItems.length, (rowIndex) {
+                        final item = pageItems[rowIndex];
+                        final globalIndex =
+                            _currentPage * widget.rowsPerPage + rowIndex + 1;
+                        final isEven = rowIndex.isEven;
+
+                        return InkWell(
+                          onTap: widget.onRowTap != null
+                              ? () => widget.onRowTap!(item)
+                              : null,
+                          hoverColor: Colors.blue.shade50,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isEven ? Colors.white : Colors.grey.shade50,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey.shade200,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Numéro de ligne
+                                if (widget.showRowNumbers)
+                                  SizedBox(
+                                    width: 48,
+                                    child: Text(
+                                      '$globalIndex',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[500],
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                // Cellules
+                                ...widget.columns.map((col) =>
+                                    _buildDataCell(col: col, item: item)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
 
           // ── Pagination ──
