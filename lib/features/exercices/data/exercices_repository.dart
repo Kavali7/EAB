@@ -16,7 +16,7 @@ class ExercicesRepository {
         .from('exercices_comptables')
         .select()
         .order('annee', ascending: false);
-    return data.map((e) => ExerciceComptable.fromJson(e)).toList();
+    return data.map((e) => ExerciceComptable.fromJson(snakeToCamel(e))).toList();
   }
 
   /// Crée un exercice en brouillon.
@@ -30,7 +30,7 @@ class ExercicesRepository {
         .insert(json)
         .select()
         .single();
-    return ExerciceComptable.fromJson(data);
+    return ExerciceComptable.fromJson(snakeToCamel(data));
   }
 
   /// Ouvre un exercice (brouillon → ouvert). RPC backend.
@@ -51,7 +51,7 @@ class ExercicesRepository {
       params: {'p_org_id': orgId},
     );
     if (data == null) return null;
-    return ExerciceComptable.fromJson(data as Map<String, dynamic>);
+    return ExerciceComptable.fromJson(snakeToCamel(data as Map<String, dynamic>));
   }
 
   /// Vérifie si on peut saisir une écriture à la date donnée.
