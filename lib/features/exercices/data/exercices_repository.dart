@@ -1,7 +1,5 @@
-/// Repository pour la feature Exercices Comptables.
-library;
-
 import 'package:eab/core/services/supabase_data_service.dart';
+import 'package:eab/core/utils/case_converters.dart';
 import 'package:eab/models/exercice_comptable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,12 +21,13 @@ class ExercicesRepository {
 
   /// Crée un exercice en brouillon.
   Future<ExerciceComptable> create(ExerciceComptable exercice) async {
+    final json = camelToSnake(exercice.toJson());
+    json.remove('id');
+    json.remove('created_at');
+    json.remove('updated_at');
     final data = await _sb
         .from('exercices_comptables')
-        .insert(exercice.toJson()
-          ..remove('id')
-          ..remove('created_at')
-          ..remove('updated_at'))
+        .insert(json)
         .select()
         .single();
     return ExerciceComptable.fromJson(data);

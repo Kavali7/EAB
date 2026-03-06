@@ -48,6 +48,14 @@ Map<String, dynamic> snakeToCamel(Map<String, dynamic> json) {
 
 /// Convertit les clés d'un [Map] de camelCase vers snake_case (récursif).
 Map<String, dynamic> camelToSnake(Map<String, dynamic> json) {
+  // Noms de champs (en camelCase) dont la valeur est un enum à convertir
+  const _enumFields = {
+    'type', 'statut', 'nature', 'role', 'modePaiement',
+    'portee', 'statutFidele', 'typeCentre',
+    'typeTiers', 'statutExercice', 'typeVisite',
+    'gender', 'maritalStatus', 'statutMatrimonial',
+  };
+
   return json.map((key, value) {
     final newKey = _camelToSnakeString(key);
     if (value is Map<String, dynamic>) {
@@ -59,6 +67,11 @@ Map<String, dynamic> camelToSnake(Map<String, dynamic> json) {
             .map((e) => e is Map<String, dynamic> ? camelToSnake(e) : e)
             .toList(),
       );
+    } else if (value is String &&
+        _enumFields.contains(key) &&
+        RegExp(r'[A-Z]').hasMatch(value)) {
+      // Convertir les valeurs enum camelCase → snake_case pour le DB
+      return MapEntry(newKey, _camelToSnakeString(value));
     }
     return MapEntry(newKey, value);
   });
