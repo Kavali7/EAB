@@ -124,3 +124,9 @@ String _camelToSnakeString(String input) {
     (match) => '_${match.group(0)!.toLowerCase()}',
   );
 }
+
+/// Version publique de [_camelToSnakeString] pour les valeurs enum.
+///
+/// Ex: `'autreOfficier'` → `'autre_officier'`
+///     `'troisiemeAge'` → `'troisieme_age'`
+String camelValueToSnake(String input) => _camelToSnakeString(input);

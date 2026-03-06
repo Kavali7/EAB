@@ -137,15 +137,41 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addMember(Member member) async {
-    await _client.from('membres').insert(camelToSnake(member.toJson()));
+    await _client.from('membres').insert(_memberToDbJson(member));
   }
 
   @override
   Future<void> updateMember(Member member) async {
     await _client
         .from('membres')
-        .update(camelToSnake(member.toJson()))
+        .update(_memberToDbJson(member))
         .eq('id', member.id);
+  }
+
+  /// Convertit un Member en JSON compatible avec la table `membres`.
+  Map<String, dynamic> _memberToDbJson(Member member) {
+    final data = <String, dynamic>{
+      'id': member.id,
+      'full_name': member.fullName,
+      'gender': member.gender.name,
+      'date_naissance': (member.dateNaissance ?? member.birthDate).toIso8601String(),
+      'statut_matrimonial': member.statutMatrimonial?.name ?? 'celibataire',
+      'phone': member.phone,
+      'email': member.email,
+      'address': member.address,
+      'date_conversion': member.dateConversion?.toIso8601String(),
+      'date_bapteme': member.dateBapteme?.toIso8601String(),
+      'date_main_association': member.dateMainAssociation?.toIso8601String(),
+      'statut': member.statut.name,
+      'role': camelValueToSnake(member.role.name),
+      'vulnerabilites': member.vulnerabilites
+          .map((v) => camelValueToSnake(v.name))
+          .toList(),
+      'id_famille': member.idFamille,
+      'id_assemblee_locale': member.idAssembleeLocale,
+    };
+    data.removeWhere((_, v) => v == null);
+    return data;
   }
 
   @override
@@ -184,15 +210,47 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addProgram(Program program) async {
-    await _client.from('programmes').insert(camelToSnake(program.toJson()));
+    await _client.from('programmes').insert(_programToDbJson(program));
   }
 
   @override
   Future<void> updateProgram(Program program) async {
     await _client
         .from('programmes')
-        .update(camelToSnake(program.toJson()))
+        .update(_programToDbJson(program))
         .eq('id', program.id);
+  }
+
+  /// Convertit un Program en JSON compatible avec la table `programmes`.
+  Map<String, dynamic> _programToDbJson(Program program) {
+    final data = <String, dynamic>{
+      'id': program.id,
+      'type': camelValueToSnake(program.type.name),
+      'date': program.date.toIso8601String(),
+      'location': program.location,
+      'id_assemblee_locale': program.idAssembleeLocale,
+      'description': program.description,
+      'observations': program.observations,
+      'participant_ids': program.participantIds,
+      'type_visite': program.typeVisite != null
+          ? camelValueToSnake(program.typeVisite!.name)
+          : null,
+      'nombre_hommes': program.nombreHommes,
+      'nombre_femmes': program.nombreFemmes,
+      'nombre_garcons': program.nombreGarcons,
+      'nombre_filles': program.nombreFilles,
+      'conversions_hommes': program.conversionsHommes,
+      'conversions_femmes': program.conversionsFemmes,
+      'conversions_garcons': program.conversionsGarcons,
+      'conversions_filles': program.conversionsFilles,
+      'nombre_classes_ecole_du_dimanche': program.nombreClassesEcoleDuDimanche,
+      'nombre_moniteurs_hommes': program.nombreMoniteursHommes,
+      'nombre_monitrices_femmes': program.nombreMonitricesFemmes,
+      'derniere_lecon_ecole_du_dimanche': program.derniereLeconEcoleDuDimanche,
+      'compte_rendu_visite': program.compteRenduVisite,
+    };
+    data.removeWhere((_, v) => v == null);
+    return data;
   }
 
   @override
