@@ -11,7 +11,7 @@ final accountingEntriesProvider =
     );
 
 class AccountingEntriesNotifier extends AsyncNotifier<List<AccountingEntry>> {
-  late final DataService _service;
+  late DataService _service;
 
   @override
   Future<List<AccountingEntry>> build() async {

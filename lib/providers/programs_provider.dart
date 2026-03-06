@@ -10,7 +10,7 @@ final programsProvider = AsyncNotifierProvider<ProgramsNotifier, List<Program>>(
 );
 
 class ProgramsNotifier extends AsyncNotifier<List<Program>> {
-  late final DataService _service;
+  late DataService _service;
 
   @override
   Future<List<Program>> build() async {

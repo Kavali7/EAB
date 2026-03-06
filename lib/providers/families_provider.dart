@@ -11,7 +11,7 @@ final familiesProvider =
 );
 
 class FamiliesNotifier extends AsyncNotifier<List<Famille>> {
-  late final DataService _service;
+  late DataService _service;
 
   @override
   Future<List<Famille>> build() async {

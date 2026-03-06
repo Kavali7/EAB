@@ -10,7 +10,7 @@ final membersProvider = AsyncNotifierProvider<MembersNotifier, List<Member>>(
 );
 
 class MembersNotifier extends AsyncNotifier<List<Member>> {
-  late final DataService _service;
+  late DataService _service;
 
   @override
   Future<List<Member>> build() async {
