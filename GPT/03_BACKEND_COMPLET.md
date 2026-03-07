@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-03-02
-- **Fichiers de migration** : `supabase/migrations/00001` → `00015`
+- **Dernière mise à jour** : 2026-03-07
+- **Fichiers de migration** : `supabase/migrations/00001` → `00016`
 
 ---
 
@@ -1030,6 +1030,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-03-07 | Agent IA | **Migration 00016** : Fix RPCs `open_exercice` et `cloturer_exercice`. Corrigé `m.user_id` (colonne inexistante sur `membres`) → `profiles.id = auth.uid()` pour la vérification d'appartenance à l'organisation. Fix côté Flutter : helper `_getOrgId()` qui récupère `organization_id` depuis `profiles` au lieu de `appMetadata` (qui ne contient pas cette donnée). Ajout `try/catch` + `SnackBar` err sur formulaires d'insertion comptable. Fix DataTable overflow (`columnSpacing: 24`, `horizontalMargin: 12`). |
 | 2026-03-02 | Agent IA | **PR4** : `FiscalPdfService` — Génération PDF multi-pages dossier fiscal (COVER avec badge/watermark, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT). Rendu dynamique depuis template fields + valeurs. Header/footer cohérents avec pagination. Intégration dans wizard (bouton PDF). |
 | 2026-03-02 | Agent IA | **Migration 00015** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
 | 2026-03-02 | Agent IA | **Migration 00013** : 4 RPCs dossier fiscal — `prefill_fiscal_dossier` (pré-remplissage depuis écritures via mappings sum_prefixes/balance_class/sum_accounts), `prefill_fiscal_dossier_from_import` (depuis balance CSV), `validate_fiscal_dossier` (contrôles actif=passif + résultat + champs requis), `lock_fiscal_dossier` (verrouillage avec validation + contrôle rôle admin/resp_region). Toutes SECURITY DEFINER + vérification org. |

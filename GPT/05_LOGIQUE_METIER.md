@@ -278,11 +278,12 @@ L'application pré-définit **190 catégories de recettes** et **183 catégories
 - Types d'action : INSERT, UPDATE, DELETE, SOFT_DELETE, LOGIN, LOGOUT, VALIDATION, CLOTURE
 - Trigger `trg_audit_ecritures` qui enregistre tout changement sur les écritures
 
-### 10.2 Ce qui manque (frontend)
+### 10.2 Frontend ✅
 
-- ❌ Écran de consultation du journal d'audit
-- ❌ Filtres par action, date, utilisateur, table
-- ❌ Visualisation de l'historique d'une entité (« qui a modifié quoi, quand »)
+- ✅ Écran de consultation du journal d'audit (`audit_log_screen.dart`)
+- ✅ Filtres : par action, table, utilisateur
+- ✅ Timeline chronologique avec icônes colorées par action
+- ✅ Détail bottom sheet : métadonnées + changements JSONB
 
 ---
 

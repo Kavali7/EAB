@@ -153,6 +153,7 @@ Le choix du service est fait via le provider `dataServiceProvider`. Les helpers 
 13. Paramétrage comptable
 14. Exercices comptables
 15. États financiers
+
 ## 5. Modèles de données (27+ entités)
 
 | Modèle | Table Supabase | Champs clés |
@@ -198,11 +199,11 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 
 ## 7. Dépendances backend (Supabase)
 
-- **11 fichiers de migration** SQL (00001 → 00010)
+- **17 fichiers de migration** SQL (00001 → 00016)
 - **Seed data** : `seed.sql` (30KB) + `reset_demo_data.sql` (4KB)
-- **22 tables** avec RLS activé sur toutes
-- **25+ fonctions PostgreSQL** (RPCs : exercices, états financiers, dashboard finance, recherche globale)
-- **5 triggers métier** + 20 triggers `updated_at`
+- **30 tables** avec RLS activé sur toutes
+- **30+ fonctions PostgreSQL** (RPCs : exercices, états financiers, dashboard finance, recherche globale, dossier fiscal)
+- **5 triggers métier** + 22 triggers `updated_at`
 - **~80 index** pour la performance
 - **4 vues** (membres_actifs, ecritures_actives, soldes_comptes, tableau_bord_financier)
 - **3 storage buckets** (member-photos, documents, organization-assets)
@@ -237,13 +238,17 @@ La sélection de l'assemblée active se fait dans l'AppBar. Le rôle détermine 
 - Dossier fiscal SYSCEBNL (wizard multi-pages, 5 pages template, pré-remplissage, validation, verrouillage) ✅
 - Import balance CSV (paste, prévisualisation, contrôle D=C) ✅
 - Export PDF dossier fiscal (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT) ✅
+- Fix RLS : injection `organization_id` depuis `profiles` (pas `appMetadata`) dans toutes les insertions comptables ✅
+- Fix RPCs `open_exercice` / `cloturer_exercice` : correction `m.user_id` → `profiles.id = auth.uid()` ✅
+- Fix DataTable overflow dans paramétrage comptable ✅
+- Error handling : `try/catch` + `SnackBar` sur les formulaires d'insertion comptable ✅
 
 ### ⚠️ Partiel / À améliorer
 
 - Trésorerie (vue simplifiée)
 - Rapprochement bancaire (basique)
 - Gestion des familles (peu exploitée)
-- Designs de certains écrans legacy (structures, accounting settings)
+- Designs de certains écrans legacy (structures)
 
 ### ❌ Non implémenté
 

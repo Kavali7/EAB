@@ -175,6 +175,8 @@
 - **Fichier** : `accounting_settings_screen.dart` (31KB)
 - **Tabs** : Plan comptable, Journaux, Centres analytiques, Tiers
 - **CRUD** : Complet pour les 4 entités de paramétrage
+- **Error handling** : `try/catch` + `SnackBar` sur les formulaires d'insertion, feedback utilisateur
+- **DataTable** : `columnSpacing: 24`, `horizontalMargin: 12` (fix overflow)
 - **État** : ✅ Fonctionnel
 
 ### 6.3 `AccountingBudgetsScreen` — Budgets prévisionnels

@@ -4,7 +4,7 @@
 
 Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiques (C1-C4), haute priorité (H1-H5), et **moyenne (M1-M6) terminées**. Le chantier restant se concentre sur : (1) les items résiduels des phases 1-2, (2) les fonctionnalités de phase 4 retenues pour la V1.
 
-> **Dernière mise à jour** : 2026-03-02
+> **Dernière mise à jour** : 2026-03-07
 
 ---
 
@@ -260,6 +260,15 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [x] `user_profile_providers.dart` : auto-init du profil courant à la connexion
 - [x] `dashboard_finance_screen.dart` : "Veuillez vous connecter" → CircularProgressIndicator
 
+### R5. Corrections RLS et Data Integrity ✅
+
+- [x] `accounting_providers.dart` : helper `_getOrgId()` — récupère `organization_id` depuis `profiles` (pas `appMetadata` qui est vide)
+- [x] 7 méthodes `ajouter*` corrigées : injection `organization_id`, suppression valeurs null/vides, `ref.invalidateSelf()`
+- [x] `exercices_repository.dart` : idem, `organization_id` depuis `profiles`
+- [x] `accounting_settings_screen.dart` : `try/catch` + `SnackBar` erreurs sur formulaires d'insertion
+- [x] `accounting_settings_screen.dart` : fix DataTable overflow (`columnSpacing: 24`, `horizontalMargin: 12`)
+- [x] **Migration 00016** : Fix RPCs `open_exercice` / `cloturer_exercice` — `m.user_id` (inexistant) → `profiles.id = auth.uid()`
+
 ---
 
 ## 📋 Résumé par phase
@@ -270,8 +279,8 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 | **Phase 2 — Haute** | H1-H5 (Exercices, Amortissements, Rapports, Dashboard financier, Recherche) | ✅ Terminé | Complet (sauf flux trésorerie, ratios) |
 | **Phase 3 — Moyenne** | M1-M6 (Audit, Fiches, Notifications, Familles, Calendrier, Tiers) | ✅ Terminé | **Complet** |
 | **Phase 4 — Basse** | B1, B2, B3, B6 (Analytics, Mobile, EN, Comptable avancé) | 🟢 Différenciation | ~3-4 semaines |
-| **Infrastructure** | R1-R4 (Sentry, Audit SQL, UX Quality, Bug fixes) | ✅ Terminé | Complet |
-| **Module Fiscal** | Dossier Fiscal SYSCEBNL (V1 MVP) — backend + frontend | ✅ Terminé | Complet (sauf PDF PR4) |
+| **Infrastructure** | R1-R5 (Sentry, Audit SQL, UX Quality, Bug fixes, RLS fixes) | ✅ Terminé | Complet |
+| **Module Fiscal** | Dossier Fiscal SYSCEBNL (V1 MVP) — backend + frontend + PDF | ✅ Terminé | Complet |
 
 ---
 
