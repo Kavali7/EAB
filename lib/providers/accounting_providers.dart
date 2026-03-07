@@ -23,6 +23,19 @@ import 'church_structure_providers.dart';
 /// Client Supabase raccourci pour persistance
 SupabaseClient get _db => Supabase.instance.client;
 
+/// Récupère l'organization_id de l'utilisateur courant depuis la table profiles
+/// (idem fonction SQL get_user_organization_id() utilisée par les RLS).
+Future<String?> _getOrgId() async {
+  final uid = _db.auth.currentUser?.id;
+  if (uid == null) return null;
+  final row = await _db
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', uid)
+      .maybeSingle();
+  return row?['organization_id'] as String?;
+}
+
 // Note : les helpers de conversion snake_case/camelCase sont dans
 // lib/core/utils/case_converters.dart (camelToSnake, snakeToCamel, etc.)
 
@@ -68,9 +81,12 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   Future<void> ajouterCompte(CompteComptable compte) async {
     final json = camelToSnake(compte.toJson());
     json.remove('id');
+    // Injecter le vrai organization_id
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('comptes_comptables').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, compte]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourCompte(CompteComptable compte) async {
@@ -109,9 +125,11 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   Future<void> ajouterJournal(JournalComptable journal) async {
     final json = camelToSnake(journal.toJson());
     json.remove('id');
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('journaux_comptables').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, journal]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourJournal(JournalComptable journal) async {
@@ -151,9 +169,11 @@ class CentresAnalytiquesNotifier
   Future<void> ajouterCentre(CentreAnalytique centre) async {
     final json = camelToSnake(centre.toJson());
     json.remove('id');
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('centres_analytiques').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, centre]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourCentre(CentreAnalytique centre) async {
@@ -190,9 +210,11 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   Future<void> ajouterTiers(Tiers t) async {
     final json = camelToSnake(t.toJson());
     json.remove('id');
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('tiers').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, t]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourTiers(Tiers t) async {
@@ -232,9 +254,11 @@ class BudgetsComptablesNotifier
   Future<void> ajouterBudget(BudgetComptable budget) async {
     final json = camelToSnake(budget.toJson());
     json.remove('id');
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('budgets_comptables').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, budget]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourBudget(BudgetComptable budget) async {
@@ -270,9 +294,9 @@ class LignesBudgetsNotifier
   Future<void> ajouterLigne(LigneBudgetComptable ligne) async {
     final json = camelToSnake(ligne.toJson());
     json.remove('id');
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('lignes_budgets').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, ligne]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourLigne(LigneBudgetComptable ligne) async {
@@ -312,9 +336,11 @@ class ImmobilisationsComptablesNotifier
   Future<void> ajouterImmobilisation(ImmobilisationComptable immo) async {
     final json = camelToSnake(immo.toJson());
     json.remove('id');
+    final orgId = await _getOrgId();
+    if (orgId != null) json['organization_id'] = orgId;
+    json.removeWhere((key, value) => value == null || value == '');
     await _db.from('immobilisations_comptables').insert(json);
-    final actuelle = state.value ?? [];
-    state = AsyncData([...actuelle, immo]);
+    ref.invalidateSelf();
   }
 
   Future<void> mettreAJourImmobilisation(ImmobilisationComptable immo) async {

@@ -103,6 +103,8 @@ class _AccountingSettingsScreenState
             Expanded(
               child: SingleChildScrollView(
                 child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 12,
                   columns: const [
                     DataColumn(label: Text('Numero')),
                     DataColumn(label: Text('Intitule')),
@@ -204,19 +206,26 @@ class _AccountingSettingsScreenState
               if (!formKey.currentState!.validate()) return;
               final notifier = ref.read(comptesComptablesProvider.notifier);
               final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final nouveau = CompteComptable(
-                id: compte?.id ?? 'compte_${numeroCtrl.text.trim()}',
+                id: compte?.id ?? '',
                 numero: numeroCtrl.text.trim(),
                 intitule: intituleCtrl.text.trim(),
                 nature: nature,
                 actif: actif,
               );
-              if (compte == null) {
-                await notifier.ajouterCompte(nouveau);
-              } else {
-                await notifier.mettreAJourCompte(nouveau);
+              try {
+                if (compte == null) {
+                  await notifier.ajouterCompte(nouveau);
+                } else {
+                  await notifier.mettreAJourCompte(nouveau);
+                }
+                navigator.pop();
+              } catch (e) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+                );
               }
-              navigator.pop();
             },
             child: Text(compte == null ? 'Ajouter' : 'Mettre a jour'),
           ),
@@ -251,6 +260,8 @@ class _AccountingSettingsScreenState
             Expanded(
               child: SingleChildScrollView(
                 child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 12,
                   columns: const [
                     DataColumn(label: Text('Code')),
                     DataColumn(label: Text('Nom')),
@@ -449,6 +460,8 @@ class _AccountingSettingsScreenState
             Expanded(
               child: SingleChildScrollView(
                 child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 12,
                   columns: const [
                     DataColumn(label: Text('Nom')),
                     DataColumn(label: Text('Type')),
@@ -683,6 +696,8 @@ class _AccountingSettingsScreenState
             Expanded(
               child: SingleChildScrollView(
                 child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 12,
                   columns: const [
                     DataColumn(label: Text('Code')),
                     DataColumn(label: Text('Intitule')),

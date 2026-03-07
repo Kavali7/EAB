@@ -14,3 +14,7 @@ flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080
 
 adb connect 10.40.155.81:5555 flutter devices
 flutter run -d 10.40.155.81:5555
+
+flutter run -d web-server --web-port=8080
+
+http://localhost:8080

@@ -22,9 +22,33 @@ class ExercicesRepository {
   /// Crée un exercice en brouillon.
   Future<ExerciceComptable> create(ExerciceComptable exercice) async {
     final json = camelToSnake(exercice.toJson());
+    // Retirer les champs auto-générés par la DB
     json.remove('id');
     json.remove('created_at');
     json.remove('updated_at');
+    json.remove('cloture_par');
+    json.remove('cloture_at');
+    json.remove('opening_entry_id');
+    json.remove('closing_entry_id');
+    // Injecter le vrai organization_id depuis la table profiles (idem RLS)
+    final uid = _sb.auth.currentUser?.id;
+    if (uid != null) {
+      final row = await _sb
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', uid)
+          .maybeSingle();
+      final orgId = row?['organization_id'];
+      if (orgId != null) {
+        json['organization_id'] = orgId;
+      } else {
+        json.remove('organization_id');
+      }
+    } else {
+      json.remove('organization_id');
+    }
+    // Retirer toute valeur vide ou null (évite les UUID '' invalides)
+    json.removeWhere((key, value) => value == null || value == '');
     final data = await _sb
         .from('exercices_comptables')
         .insert(json)
