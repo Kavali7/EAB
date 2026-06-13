@@ -232,7 +232,9 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addProgram(Program program) async {
-    await _client.from('programmes').insert(_programToDbJson(program));
+    final data = _programToDbJson(program);
+    data['organization_id'] = await _currentOrganizationId();
+    await _client.from('programmes').insert(data);
   }
 
   @override
@@ -251,6 +253,7 @@ class SupabaseDataService implements DataService {
       'date': program.date.toIso8601String(),
       'location': program.location,
       'id_assemblee_locale': program.idAssembleeLocale,
+      'church_unit_id': program.churchUnitId,
       'description': program.description,
       'observations': program.observations,
       'participant_ids': program.participantIds,
@@ -271,7 +274,12 @@ class SupabaseDataService implements DataService {
       'derniere_lecon_ecole_du_dimanche': program.derniereLeconEcoleDuDimanche,
       'compte_rendu_visite': program.compteRenduVisite,
     };
-    data.removeWhere((_, v) => v == null);
+    data.removeWhere(
+      (key, value) =>
+          value == null &&
+          key != 'id_assemblee_locale' &&
+          key != 'church_unit_id',
+    );
     return data;
   }
 

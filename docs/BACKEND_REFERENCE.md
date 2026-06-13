@@ -304,6 +304,9 @@
 
 ### 2.11 `programmes`
 
+> Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Le trigger `sync_program_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
+
 > Activités et programmes de l'église (cultes, évangélisations, etc.).
 
 | Colonne | Type | Nullable | Défaut | Description |
@@ -968,6 +971,12 @@ Migration `00019` ajoute :
 Ces triggers renseignent `organization_id` si besoin et synchronisent `church_unit_id`
 avec `id_assemblee_locale` lorsque l'unite flexible conserve un lien legacy.
 
+Migration `00020` ajoute :
+
+- `sync_program_church_unit_scope_trigger` sur `programmes`
+
+Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les programmes.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables` (20 tables).
@@ -1155,6 +1164,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |
 | 2026-06-13 | Agent IA | **Migration 00019** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |
 | 2026-06-13 | Agent IA | **Migration 00018** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
 | 2026-06-13 | Agent IA | **Migration 00017** : Branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et conservation de `logo_url`. L'application utilise une marque neutre par defaut et l'identite de l'organisation active. |

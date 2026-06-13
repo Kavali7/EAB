@@ -7,8 +7,11 @@ import 'package:intl/intl.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/program.dart';
 import 'package:eab/providers/programs_provider.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
@@ -53,8 +56,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final programsAsync = ref.watch(programsProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final programs = programsAsync.value ?? [];
-    final monthPrograms = _programsForMonth(programs);
+    final churchUnits = churchUnitsAsync.value ?? [];
+    final churchUnitById = {for (final unit in churchUnits) unit.id: unit};
+    final scopedPrograms = _programsForActiveScope(
+      programs,
+      churchUnitById,
+      assembleeActiveId,
+    );
+    final monthPrograms = _programsForMonth(scopedPrograms);
     final byDay = _groupByDay(monthPrograms);
     final monthLabel = _capitalize(
       DateFormat('MMMM yyyy', 'fr_FR').format(_currentMonth),
@@ -179,6 +191,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return p.date.year == _currentMonth.year &&
           p.date.month == _currentMonth.month;
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  List<Program> _programsForActiveScope(
+    List<Program> programs,
+    Map<String, ChurchUnit> churchUnitById,
+    String? assembleeActiveId,
+  ) {
+    if (assembleeActiveId == null) return programs;
+    return programs.where((program) {
+      if (program.idAssembleeLocale == assembleeActiveId) return true;
+      final unit = program.churchUnitId == null
+          ? null
+          : churchUnitById[program.churchUnitId!];
+      return unit?.legacyAssembleeId == assembleeActiveId;
+    }).toList();
   }
 
   Map<int, List<Program>> _groupByDay(List<Program> programs) {

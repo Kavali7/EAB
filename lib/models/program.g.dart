@@ -12,6 +12,7 @@ _Program _$ProgramFromJson(Map<String, dynamic> json) => _Program(
   date: DateTime.parse(json['date'] as String),
   location: json['location'] as String,
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
+  churchUnitId: json['churchUnitId'] as String?,
   description: json['description'] as String?,
   observations: json['observations'] as String?,
   participantIds:
@@ -42,6 +43,7 @@ Map<String, dynamic> _$ProgramToJson(_Program instance) => <String, dynamic>{
   'date': instance.date.toIso8601String(),
   'location': instance.location,
   'idAssembleeLocale': instance.idAssembleeLocale,
+  'churchUnitId': instance.churchUnitId,
   'description': instance.description,
   'observations': instance.observations,
   'participantIds': instance.participantIds,

@@ -54,7 +54,7 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [x] CRUD des niveaux/unites flexibles dans l'interface Structure : creation, modification, deplacement, suppression des niveaux inutilises et archivage securise des unites
 - [ ] Bascule progressive des modules vers `church_units`
   - [x] Membres/familles : migration `00019`, champ `church_unit_id`, formulaire et liste Membres
-  - [ ] Programmes : `church_unit_id`, formulaire, calendrier et filtres
+  - [x] Programmes : migration `00020`, champ `church_unit_id`, formulaire, liste, calendrier et filtres
   - [ ] Comptabilite : perimetres comptables bases sur `church_units`
 - [ ] Gestion avancee des sous-comptes utilisateurs par perimetre flexible
 - [ ] Onboarding : écran de création d'organisation (nom, logo, couleurs)

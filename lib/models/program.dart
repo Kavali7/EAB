@@ -4,13 +4,7 @@ import '../core/constants.dart';
 part 'program.freezed.dart';
 part 'program.g.dart';
 
-enum TypeVisite {
-  fidele,
-  autorite,
-  partenaire,
-  autreAssemblee,
-  autre,
-}
+enum TypeVisite { fidele, autorite, partenaire, autreAssemblee, autre }
 
 @freezed
 abstract class Program with _$Program {
@@ -22,6 +16,7 @@ abstract class Program with _$Program {
     required DateTime date,
     required String location,
     String? idAssembleeLocale,
+    String? churchUnitId,
     String? description,
     String? observations,
     @Default([]) List<String> participantIds,
@@ -44,6 +39,9 @@ abstract class Program with _$Program {
   @JsonKey(includeFromJson: false, includeToJson: false)
   bool get aUneAssembleeLocale =>
       idAssembleeLocale != null && idAssembleeLocale!.isNotEmpty;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool get aUneUniteEglise => churchUnitId != null && churchUnitId!.isNotEmpty;
 
   factory Program.fromJson(Map<String, dynamic> json) =>
       _$ProgramFromJson(json);

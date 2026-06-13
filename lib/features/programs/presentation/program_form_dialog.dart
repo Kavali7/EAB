@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:eab/core/constants.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/program.dart';
 
 import 'package:eab/providers/members_provider.dart';
@@ -20,6 +22,8 @@ const _typeVisiteLabels = {
   TypeVisite.autreAssemblee: 'Autre assemblee',
   TypeVisite.autre: 'Autre',
 };
+
+const _noChurchUnitValue = '__none__';
 
 /// Ouvre le formulaire d'ajout/modification de programme.
 Future<void> showProgramFormV2(BuildContext context, {Program? program}) {
@@ -59,6 +63,9 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
   final _compteRenduVisiteCtrl = TextEditingController();
   TypeVisite? _typeVisite;
   final _selectedParticipants = <String>{};
+  String? _churchUnitId;
+  bool _churchUnitTouched = false;
+  bool _churchUnitInitialized = false;
   bool _isSaving = false;
 
   bool get _isEditing => widget.program != null;
@@ -93,6 +100,7 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
       _derniereLeconCtrl.text = p.derniereLeconEcoleDuDimanche ?? '';
       _typeVisite = p.typeVisite;
       _compteRenduVisiteCtrl.text = p.compteRenduVisite ?? '';
+      _churchUnitId = p.churchUnitId;
     }
   }
 
@@ -121,6 +129,10 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
     final members = membersAsync.value ?? [];
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final activeAssembleeId = ref.watch(assembleeActiveIdProvider);
+    final units = _programAssignableUnits(churchUnitsAsync.value ?? []);
+    _initializeChurchUnit(units, activeAssembleeId);
 
     return EabDialog(
       title: _isEditing ? 'Modifier le programme' : 'Nouveau programme',
@@ -153,6 +165,31 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
               label: 'Date et heure',
               value: _date,
               onChanged: (d) => setState(() => _date = d),
+            ),
+            const SizedBox(height: AppSpacing.fieldGap),
+            EabSelectField<String>(
+              label: 'Unite / perimetre',
+              value: _churchUnitId ?? _noChurchUnitValue,
+              items: [
+                const DropdownMenuItem(
+                  value: _noChurchUnitValue,
+                  child: Text('Aucune unite rattachee'),
+                ),
+                ...units.map(
+                  (unit) => DropdownMenuItem(
+                    value: unit.id,
+                    child: Text(_unitLabel(unit)),
+                  ),
+                ),
+              ],
+              onChanged: churchUnitsAsync.isLoading
+                  ? null
+                  : (value) => setState(() {
+                      _churchUnitTouched = true;
+                      _churchUnitId = value == _noChurchUnitValue
+                          ? null
+                          : value;
+                    }),
             ),
             const SizedBox(height: AppSpacing.fieldGap),
 
@@ -400,13 +437,20 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
       final notifier = ref.read(programsProvider.notifier);
       final assembleeActiveId = ref.read(assembleeActiveIdProvider);
       final id = widget.program?.id ?? const Uuid().v4();
+      final selectedUnit = _unitById(
+        ref.read(churchUnitsProvider).value ?? [],
+      )[_churchUnitId];
+      final legacyAssembleeId =
+          selectedUnit?.legacyAssembleeId ??
+          (_churchUnitTouched ? null : widget.program?.idAssembleeLocale) ??
+          assembleeActiveId;
       final program = Program(
         id: id,
         type: _type!,
         date: _date!,
         location: _locationCtrl.text.trim(),
-        idAssembleeLocale:
-            widget.program?.idAssembleeLocale ?? assembleeActiveId,
+        idAssembleeLocale: legacyAssembleeId,
+        churchUnitId: _churchUnitId,
         description: _descriptionCtrl.text.trim().isEmpty
             ? null
             : _descriptionCtrl.text.trim(),
@@ -468,5 +512,43 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  List<ChurchUnit> _programAssignableUnits(List<ChurchUnit> units) {
+    return units.where((unit) => unit.active).toList()..sort((a, b) {
+      final order = a.levelOrder.compareTo(b.levelOrder);
+      if (order != 0) return order;
+      return a.nom.compareTo(b.nom);
+    });
+  }
+
+  void _initializeChurchUnit(
+    List<ChurchUnit> units,
+    String? activeAssembleeId,
+  ) {
+    if (_churchUnitInitialized || units.isEmpty) return;
+
+    final program = widget.program;
+    final legacyAssembleeId = program?.idAssembleeLocale ?? activeAssembleeId;
+    if (_churchUnitId == null && legacyAssembleeId != null) {
+      for (final unit in units) {
+        if (unit.legacyAssembleeId == legacyAssembleeId) {
+          _churchUnitId = unit.id;
+          break;
+        }
+      }
+    }
+    _churchUnitInitialized = true;
+  }
+
+  Map<String, ChurchUnit> _unitById(List<ChurchUnit> units) {
+    return {for (final unit in units) unit.id: unit};
+  }
+
+  String _unitLabel(ChurchUnit unit) {
+    final code = unit.code == null || unit.code!.trim().isEmpty
+        ? ''
+        : ' - ${unit.code}';
+    return '${unit.nom}$code';
   }
 }

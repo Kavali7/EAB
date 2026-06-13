@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/program.dart';
 import 'package:eab/providers/church_structure_providers.dart';
 import 'package:eab/providers/programs_provider.dart';
@@ -51,15 +53,23 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
   Widget build(BuildContext context) {
     final programsAsync = ref.watch(programsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
 
     final programs = programsAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
+    final churchUnits = churchUnitsAsync.value ?? [];
     final assembleeById = {for (final a in assemblees) a.id: a};
+    final churchUnitById = {for (final unit in churchUnits) unit.id: unit};
 
     final filtered = programs.where((program) {
       if (assembleeActiveId != null &&
-          program.idAssembleeLocale != assembleeActiveId) {
+          program.idAssembleeLocale != assembleeActiveId &&
+          !_programMatchesLegacyAssembly(
+            program,
+            churchUnitById,
+            assembleeActiveId,
+          )) {
         return false;
       }
 
@@ -81,15 +91,15 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
               program.typeVisite != _typeVisiteFilter)) {
         return false;
       }
-      if (_dateDebut != null && program.date.isBefore(_startOfDay(_dateDebut!))) {
+      if (_dateDebut != null &&
+          program.date.isBefore(_startOfDay(_dateDebut!))) {
         return false;
       }
       if (_dateFin != null && program.date.isAfter(_endOfDay(_dateFin!))) {
         return false;
       }
       return true;
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
     return AppShell(
       title: 'Programmes',
@@ -109,6 +119,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
               programsAsync: programsAsync,
               filtered: filtered,
               assembleeById: assembleeById,
+              churchUnitById: churchUnitById,
               horizontalPadding: horizontalPadding,
             );
           }
@@ -168,10 +179,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                   onClear: _clearFilters,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _ProgramSummaryStrip(
-                  programs: filtered,
-                  compact: compact,
-                ),
+                _ProgramSummaryStrip(programs: filtered, compact: compact),
                 const SizedBox(height: AppSpacing.md),
                 Expanded(
                   child: programsAsync.when(
@@ -180,6 +188,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                         : _buildProgramList(
                             filtered,
                             assembleeById,
+                            churchUnitById,
                             compact,
                             isRefreshing: true,
                           ),
@@ -190,6 +199,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                     data: (_) => _buildProgramList(
                       filtered,
                       assembleeById,
+                      churchUnitById,
                       compact,
                     ),
                   ),
@@ -205,6 +215,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
   Widget _buildProgramList(
     List<Program> programs,
     Map<String, dynamic> assembleeById,
+    Map<String, ChurchUnit> churchUnitById,
     bool compact, {
     bool isRefreshing = false,
   }) {
@@ -232,8 +243,13 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
               return _ProgramCard(
                 program: program,
                 dateTimeFormat: _dateTimeFormat,
-                assembleeName: _assemblyName(program, assembleeById),
-                onOpenDetails: () => _showDetails(program, assembleeById),
+                assembleeName: _unitName(
+                  program,
+                  assembleeById,
+                  churchUnitById,
+                ),
+                onOpenDetails: () =>
+                    _showDetails(program, assembleeById, churchUnitById),
                 onEdit: () => showProgramFormV2(context, program: program),
                 onDelete: () => _confirmDelete(program),
               );
@@ -282,7 +298,8 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
             rowsPerPage: 15,
             emptyMessage: 'Aucun programme trouve',
             emptyIcon: Icons.event_busy_outlined,
-            onRowTap: (program) => _showDetails(program, assembleeById),
+            onRowTap: (program) =>
+                _showDetails(program, assembleeById, churchUnitById),
             columns: [
               EabColumn<Program>(
                 label: 'Type',
@@ -299,23 +316,20 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
                 label: 'Date',
                 fixedWidth: 150,
                 sortKeyExtractor: (program) => program.date,
-                cellBuilder: (program) => Text(
-                  _dateTimeFormat.format(program.date),
-                ),
+                cellBuilder: (program) =>
+                    Text(_dateTimeFormat.format(program.date)),
               ),
               EabColumn<Program>(
                 label: 'Lieu',
                 flex: 2,
-                cellBuilder: (program) => Text(
-                  program.location,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                cellBuilder: (program) =>
+                    Text(program.location, overflow: TextOverflow.ellipsis),
               ),
               EabColumn<Program>(
-                label: 'Assemblee',
+                label: 'Unite',
                 flex: 2,
                 cellBuilder: (program) => Text(
-                  _assemblyName(program, assembleeById),
+                  _unitName(program, assembleeById, churchUnitById),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -360,6 +374,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     required AsyncValue<List<Program>> programsAsync,
     required List<Program> filtered,
     required Map<String, dynamic> assembleeById,
+    required Map<String, ChurchUnit> churchUnitById,
     required double horizontalPadding,
   }) {
     return ListView(
@@ -407,7 +422,11 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
               onRetry: () => ref.invalidate(programsProvider),
             ),
           ),
-          data: (_) => _buildCompactProgramCards(filtered, assembleeById),
+          data: (_) => _buildCompactProgramCards(
+            filtered,
+            assembleeById,
+            churchUnitById,
+          ),
         ),
       ],
     );
@@ -416,6 +435,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
   Widget _buildCompactProgramCards(
     List<Program> programs,
     Map<String, dynamic> assembleeById,
+    Map<String, ChurchUnit> churchUnitById,
   ) {
     if (programs.isEmpty) return const _ProgramEmptyState();
 
@@ -425,8 +445,13 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
           _ProgramCard(
             program: programs[i],
             dateTimeFormat: _dateTimeFormat,
-            assembleeName: _assemblyName(programs[i], assembleeById),
-            onOpenDetails: () => _showDetails(programs[i], assembleeById),
+            assembleeName: _unitName(
+              programs[i],
+              assembleeById,
+              churchUnitById,
+            ),
+            onOpenDetails: () =>
+                _showDetails(programs[i], assembleeById, churchUnitById),
             onEdit: () => showProgramFormV2(context, program: programs[i]),
             onDelete: () => _confirmDelete(programs[i]),
           ),
@@ -447,7 +472,11 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     });
   }
 
-  void _showDetails(Program program, Map<String, dynamic> assembleeById) {
+  void _showDetails(
+    Program program,
+    Map<String, dynamic> assembleeById,
+    Map<String, ChurchUnit> churchUnitById,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -514,8 +543,8 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
             const SizedBox(height: AppSpacing.sm),
             _DetailTile(
               icon: Icons.church_outlined,
-              label: 'Assemblee',
-              value: _assemblyName(program, assembleeById),
+              label: 'Unite',
+              value: _unitName(program, assembleeById, churchUnitById),
             ),
             const SizedBox(height: AppSpacing.sm),
             _DetailTile(
@@ -596,8 +625,7 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     final confirm = await EabDialog.confirm(
       context,
       title: 'Supprimer un programme',
-      message:
-          'Supprimer le programme ${typeProgrammeLabels[program.type]} ?',
+      message: 'Supprimer le programme ${typeProgrammeLabels[program.type]} ?',
       confirmLabel: 'Supprimer',
       isDanger: true,
     );
@@ -606,7 +634,26 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     }
   }
 
-  String _assemblyName(Program program, Map<String, dynamic> assembleeById) {
+  bool _programMatchesLegacyAssembly(
+    Program program,
+    Map<String, ChurchUnit> churchUnitById,
+    String assembleeId,
+  ) {
+    final unit = program.churchUnitId == null
+        ? null
+        : churchUnitById[program.churchUnitId!];
+    return unit?.legacyAssembleeId == assembleeId;
+  }
+
+  String _unitName(
+    Program program,
+    Map<String, dynamic> assembleeById,
+    Map<String, ChurchUnit> churchUnitById,
+  ) {
+    final unit = program.churchUnitId == null
+        ? null
+        : churchUnitById[program.churchUnitId!];
+    if (unit != null) return unit.nom;
     if (program.idAssembleeLocale == null) return '-';
     final assemblee = assembleeById[program.idAssembleeLocale];
     return assemblee?.nom ?? '-';
@@ -904,9 +951,12 @@ class _ProgramSummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final upcoming = programs.where((program) => program.date.isAfter(now)).length;
-    final visits =
-        programs.where((program) => program.type == TypeProgramme.visite).length;
+    final upcoming = programs
+        .where((program) => program.date.isAfter(now))
+        .length;
+    final visits = programs
+        .where((program) => program.type == TypeProgramme.visite)
+        .length;
     final participants = programs.fold<int>(
       0,
       (total, program) =>
@@ -1128,7 +1178,8 @@ class _ProgramCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final participantTotal = (program.nombreHommes ?? 0) +
+    final participantTotal =
+        (program.nombreHommes ?? 0) +
         (program.nombreFemmes ?? 0) +
         (program.nombreGarcons ?? 0) +
         (program.nombreFilles ?? 0);
@@ -1158,7 +1209,8 @@ class _ProgramCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          typeProgrammeLabels[program.type] ?? program.type.name,
+                          typeProgrammeLabels[program.type] ??
+                              program.type.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1233,7 +1285,10 @@ class _ProgramCard extends StatelessWidget {
                         label: 'Voir details',
                       ),
                     ),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
             ],
@@ -1267,31 +1322,27 @@ class _ProgramTypeIcon extends StatelessWidget {
   ({IconData icon, Color color}) _styleForType(TypeProgramme type) =>
       switch (type) {
         TypeProgramme.culte => (
-            icon: Icons.church_outlined,
-            color: AppColors.primary,
-          ),
+          icon: Icons.church_outlined,
+          color: AppColors.primary,
+        ),
         TypeProgramme.evangelisationMasse ||
-        TypeProgramme.evangelisationPorteAPorte =>
-          (
-            icon: Icons.campaign_outlined,
-            color: AppColors.error,
-          ),
+        TypeProgramme.evangelisationPorteAPorte => (
+          icon: Icons.campaign_outlined,
+          color: AppColors.error,
+        ),
         TypeProgramme.visite => (
-            icon: Icons.handshake_outlined,
-            color: AppColors.teal,
-          ),
+          icon: Icons.handshake_outlined,
+          color: AppColors.teal,
+        ),
         TypeProgramme.ecoleDuDimanche => (
-            icon: Icons.school_outlined,
-            color: AppColors.info,
-          ),
+          icon: Icons.school_outlined,
+          color: AppColors.info,
+        ),
         TypeProgramme.reunionPriere => (
-            icon: Icons.volunteer_activism_outlined,
-            color: AppColors.indigo,
-          ),
-        _ => (
-            icon: Icons.event_note_outlined,
-            color: AppColors.warning,
-          ),
+          icon: Icons.volunteer_activism_outlined,
+          color: AppColors.indigo,
+        ),
+        _ => (icon: Icons.event_note_outlined, color: AppColors.warning),
       };
 }
 
