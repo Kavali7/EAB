@@ -24,8 +24,10 @@ class EabColumn<T> {
     this.sortKeyExtractor,
     this.alignment = Alignment.centerLeft,
     this.numeric = false,
-  }) : assert(flex != null || fixedWidth != null,
-            'EabColumn: flex ou fixedWidth requis');
+  }) : assert(
+         flex != null || fixedWidth != null,
+         'EabColumn: flex ou fixedWidth requis',
+       );
 
   /// Label affiché dans l'en-tête.
   final String label;
@@ -112,9 +114,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
       ..sort((a, b) {
         final valA = extractor(a);
         final valB = extractor(b);
-        return _sortAscending
-            ? valA.compareTo(valB)
-            : valB.compareTo(valA);
+        return _sortAscending ? valA.compareTo(valB) : valB.compareTo(valA);
       });
     return sorted;
   }
@@ -164,8 +164,11 @@ class _EabTableState<T> extends State<EabTable<T>> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline,
-                  size: 48, color: theme.colorScheme.error),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.error,
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 widget.errorMessage!,
@@ -218,9 +221,12 @@ class _EabTableState<T> extends State<EabTable<T>> {
           if (widget.headerActions != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: widget.headerActions!,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: widget.headerActions!,
+                ),
               ),
             ),
 
@@ -240,8 +246,10 @@ class _EabTableState<T> extends State<EabTable<T>> {
               totalFixedWidth += 32; // padding horizontal
               // Donner au minimum 120px par flex unit, ou la largeur parent
               final flexWidth = totalFlex * 120.0;
-              final contentWidth = (totalFixedWidth + flexWidth)
-                  .clamp(constraints.maxWidth, double.infinity);
+              final contentWidth = (totalFixedWidth + flexWidth).clamp(
+                constraints.maxWidth,
+                double.infinity,
+              );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -254,7 +262,10 @@ class _EabTableState<T> extends State<EabTable<T>> {
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade300, width: 2),
+                            bottom: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                         ),
                         padding: const EdgeInsets.symmetric(
@@ -309,7 +320,9 @@ class _EabTableState<T> extends State<EabTable<T>> {
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: isEven ? Colors.white : Colors.grey.shade50,
+                              color: isEven
+                                  ? Colors.white
+                                  : Colors.grey.shade50,
                               border: Border(
                                 bottom: BorderSide(
                                   color: Colors.grey.shade200,
@@ -334,8 +347,9 @@ class _EabTableState<T> extends State<EabTable<T>> {
                                     ),
                                   ),
                                 // Cellules
-                                ...widget.columns.map((col) =>
-                                    _buildDataCell(col: col, item: item)),
+                                ...widget.columns.map(
+                                  (col) => _buildDataCell(col: col, item: item),
+                                ),
                               ],
                             ),
                           ),
@@ -358,57 +372,62 @@ class _EabTableState<T> extends State<EabTable<T>> {
                   bottom: Radius.circular(12),
                 ),
               ),
-              child: Row(
-                children: [
-                  Text(
-                    '${widget.items.length} résultat${widget.items.length > 1 ? "s" : ""} — '
-                    'Page ${_currentPage + 1} / $_totalPages',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Text(
+                      '${widget.items.length} résultat${widget.items.length > 1 ? "s" : ""} — '
+                      'Page ${_currentPage + 1} / $_totalPages',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  // Boutons page
-                  _pageButton(
-                    icon: Icons.first_page,
-                    onPressed: _currentPage > 0
-                        ? () => setState(() => _currentPage = 0)
-                        : null,
-                  ),
-                  _pageButton(
-                    icon: Icons.chevron_left,
-                    onPressed: _currentPage > 0
-                        ? () => setState(() => _currentPage--)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.grey.shade300),
+                    const Spacer(),
+                    // Boutons page
+                    _pageButton(
+                      icon: Icons.first_page,
+                      onPressed: _currentPage > 0
+                          ? () => setState(() => _currentPage = 0)
+                          : null,
                     ),
-                    child: Text(
-                      '${_currentPage + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    _pageButton(
+                      icon: Icons.chevron_left,
+                      onPressed: _currentPage > 0
+                          ? () => setState(() => _currentPage--)
+                          : null,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _pageButton(
-                    icon: Icons.chevron_right,
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () => setState(() => _currentPage++)
-                        : null,
-                  ),
-                  _pageButton(
-                    icon: Icons.last_page,
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () => setState(() => _currentPage = _totalPages - 1)
-                        : null,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        '${_currentPage + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _pageButton(
+                      icon: Icons.chevron_right,
+                      onPressed: _currentPage < _totalPages - 1
+                          ? () => setState(() => _currentPage++)
+                          : null,
+                    ),
+                    _pageButton(
+                      icon: Icons.last_page,
+                      onPressed: _currentPage < _totalPages - 1
+                          ? () => setState(() => _currentPage = _totalPages - 1)
+                          : null,
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
@@ -445,9 +464,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
             const SizedBox(width: 4),
             Icon(
               isSorted
-                  ? (_sortAscending
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward)
+                  ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
                   : Icons.unfold_more,
               size: 14,
               color: isSorted ? theme.colorScheme.primary : Colors.grey[400],
@@ -464,10 +481,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
   }
 
   /// Construit une cellule de données.
-  Widget _buildDataCell({
-    required EabColumn<T> col,
-    required T item,
-  }) {
+  Widget _buildDataCell({required EabColumn<T> col, required T item}) {
     final child = DefaultTextStyle.merge(
       style: const TextStyle(fontSize: 14, height: 1.4),
       overflow: TextOverflow.ellipsis,
@@ -487,19 +501,16 @@ class _EabTableState<T> extends State<EabTable<T>> {
   Widget _pageButton({
     required IconData icon,
     required VoidCallback? onPressed,
-  }) =>
-      SizedBox(
-        width: 32,
-        height: 32,
-        child: IconButton(
-          icon: Icon(icon, size: 18),
-          onPressed: onPressed,
-          padding: EdgeInsets.zero,
-          style: IconButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-        ),
-      );
+  }) => SizedBox(
+    width: 32,
+    height: 32,
+    child: IconButton(
+      icon: Icon(icon, size: 18),
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+    ),
+  );
 }

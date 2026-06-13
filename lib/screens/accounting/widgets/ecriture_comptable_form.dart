@@ -11,6 +11,7 @@ import '../../../models/tiers.dart';
 import '../../../core/constants.dart';
 import '../../../providers/accounting_providers.dart';
 import '../../../providers/user_profile_providers.dart';
+import '../../../ui/ui.dart';
 
 class EcritureComptableFormDialog extends ConsumerStatefulWidget {
   const EcritureComptableFormDialog({super.key, this.ecritureExistante});
@@ -74,10 +75,8 @@ class _EcritureComptableFormDialogState
             idCentre: l.idCentreAnalytique,
             idTiers: l.idTiers,
             mode: l.modePaiement,
-            debitText:
-                l.debit != null ? l.debit!.toStringAsFixed(0) : '',
-            creditText:
-                l.credit != null ? l.credit!.toStringAsFixed(0) : '',
+            debitText: l.debit != null ? l.debit!.toStringAsFixed(0) : '',
+            creditText: l.credit != null ? l.credit!.toStringAsFixed(0) : '',
           ),
         );
       }
@@ -102,7 +101,9 @@ class _EcritureComptableFormDialogState
         comptesAsync.isLoading ||
         centresAsync.isLoading ||
         tiersAsync.isLoading) {
-      return const AlertDialog(
+      return const EabDialog(
+        title: 'Chargement',
+        width: 420,
         content: SizedBox(
           height: 120,
           child: Center(child: CircularProgressIndicator()),
@@ -113,14 +114,22 @@ class _EcritureComptableFormDialogState
         comptesAsync.hasError ||
         centresAsync.hasError ||
         tiersAsync.hasError) {
-      final errMsg = journauxAsync.error ?? comptesAsync.error ?? centresAsync.error ?? tiersAsync.error;
-      return AlertDialog(
-        title: const Text('Erreur'),
-        content: Text('Impossible de charger les donnees comptables.\n\nDétail : $errMsg'),
+      final errMsg =
+          journauxAsync.error ??
+          comptesAsync.error ??
+          centresAsync.error ??
+          tiersAsync.error;
+      return EabDialog(
+        title: 'Erreur',
+        width: 520,
+        content: Text(
+          'Impossible de charger les donnees comptables.\n\nDetail : $errMsg',
+        ),
         actions: [
-          TextButton(
+          EabButton(
+            label: 'Fermer',
+            variant: EabButtonVariant.ghost,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
           ),
         ],
       );
@@ -141,44 +150,70 @@ class _EcritureComptableFormDialogState
             return c.idAssembleeLocale == assembleeActiveId;
           }).toList();
 
-    return AlertDialog(
-      title: Text(
-        widget.ecritureExistante == null
-            ? 'Nouvelle ecriture comptable'
-            : 'Modifier une ecriture comptable',
-      ),
-      content: SizedBox(
-        width: 800,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderSection(journaux, centresFiltres),
-                const SizedBox(height: 16),
-                _buildLignesSection(comptes, centresFiltres, tiers),
-                const SizedBox(height: 12),
-                _buildTotauxSection(),
-              ],
-            ),
-          ),
+    return EabDialog(
+      title: widget.ecritureExistante == null
+          ? 'Nouvelle ecriture comptable'
+          : 'Modifier une ecriture comptable',
+      width: 860,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderSection(journaux, centresFiltres),
+            const SizedBox(height: 16),
+            _buildLignesSection(comptes, centresFiltres, tiers),
+            const SizedBox(height: 12),
+            _buildTotauxSection(),
+          ],
         ),
       ),
       actions: [
-        TextButton(
+        EabButton(
+          label: 'Annuler',
+          variant: EabButtonVariant.ghost,
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
         ),
-        ElevatedButton(
+        EabButton(
+          label: 'Enregistrer',
           onPressed: () => _validerEtEnregistrer(
             journaux,
             centresFiltres,
             assembleeActiveId,
           ),
-          child: const Text('Enregistrer'),
         ),
       ],
+    );
+  }
+
+  Widget _responsiveFields(
+    List<Widget> children, {
+    double minFieldWidth = 220,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final canUseRow =
+            constraints.maxWidth >= (children.length * minFieldWidth);
+        if (!canUseRow) {
+          return Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1) const SizedBox(height: 12),
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              Expanded(child: children[i]),
+              if (i < children.length - 1) const SizedBox(width: 12),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -189,77 +224,62 @@ class _EcritureComptableFormDialogState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<JournalComptable>(
-                isExpanded: true,
-                initialValue: _journalSelectionne,
-                decoration: const InputDecoration(labelText: 'Journal'),
-                items: journaux
-                    .map(
-                      (j) => DropdownMenuItem(
-                        value: j,
-                        child: Text('${j.code} - ${j.intitule}'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _journalSelectionne = value),
-                validator: (v) => v == null ? 'Journal requis' : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: InkWell(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime.now()
-                        .subtract(const Duration(days: 365 * 5)),
-                    lastDate:
-                        DateTime.now().add(const Duration(days: 365 * 5)),
-                  );
-                  if (picked != null) setState(() => _date = picked);
-                },
-                child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Date'),
-                  child: Text(dateFormatter.format(_date)),
+        _responsiveFields([
+          DropdownButtonFormField<JournalComptable>(
+            isExpanded: true,
+            initialValue: _journalSelectionne,
+            decoration: const InputDecoration(labelText: 'Journal'),
+            items: journaux
+                .map(
+                  (j) => DropdownMenuItem(
+                    value: j,
+                    child: Text('${j.code} - ${j.intitule}'),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setState(() => _journalSelectionne = value),
+            validator: (v) => v == null ? 'Journal requis' : null,
+          ),
+          InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _date,
+                firstDate: DateTime.now().subtract(
+                  const Duration(days: 365 * 5),
                 ),
-              ),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+              );
+              if (picked != null) setState(() => _date = picked);
+            },
+            child: InputDecorator(
+              decoration: const InputDecoration(labelText: 'Date'),
+              child: Text(dateFormatter.format(_date)),
             ),
-          ],
-        ),
+          ),
+        ]),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: _referencePiece,
-                decoration:
-                    const InputDecoration(labelText: 'Reference piece'),
-                onChanged: (v) => _referencePiece = v,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: _libelleGeneral,
-                decoration: const InputDecoration(labelText: 'Libelle'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Libelle requis' : null,
-                onChanged: (v) => _libelleGeneral = v,
-              ),
-            ),
-          ],
-        ),
+        _responsiveFields([
+          TextFormField(
+            initialValue: _referencePiece,
+            decoration: const InputDecoration(labelText: 'Reference piece'),
+            onChanged: (v) => _referencePiece = v,
+          ),
+          TextFormField(
+            initialValue: _libelleGeneral,
+            decoration: const InputDecoration(labelText: 'Libelle'),
+            validator: (v) =>
+                v == null || v.trim().isEmpty ? 'Libelle requis' : null,
+            onChanged: (v) => _libelleGeneral = v,
+          ),
+        ]),
         const SizedBox(height: 12),
         DropdownButtonFormField<CentreAnalytique?>(
           isExpanded: true,
           initialValue: _centrePrincipal,
-          decoration:
-              const InputDecoration(labelText: 'Centre analytique principal'),
+          decoration: const InputDecoration(
+            labelText: 'Centre analytique principal',
+          ),
           items: [
             const DropdownMenuItem<CentreAnalytique?>(
               value: null,
@@ -292,10 +312,7 @@ class _EcritureComptableFormDialogState
         )
         .toList();
     final centreItems = [
-      const DropdownMenuItem<String?>(
-        value: null,
-        child: Text('Aucun'),
-      ),
+      const DropdownMenuItem<String?>(value: null, child: Text('Aucun')),
       ...centres.map(
         (c) => DropdownMenuItem<String?>(
           value: c.id,
@@ -304,31 +321,21 @@ class _EcritureComptableFormDialogState
       ),
     ];
     final tiersItems = [
-      const DropdownMenuItem<String?>(
-        value: null,
-        child: Text('Aucun'),
-      ),
+      const DropdownMenuItem<String?>(value: null, child: Text('Aucun')),
       ...tiers.map(
-        (t) => DropdownMenuItem<String?>(
-          value: t.id,
-          child: Text(t.nom),
-        ),
+        (t) => DropdownMenuItem<String?>(value: t.id, child: Text(t.nom)),
       ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text(
-              'Lignes',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const Spacer(),
-            DropdownButton<ModePaiement?>(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final modeField = DropdownButton<ModePaiement?>(
               value: _modePaiementGlobal,
               hint: const Text('Mode pour nouvelles lignes'),
+              isExpanded: constraints.maxWidth < 520,
               items: [
                 const DropdownMenuItem<ModePaiement?>(
                   value: null,
@@ -342,8 +349,31 @@ class _EcritureComptableFormDialogState
                 ),
               ],
               onChanged: (v) => setState(() => _modePaiementGlobal = v),
-            ),
-          ],
+            );
+            if (constraints.maxWidth < 520) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lignes',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  modeField,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                const Text(
+                  'Lignes',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                SizedBox(width: 260, child: modeField),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 8),
         Column(
@@ -355,151 +385,129 @@ class _EcritureComptableFormDialogState
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              initialValue: _lignes[i].idCompte,
-                              decoration:
-                                  const InputDecoration(labelText: 'Compte'),
-                              items: compteItems,
-                              onChanged: (v) =>
-                                  setState(() => _lignes[i].idCompte = v),
-                              validator: (v) =>
-                                  v == null || v.isEmpty ? 'Compte requis' : null,
-                            ),
+                      _responsiveFields([
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: _lignes[i].idCompte,
+                          decoration: const InputDecoration(
+                            labelText: 'Compte',
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lignes[i].libelleCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Libelle de ligne',
+                          items: compteItems,
+                          onChanged: (v) =>
+                              setState(() => _lignes[i].idCompte = v),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Compte requis' : null,
+                        ),
+                        TextFormField(
+                          controller: _lignes[i].libelleCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Libelle de ligne',
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 12),
+                      _responsiveFields([
+                        DropdownButtonFormField<String?>(
+                          isExpanded: true,
+                          initialValue: _lignes[i].idCentre,
+                          decoration: const InputDecoration(
+                            labelText: 'Centre',
+                          ),
+                          items: centreItems,
+                          onChanged: (v) =>
+                              setState(() => _lignes[i].idCentre = v),
+                        ),
+                        DropdownButtonFormField<String?>(
+                          isExpanded: true,
+                          initialValue: _lignes[i].idTiers,
+                          decoration: const InputDecoration(labelText: 'Tiers'),
+                          items: tiersItems,
+                          onChanged: (v) =>
+                              setState(() => _lignes[i].idTiers = v),
+                        ),
+                        DropdownButtonFormField<ModePaiement?>(
+                          isExpanded: true,
+                          initialValue: _lignes[i].mode ?? _modePaiementGlobal,
+                          decoration: const InputDecoration(labelText: 'Mode'),
+                          items: [
+                            const DropdownMenuItem<ModePaiement?>(
+                              value: null,
+                              child: Text('Aucun'),
+                            ),
+                            ...ModePaiement.values.map(
+                              (m) => DropdownMenuItem(
+                                value: m,
+                                child: Text(_modePaiementLabel(m)),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                          onChanged: (v) => setState(() => _lignes[i].mode = v),
+                        ),
+                      ], minFieldWidth: 190),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String?>(
-                              isExpanded: true,
-                              initialValue: _lignes[i].idCentre,
-                              decoration:
-                                  const InputDecoration(labelText: 'Centre'),
-                              items: centreItems,
-                              onChanged: (v) =>
-                                  setState(() => _lignes[i].idCentre = v),
-                            ),
+                      _responsiveFields([
+                        TextFormField(
+                          controller: _lignes[i].debitCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Debit'),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value.trim().isNotEmpty) {
+                                _lignes[i].creditCtrl.text = '';
+                              }
+                            });
+                          },
+                        ),
+                        TextFormField(
+                          controller: _lignes[i].creditCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Credit',
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<String?>(
-                              isExpanded: true,
-                              initialValue: _lignes[i].idTiers,
-                              decoration:
-                                  const InputDecoration(labelText: 'Tiers'),
-                              items: tiersItems,
-                              onChanged: (v) =>
-                                  setState(() => _lignes[i].idTiers = v),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<ModePaiement?>(
-                              isExpanded: true,
-                              initialValue:
-                                  _lignes[i].mode ?? _modePaiementGlobal,
-                              decoration:
-                                  const InputDecoration(labelText: 'Mode'),
-                              items: [
-                                const DropdownMenuItem<ModePaiement?>(
-                                  value: null,
-                                  child: Text('Aucun'),
-                                ),
-                                ...ModePaiement.values.map(
-                                  (m) => DropdownMenuItem(
-                                    value: m,
-                                    child: Text(_modePaiementLabel(m)),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (v) =>
-                                  setState(() => _lignes[i].mode = v),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lignes[i].debitCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration:
-                                  const InputDecoration(labelText: 'Debit'),
-                              onChanged: (value) {
+                          onChanged: (value) {
+                            setState(() {
+                              if (value.trim().isNotEmpty) {
+                                _lignes[i].debitCtrl.text = '';
+                              }
+                            });
+                          },
+                        ),
+                      ]),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              onPressed: () {
                                 setState(() {
-                                  if (value.trim().isNotEmpty) {
-                                    _lignes[i].creditCtrl.text = '';
-                                  }
+                                  final original = _lignes[i];
+                                  final duplicate = _LigneEditable(
+                                    idTemp: _uuid.v4(),
+                                    idCompte: original.idCompte,
+                                    libelle: original.libelleCtrl.text,
+                                    idCentre: original.idCentre,
+                                    idTiers: original.idTiers,
+                                    mode: original.mode ?? _modePaiementGlobal,
+                                  );
+                                  _lignes.insert(i + 1, duplicate);
                                 });
                               },
+                              icon: const Icon(Icons.content_copy),
+                              tooltip: 'Dupliquer la ligne',
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _lignes[i].creditCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration:
-                                  const InputDecoration(labelText: 'Credit'),
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value.trim().isNotEmpty) {
-                                    _lignes[i].debitCtrl.text = '';
-                                  }
-                                });
-                              },
+                            IconButton(
+                              onPressed: _lignes.length > 2
+                                  ? () => setState(() {
+                                      _lignes.removeAt(i).dispose();
+                                    })
+                                  : null,
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: 'Supprimer la ligne',
                             ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    final original = _lignes[i];
-                                    final duplicate = _LigneEditable(
-                                      idTemp: _uuid.v4(),
-                                      idCompte: original.idCompte,
-                                      libelle: original.libelleCtrl.text,
-                                      idCentre: original.idCentre,
-                                      idTiers: original.idTiers,
-                                      mode: original.mode ?? _modePaiementGlobal,
-                                    );
-                                    _lignes.insert(i + 1, duplicate);
-                                  });
-                                },
-                                icon: const Icon(Icons.content_copy),
-                                tooltip: 'Dupliquer la ligne',
-                              ),
-                              IconButton(
-                                onPressed: _lignes.length > 2
-                                    ? () => setState(() {
-                                          _lignes.removeAt(i).dispose();
-                                        })
-                                    : null,
-                                icon: const Icon(Icons.delete_outline),
-                                tooltip: 'Supprimer la ligne',
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -543,12 +551,12 @@ class _EcritureComptableFormDialogState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
           children: [
             Text('Total debit : ${currencyFormatter.format(totalDebit)}'),
-            const SizedBox(width: 16),
             Text('Total credit : ${currencyFormatter.format(totalCredit)}'),
-            const SizedBox(width: 16),
             Text('Ecart : ${currencyFormatter.format(ecart)}'),
           ],
         ),
@@ -676,9 +684,9 @@ class _EcritureComptableFormDialogState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -692,9 +700,9 @@ class _LigneEditable {
     this.mode,
     String debitText = '',
     String creditText = '',
-  })  : libelleCtrl = TextEditingController(text: libelle),
-        debitCtrl = TextEditingController(text: debitText),
-        creditCtrl = TextEditingController(text: creditText);
+  }) : libelleCtrl = TextEditingController(text: libelle),
+       debitCtrl = TextEditingController(text: debitText),
+       creditCtrl = TextEditingController(text: creditText);
 
   final String idTemp;
   String? idCompte;

@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/rapport_mensuel_eab.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/rapport_mensuel_eab_providers.dart';
+import '../../widgets/print_preview_shell.dart';
 
 class RapportMensuelEabPrintScreen extends ConsumerWidget {
-  final int annee;
-  final int mois;
-  final String idAssembleeLocale;
-
   const RapportMensuelEabPrintScreen({
     super.key,
     required this.annee,
@@ -18,237 +16,411 @@ class RapportMensuelEabPrintScreen extends ConsumerWidget {
     required this.idAssembleeLocale,
   });
 
+  final int annee;
+  final int mois;
+  final String idAssembleeLocale;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Apercu imprimable - Rapport mensuel EAB'),
+    return assembleesAsync.when(
+      loading: () => const _ReportStateScreen(
+        title: 'Rapport mensuel',
+        subtitle: 'Chargement des assemblees',
+        message: 'Preparation de l apercu...',
+        loading: true,
       ),
-      body: assembleesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, st) =>
-            const Center(child: Text('Erreur chargement assemblees')),
-        data: (assemblees) {
-          final assemblee = assemblees.firstWhere(
-            (a) => a.id == idAssembleeLocale,
-            orElse: () => assemblees.isNotEmpty
-                ? assemblees.first
-                : AssembleeLocale(
-                    id: idAssembleeLocale,
-                    nom: 'Assemblee inconnue',
-                    idDistrict: '',
-                  ),
-          );
-
-          final params = RapportMensuelParams(
-            annee: annee,
-            mois: mois,
-            idAssembleeLocale: idAssembleeLocale,
-          );
-
-          final rapportAsync = ref.watch(rapportMensuelEabProvider(params));
-
-          return rapportAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, st) => Center(
-              child: Text('Erreur calcul rapport : $err'),
-            ),
-            data: (rapport) {
-              return _buildPrintLayout(context, assemblee, rapport);
-            },
-          );
-        },
+      error: (err, st) => const _ReportStateScreen(
+        title: 'Rapport mensuel',
+        subtitle: 'Apercu indisponible',
+        message: 'Erreur chargement assemblees',
       ),
+      data: (assemblees) {
+        final assemblee = assemblees.firstWhere(
+          (a) => a.id == idAssembleeLocale,
+          orElse: () => assemblees.isNotEmpty
+              ? assemblees.first
+              : AssembleeLocale(
+                  id: idAssembleeLocale,
+                  nom: 'Assemblee inconnue',
+                  idDistrict: '',
+                ),
+        );
+
+        final params = RapportMensuelParams(
+          annee: annee,
+          mois: mois,
+          idAssembleeLocale: idAssembleeLocale,
+        );
+        final rapportAsync = ref.watch(rapportMensuelEabProvider(params));
+
+        return rapportAsync.when(
+          loading: () => _ReportStateScreen(
+            title: 'Rapport mensuel',
+            subtitle: assemblee.nom,
+            message: 'Calcul du rapport en cours...',
+            loading: true,
+          ),
+          error: (err, st) => _ReportStateScreen(
+            title: 'Rapport mensuel',
+            subtitle: assemblee.nom,
+            message: 'Erreur calcul rapport : $err',
+          ),
+          data: (rapport) =>
+              _ReportPreview(assemblee: assemblee, rapport: rapport),
+        );
+      },
     );
   }
+}
 
-  Widget _buildPrintLayout(
-    BuildContext context,
-    AssembleeLocale assemblee,
-    RapportMensuelEab rapport,
-  ) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(assemblee, rapport),
-            const SizedBox(height: 24),
-            _buildSectionMembres(rapport.statsMembres),
-            const SizedBox(height: 16),
-            _buildSectionActivites(rapport.statsActivites),
-            const SizedBox(height: 16),
-            _buildSectionFinances(rapport.statsFinances),
-            const SizedBox(height: 16),
-            _buildSectionTextes(rapport),
+class _ReportPreview extends StatelessWidget {
+  const _ReportPreview({required this.assemblee, required this.rapport});
+
+  final AssembleeLocale assemblee;
+  final RapportMensuelEab rapport;
+
+  @override
+  Widget build(BuildContext context) {
+    final resultat =
+        rapport.statsFinances.totalProduits -
+        rapport.statsFinances.totalCharges;
+
+    return PrintPreviewShell(
+      title: 'Rapport mensuel',
+      subtitle: '${assemblee.nom} - ${rapport.mois}/${rapport.annee}',
+      icon: Icons.description_outlined,
+      children: [
+        PrintMetricGrid(
+          metrics: [
+            PrintMetric(
+              label: 'Assemblee',
+              value: assemblee.nom,
+              icon: Icons.church_outlined,
+            ),
+            PrintMetric(
+              label: 'Periode',
+              value: '${rapport.mois}/${rapport.annee}',
+              icon: Icons.calendar_month_outlined,
+              color: AppColors.info,
+            ),
+            PrintMetric(
+              label: 'Membres actifs',
+              value: rapport.statsMembres.totalMembresActifs.toString(),
+              icon: Icons.groups_outlined,
+              color: AppColors.teal,
+            ),
+            PrintMetric(
+              label: 'Resultat',
+              value: _formatAmount(resultat),
+              icon: Icons.account_balance_wallet_outlined,
+              color: resultat >= 0 ? AppColors.success : AppColors.error,
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(AssembleeLocale a, RapportMensuelEab r) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text(
-          'EGLISE APOSTOLIQUE DU BENIN',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Rapport mensuel d\'activites',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Assemblee : ${a.nom}',
-          textAlign: TextAlign.center,
-        ),
-        Text(
-          'Mois : ${r.mois} / ${r.annee}',
-          textAlign: TextAlign.center,
-        ),
-        if (a.ville != null && a.ville!.isNotEmpty)
-          Text('Ville : ${a.ville}', textAlign: TextAlign.center),
-      ],
-    );
-  }
-
-  Widget _buildSectionMembres(StatsMembresMensuelles stats) {
-    return _section(
-      'Statistiques membres',
-      [
-        _line('Total membres actifs', '${stats.totalMembresActifs}'),
-        _line('Hommes / Femmes', '${stats.totalHommesActifs} / ${stats.totalFemmesActives}'),
-        _line('Enfants (0-14 ans)', '${stats.totalEnfants}'),
-        _line('Officiers', '${stats.totalOfficiers}'),
-        _line('Orphelins / Veufs/Veuves / Handicapes / 3e age',
-            '${stats.totalOrphelins} / ${stats.totalVeufsVeuves} / ${stats.totalHandicapes} / ${stats.totalTroisiemeAge}'),
-        _line('Nouveaux convertis', '${stats.nouveauxConvertis}'),
-        _line('Nouveaux baptises', '${stats.nouveauxBaptises}'),
-        _line('Nouvelles mains d\'association', '${stats.nouvellesMainsAssociation}'),
-        _line('Mariages cheres', '${stats.mariagesCheres}'),
-        _line('Departs / deces', '${stats.departAssemblage} / ${stats.deces}'),
-      ],
-    );
-  }
-
-  Widget _buildSectionActivites(StatsActivitesMensuelles stats) {
-    return _section(
-      'Activites et visites',
-      [
-        _line('Evangelisation masse / porte a porte',
-            '${stats.nbEvangelisationsMasse} / ${stats.nbEvangelisationsPorteAPorte}'),
-        _line(
-          'Conversions H/F/G/Fi',
-          '${stats.totalConversionsHommes}/${stats.totalConversionsFemmes}/${stats.totalConversionsGarcons}/${stats.totalConversionsFilles}',
-        ),
-        _line('Baptemes', '${stats.nbBaptemes}'),
-        _line('Mains d\'association', '${stats.nbMainsAssociation}'),
-        _line('Saintes cenes', '${stats.nbSaintesCenes}'),
-        _line('Reunions de priere', '${stats.nbReunionsPriere}'),
-        _line('Mariages', '${stats.nbMariages}'),
-        _line('Disciplines', '${stats.nbDisciplines}'),
-        _line(
-          'Visites fideles / autorites / partenaires / autres assemblees',
-          '${stats.nbVisitesFideles} / ${stats.nbVisitesAutorites} / ${stats.nbVisitesPartenaires} / ${stats.nbVisitesAutresAssemblees}',
-        ),
-        _line(
-          'Ecole du dimanche : seances / apprenants H/F/G/Fi / classes / moniteurs H/F',
-          '${stats.nbSeancesEcoleDimanche} / ${stats.totalApprenantsHommes}/${stats.totalApprenantsFemmes}/${stats.totalApprenantsGarcons}/${stats.totalApprenantsFilles} / ${stats.totalClassesEcoleDimanche} / ${stats.totalMoniteursHommes}/${stats.totalMonitricesFemmes}',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionFinances(StatsFinancieresMensuelles stats) {
-    return _section(
-      'Finances (FCFA)',
-      [
-        _line('Total produits', stats.totalProduits.toStringAsFixed(0)),
-        _line('Total charges', stats.totalCharges.toStringAsFixed(0)),
-        _line(
-          'Resultat',
-          (stats.totalProduits - stats.totalCharges).toStringAsFixed(0),
-        ),
-        _line('Offrandes de culte', stats.totalOffrandesCultes.toStringAsFixed(0)),
-        _line('Dons & liberalites', stats.totalDonsLiberaites.toStringAsFixed(0)),
-        _line('Autres recettes', stats.totalRecettesAutres.toStringAsFixed(0)),
-        _line('Charges fonctionnement', stats.totalChargesFonctionnement.toStringAsFixed(0)),
-        _line('Charges sociales', stats.totalChargesSociales.toStringAsFixed(0)),
-      ],
-    );
-  }
-
-  Widget _buildSectionTextes(RapportMensuelEab r) {
-    return _section(
-      'Commentaires',
-      [
-        _paragraph('Resume des activites', r.resumeActivites),
-        _paragraph('Projets realises', r.projetsRealisations),
-        _paragraph('Projets du mois suivant', r.projetsMoisSuivant),
-        _paragraph('Observations', r.observations),
-      ],
-    );
-  }
-
-  Widget _section(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
-    );
-  }
-
-  Widget _line(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+        PrintSection(
+          title: 'Identification',
+          subtitle: 'Informations de contexte du rapport',
+          icon: Icons.badge_outlined,
+          child: _FactsGrid(
+            items: [
+              _FactItem('Eglise', 'Eglise Apostolique du Benin'),
+              _FactItem('Assemblee', assemblee.nom),
+              _FactItem('Ville', _safeText(assemblee.ville)),
+              _FactItem('Mois', '${rapport.mois}/${rapport.annee}'),
+            ],
           ),
-          Expanded(
-            flex: 3,
-            child: Text(value),
+        ),
+        _membersSection(rapport.statsMembres),
+        _activitiesSection(rapport.statsActivites),
+        _financesSection(rapport.statsFinances),
+        _commentsSection(rapport),
+      ],
+    );
+  }
+
+  Widget _membersSection(StatsMembresMensuelles stats) {
+    return PrintSection(
+      title: 'Statistiques membres',
+      icon: Icons.groups_outlined,
+      child: _FactsGrid(
+        items: [
+          _FactItem('Total membres actifs', '${stats.totalMembresActifs}'),
+          _FactItem(
+            'Hommes / Femmes',
+            '${stats.totalHommesActifs} / ${stats.totalFemmesActives}',
+          ),
+          _FactItem('Enfants (0-14 ans)', '${stats.totalEnfants}'),
+          _FactItem('Officiers', '${stats.totalOfficiers}'),
+          _FactItem(
+            'Orphelins / Veufs / Handicapes / 3e age',
+            '${stats.totalOrphelins} / ${stats.totalVeufsVeuves} / ${stats.totalHandicapes} / ${stats.totalTroisiemeAge}',
+          ),
+          _FactItem('Nouveaux convertis', '${stats.nouveauxConvertis}'),
+          _FactItem('Nouveaux baptises', '${stats.nouveauxBaptises}'),
+          _FactItem(
+            'Nouvelles mains association',
+            '${stats.nouvellesMainsAssociation}',
+          ),
+          _FactItem('Mariages cheres', '${stats.mariagesCheres}'),
+          _FactItem(
+            'Departs / deces',
+            '${stats.departAssemblage} / ${stats.deces}',
           ),
         ],
       ),
     );
   }
 
-  Widget _paragraph(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+  Widget _activitiesSection(StatsActivitesMensuelles stats) {
+    return PrintSection(
+      title: 'Activites et visites',
+      icon: Icons.event_available_outlined,
+      child: _FactsGrid(
+        items: [
+          _FactItem(
+            'Evangelisation masse / porte a porte',
+            '${stats.nbEvangelisationsMasse} / ${stats.nbEvangelisationsPorteAPorte}',
+          ),
+          _FactItem(
+            'Conversions H/F/G/Fi',
+            '${stats.totalConversionsHommes}/${stats.totalConversionsFemmes}/${stats.totalConversionsGarcons}/${stats.totalConversionsFilles}',
+          ),
+          _FactItem('Baptemes', '${stats.nbBaptemes}'),
+          _FactItem('Mains association', '${stats.nbMainsAssociation}'),
+          _FactItem('Saintes cenes', '${stats.nbSaintesCenes}'),
+          _FactItem('Reunions de priere', '${stats.nbReunionsPriere}'),
+          _FactItem('Mariages', '${stats.nbMariages}'),
+          _FactItem('Disciplines', '${stats.nbDisciplines}'),
+          _FactItem(
+            'Visites fideles / autorites / partenaires / autres assemblees',
+            '${stats.nbVisitesFideles} / ${stats.nbVisitesAutorites} / ${stats.nbVisitesPartenaires} / ${stats.nbVisitesAutresAssemblees}',
+          ),
+          _FactItem(
+            'Ecole du dimanche',
+            '${stats.nbSeancesEcoleDimanche} seances, ${stats.totalClassesEcoleDimanche} classes',
+          ),
+          _FactItem(
+            'Apprenants H/F/G/Fi',
+            '${stats.totalApprenantsHommes}/${stats.totalApprenantsFemmes}/${stats.totalApprenantsGarcons}/${stats.totalApprenantsFilles}',
+          ),
+          _FactItem(
+            'Moniteurs H/F',
+            '${stats.totalMoniteursHommes}/${stats.totalMonitricesFemmes}',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _financesSection(StatsFinancieresMensuelles stats) {
+    final resultat = stats.totalProduits - stats.totalCharges;
+
+    return PrintSection(
+      title: 'Finances (FCFA)',
+      icon: Icons.payments_outlined,
+      child: _FactsGrid(
+        items: [
+          _FactItem('Total produits', _formatAmount(stats.totalProduits)),
+          _FactItem('Total charges', _formatAmount(stats.totalCharges)),
+          _FactItem('Resultat', _formatAmount(resultat)),
+          _FactItem(
+            'Offrandes de culte',
+            _formatAmount(stats.totalOffrandesCultes),
+          ),
+          _FactItem(
+            'Dons et liberalites',
+            _formatAmount(stats.totalDonsLiberaites),
+          ),
+          _FactItem(
+            'Autres recettes',
+            _formatAmount(stats.totalRecettesAutres),
+          ),
+          _FactItem(
+            'Charges fonctionnement',
+            _formatAmount(stats.totalChargesFonctionnement),
+          ),
+          _FactItem(
+            'Charges sociales',
+            _formatAmount(stats.totalChargesSociales),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _commentsSection(RapportMensuelEab rapport) {
+    return PrintSection(
+      title: 'Commentaires',
+      icon: Icons.notes_outlined,
+      child: Column(
+        children: [
+          _ParagraphBlock('Resume des activites', rapport.resumeActivites),
+          _ParagraphBlock('Projets realises', rapport.projetsRealisations),
+          _ParagraphBlock(
+            'Projets du mois suivant',
+            rapport.projetsMoisSuivant,
+          ),
+          _ParagraphBlock('Observations', rapport.observations),
+        ],
+      ),
+    );
+  }
+}
+
+class _FactsGrid extends StatelessWidget {
+  const _FactsGrid({required this.items});
+
+  final List<_FactItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 680;
+        final columns = compact ? 1 : 2;
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: width
+                    .clamp(
+                      constraints.maxWidth < 180 ? constraints.maxWidth : 180.0,
+                      constraints.maxWidth,
+                    )
+                    .toDouble(),
+                child: _FactTile(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FactTile extends StatelessWidget {
+  const _FactTile({required this.item});
+
+  final _FactItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 72),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.divider),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          Text(item.label, style: AppTextStyles.caption),
+          const SizedBox(height: 6),
+          Text(item.value, style: AppTextStyles.subtitle),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParagraphBlock extends StatelessWidget {
+  const _ParagraphBlock(this.label, this.value);
+
+  final String label;
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = (value ?? '').trim();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.subtitle),
+          const SizedBox(height: 6),
           Text(
-            (value ?? '').isNotEmpty ? value! : 'Non renseigne',
-            style: const TextStyle(color: Colors.black87),
+            text.isNotEmpty ? text : 'Non renseigne',
+            style: AppTextStyles.bodySmall.copyWith(height: 1.45),
           ),
         ],
       ),
     );
   }
+}
+
+class _FactItem {
+  const _FactItem(this.label, this.value);
+
+  final String label;
+  final String value;
+}
+
+class _ReportStateScreen extends StatelessWidget {
+  const _ReportStateScreen({
+    required this.title,
+    required this.subtitle,
+    required this.message,
+    this.loading = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final String message;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return PrintPreviewShell(
+      title: title,
+      subtitle: subtitle,
+      icon: loading ? Icons.description_outlined : Icons.error_outline,
+      children: [
+        PrintSection(
+          title: loading ? 'Chargement' : 'Apercu indisponible',
+          child: loading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : PrintEmptyState(message: message, icon: Icons.info_outline),
+        ),
+      ],
+    );
+  }
+}
+
+String _safeText(String? value) {
+  final text = value?.trim() ?? '';
+  return text.isEmpty ? 'Non renseigne' : text;
+}
+
+String _formatAmount(double value) {
+  final sign = value < 0 ? '-' : '';
+  final digits = value.abs().round().toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    final remaining = digits.length - i;
+    buffer.write(digits[i]);
+    if (remaining > 1 && remaining % 3 == 1) buffer.write(' ');
+  }
+  return '$sign$buffer';
 }

@@ -1,4 +1,4 @@
-/// Formulaire d'ajout / modification de programme — v2 avec UI Kit.
+/// Formulaire d'ajout / modification de programme - v2 avec UI Kit.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,13 +10,14 @@ import 'package:eab/models/program.dart';
 
 import 'package:eab/providers/members_provider.dart';
 import 'package:eab/providers/programs_provider.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
 
 const _typeVisiteLabels = {
-  TypeVisite.fidele: 'Fidèle',
-  TypeVisite.autorite: 'Autorité',
+  TypeVisite.fidele: 'Fidele',
+  TypeVisite.autorite: 'Autorite',
   TypeVisite.partenaire: 'Partenaire',
-  TypeVisite.autreAssemblee: 'Autre assemblée',
+  TypeVisite.autreAssemblee: 'Autre assemblee',
   TypeVisite.autre: 'Autre',
 };
 
@@ -134,10 +135,12 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
               label: 'Type de programme',
               value: _type,
               items: TypeProgramme.values
-                  .map((t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(typeProgrammeLabels[t]!),
-                      ))
+                  .map(
+                    (t) => DropdownMenuItem(
+                      value: t,
+                      child: Text(typeProgrammeLabels[t]!),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() {
                 _type = v;
@@ -158,8 +161,7 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
               label: 'Lieu',
               controller: _locationCtrl,
               prefixIcon: Icons.location_on,
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Lieu requis' : null,
+              validator: (v) => v == null || v.isEmpty ? 'Lieu requis' : null,
             ),
             const SizedBox(height: AppSpacing.fieldGap),
             EabTextField(
@@ -183,25 +185,37 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
               runSpacing: AppSpacing.cardGap,
               children: [
                 SizedBox(
-                    width: 140,
-                    child: EabNumberField(
-                        label: 'Hommes', controller: _nombreHommesCtrl)),
+                  width: 140,
+                  child: EabNumberField(
+                    label: 'Hommes',
+                    controller: _nombreHommesCtrl,
+                  ),
+                ),
                 SizedBox(
-                    width: 140,
-                    child: EabNumberField(
-                        label: 'Femmes', controller: _nombreFemmesCtrl)),
+                  width: 140,
+                  child: EabNumberField(
+                    label: 'Femmes',
+                    controller: _nombreFemmesCtrl,
+                  ),
+                ),
                 SizedBox(
-                    width: 140,
-                    child: EabNumberField(
-                        label: 'Garçons', controller: _nombreGarconsCtrl)),
+                  width: 140,
+                  child: EabNumberField(
+                    label: 'Garcons',
+                    controller: _nombreGarconsCtrl,
+                  ),
+                ),
                 SizedBox(
-                    width: 140,
-                    child: EabNumberField(
-                        label: 'Filles', controller: _nombreFillesCtrl)),
+                  width: 140,
+                  child: EabNumberField(
+                    label: 'Filles',
+                    controller: _nombreFillesCtrl,
+                  ),
+                ),
               ],
             ),
 
-            // Conversions (évangélisation)
+            // Conversions (evangelisation)
             if (_isEvangelisationType) ...[
               const SizedBox(height: AppSpacing.lg),
               _sectionTitle('Conversions'),
@@ -211,53 +225,72 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
                 runSpacing: AppSpacing.cardGap,
                 children: [
                   SizedBox(
-                      width: 140,
-                      child: EabNumberField(
-                          label: 'Hommes', controller: _convHommesCtrl)),
+                    width: 140,
+                    child: EabNumberField(
+                      label: 'Hommes',
+                      controller: _convHommesCtrl,
+                    ),
+                  ),
                   SizedBox(
-                      width: 140,
-                      child: EabNumberField(
-                          label: 'Femmes', controller: _convFemmesCtrl)),
+                    width: 140,
+                    child: EabNumberField(
+                      label: 'Femmes',
+                      controller: _convFemmesCtrl,
+                    ),
+                  ),
                   SizedBox(
-                      width: 140,
-                      child: EabNumberField(
-                          label: 'Garçons', controller: _convGarconsCtrl)),
+                    width: 140,
+                    child: EabNumberField(
+                      label: 'Garcons',
+                      controller: _convGarconsCtrl,
+                    ),
+                  ),
                   SizedBox(
-                      width: 140,
-                      child: EabNumberField(
-                          label: 'Filles', controller: _convFillesCtrl)),
+                    width: 140,
+                    child: EabNumberField(
+                      label: 'Filles',
+                      controller: _convFillesCtrl,
+                    ),
+                  ),
                 ],
               ),
             ],
 
-            // École du dimanche
+            // Ecole du dimanche
             if (_isEcoleType) ...[
               const SizedBox(height: AppSpacing.lg),
-              _sectionTitle('École du dimanche'),
+              _sectionTitle('Ecole du dimanche'),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: AppSpacing.cardGap,
                 runSpacing: AppSpacing.cardGap,
                 children: [
                   SizedBox(
-                      width: 160,
-                      child: EabNumberField(
-                          label: 'Nb classes', controller: _classesCtrl)),
+                    width: 160,
+                    child: EabNumberField(
+                      label: 'Nb classes',
+                      controller: _classesCtrl,
+                    ),
+                  ),
                   SizedBox(
-                      width: 160,
-                      child: EabNumberField(
-                          label: 'Moniteurs H',
-                          controller: _moniteursHommesCtrl)),
+                    width: 160,
+                    child: EabNumberField(
+                      label: 'Moniteurs H',
+                      controller: _moniteursHommesCtrl,
+                    ),
+                  ),
                   SizedBox(
-                      width: 160,
-                      child: EabNumberField(
-                          label: 'Monitrices F',
-                          controller: _monitricesFemmesCtrl)),
+                    width: 160,
+                    child: EabNumberField(
+                      label: 'Monitrices F',
+                      controller: _monitricesFemmesCtrl,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.fieldGap),
               EabTextField(
-                label: 'Dernière leçon étudiée',
+                label: 'Derniere lecon etudiee',
                 controller: _derniereLeconCtrl,
               ),
             ],
@@ -271,14 +304,15 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
                 label: 'Type de visite',
                 value: _typeVisite,
                 items: TypeVisite.values
-                    .map((t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(_typeVisiteLabels[t]!),
-                        ))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(_typeVisiteLabels[t]!),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() => _typeVisite = v),
-                validator: (v) =>
-                    _isVisiteType && v == null ? 'Requis' : null,
+                validator: (v) => _isVisiteType && v == null ? 'Requis' : null,
               ),
               const SizedBox(height: AppSpacing.fieldGap),
               EabTextField(
@@ -288,9 +322,9 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
               ),
             ],
 
-            // Participants identifiés
+            // Participants identifies
             const SizedBox(height: AppSpacing.lg),
-            _sectionTitle('Participants identifiés'),
+            _sectionTitle('Participants identifies'),
             const SizedBox(height: AppSpacing.sm),
             if (membersAsync.isLoading && members.isEmpty)
               const Padding(
@@ -327,7 +361,7 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
           onPressed: () => Navigator.pop(context),
         ),
         EabButton(
-          label: _isEditing ? 'Mettre à jour' : 'Enregistrer',
+          label: _isEditing ? 'Mettre a jour' : 'Enregistrer',
           variant: EabButtonVariant.primary,
           isLoading: _isSaving,
           onPressed: _submit,
@@ -337,9 +371,9 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
   }
 
   Widget _sectionTitle(String text) => Align(
-        alignment: Alignment.centerLeft,
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
+    alignment: Alignment.centerLeft,
+    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+  );
 
   int? _intFromCtrl(TextEditingController c) {
     final raw = c.text.trim();
@@ -364,12 +398,15 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
     setState(() => _isSaving = true);
     try {
       final notifier = ref.read(programsProvider.notifier);
+      final assembleeActiveId = ref.read(assembleeActiveIdProvider);
       final id = widget.program?.id ?? const Uuid().v4();
       final program = Program(
         id: id,
         type: _type!,
         date: _date!,
         location: _locationCtrl.text.trim(),
+        idAssembleeLocale:
+            widget.program?.idAssembleeLocale ?? assembleeActiveId,
         description: _descriptionCtrl.text.trim().isEmpty
             ? null
             : _descriptionCtrl.text.trim(),
@@ -381,29 +418,36 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
         nombreFemmes: _intFromCtrl(_nombreFemmesCtrl),
         nombreGarcons: _intFromCtrl(_nombreGarconsCtrl),
         nombreFilles: _intFromCtrl(_nombreFillesCtrl),
-        conversionsHommes:
-            _isEvangelisationType ? _intFromCtrl(_convHommesCtrl) : null,
-        conversionsFemmes:
-            _isEvangelisationType ? _intFromCtrl(_convFemmesCtrl) : null,
-        conversionsGarcons:
-            _isEvangelisationType ? _intFromCtrl(_convGarconsCtrl) : null,
-        conversionsFilles:
-            _isEvangelisationType ? _intFromCtrl(_convFillesCtrl) : null,
-        nombreClassesEcoleDuDimanche:
-            _isEcoleType ? _intFromCtrl(_classesCtrl) : null,
-        nombreMoniteursHommes:
-            _isEcoleType ? _intFromCtrl(_moniteursHommesCtrl) : null,
-        nombreMonitricesFemmes:
-            _isEcoleType ? _intFromCtrl(_monitricesFemmesCtrl) : null,
+        conversionsHommes: _isEvangelisationType
+            ? _intFromCtrl(_convHommesCtrl)
+            : null,
+        conversionsFemmes: _isEvangelisationType
+            ? _intFromCtrl(_convFemmesCtrl)
+            : null,
+        conversionsGarcons: _isEvangelisationType
+            ? _intFromCtrl(_convGarconsCtrl)
+            : null,
+        conversionsFilles: _isEvangelisationType
+            ? _intFromCtrl(_convFillesCtrl)
+            : null,
+        nombreClassesEcoleDuDimanche: _isEcoleType
+            ? _intFromCtrl(_classesCtrl)
+            : null,
+        nombreMoniteursHommes: _isEcoleType
+            ? _intFromCtrl(_moniteursHommesCtrl)
+            : null,
+        nombreMonitricesFemmes: _isEcoleType
+            ? _intFromCtrl(_monitricesFemmesCtrl)
+            : null,
         derniereLeconEcoleDuDimanche:
             _isEcoleType && _derniereLeconCtrl.text.trim().isNotEmpty
-                ? _derniereLeconCtrl.text.trim()
-                : null,
+            ? _derniereLeconCtrl.text.trim()
+            : null,
         typeVisite: _isVisiteType ? _typeVisite : null,
         compteRenduVisite:
             _isVisiteType && _compteRenduVisiteCtrl.text.trim().isNotEmpty
-                ? _compteRenduVisiteCtrl.text.trim()
-                : null,
+            ? _compteRenduVisiteCtrl.text.trim()
+            : null,
       );
 
       if (widget.program == null) {
@@ -413,7 +457,7 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Programme enregistré avec succès.')),
+          const SnackBar(content: Text('Programme enregistre avec succes.')),
         );
         Navigator.pop(context);
       }

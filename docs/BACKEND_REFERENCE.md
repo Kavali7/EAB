@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-03-02
-- **Fichiers de migration** : `supabase/migrations/00001` → `00015`
+- **Derniere mise a jour** : 2026-06-13
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00018`
 
 ---
 
@@ -72,6 +72,15 @@
 | `code` | TEXT | OUI | — | Code unique (UNIQUE) |
 | `description` | TEXT | OUI | — | Description |
 | `logo_url` | TEXT | OUI | — | URL du logo |
+| `sigle` | TEXT | OUI | — | Sigle affiche dans l'interface |
+| `couleur_primaire` | TEXT | OUI | — | Couleur principale de l'organisation |
+| `couleur_secondaire` | TEXT | OUI | — | Couleur secondaire de l'organisation |
+| `adresse` | TEXT | OUI | — | Adresse de contact |
+| `telephone` | TEXT | OUI | — | Telephone de contact |
+| `email` | TEXT | OUI | — | Email de contact |
+| `site_web` | TEXT | OUI | — | Site web |
+| `devise` | TEXT | NON | `'FCFA'` | Devise par defaut |
+| `parametres` | JSONB | NON | `'{}'::jsonb` | Parametres libres de l'organisation |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | Date de création |
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Dernière modification |
 
@@ -92,6 +101,7 @@
 | `id_region` | UUID | OUI | — | FK → `regions_eglise(id)` ON DELETE SET NULL |
 | `id_district` | UUID | OUI | — | FK → `districts_eglise(id)` ON DELETE SET NULL |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` ON DELETE SET NULL |
+| `primary_church_unit_id` | UUID | OUI | — | FK → `church_units(id)` ON DELETE SET NULL |
 | `avatar_url` | TEXT | OUI | — | URL de l'avatar |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
@@ -161,7 +171,76 @@
 
 ---
 
-### 2.6 `familles`
+### 2.6 `church_unit_types`
+
+> Niveaux de hierarchie configurables par organisation : organisation, region, district, eglise locale, departement, etc.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` ON DELETE CASCADE |
+| `code` | TEXT | NON | — | Code technique du niveau |
+| `label` | TEXT | NON | — | Libelle visible |
+| `level_order` | INTEGER | NON | `0` | Ordre hierarchique |
+| `is_local` | BOOLEAN | NON | `FALSE` | Indique une eglise locale |
+| `is_financial_scope` | BOOLEAN | NON | `FALSE` | Peut servir de perimetre comptable |
+| `can_have_members` | BOOLEAN | NON | `FALSE` | Peut contenir des fideles |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+| `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(organization_id, code)`
+
+---
+
+### 2.7 `church_units`
+
+> Noeuds generiques de structure. Permet une eglise unique ou une hierarchie multi-niveaux. Les donnees EAB historiques sont recopiees ici comme demo.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` ON DELETE CASCADE |
+| `type_id` | UUID | NON | — | FK → `church_unit_types(id)` ON DELETE RESTRICT |
+| `parent_id` | UUID | OUI | — | FK recursive → `church_units(id)` ON DELETE CASCADE |
+| `nom` | TEXT | NON | — | Nom de l'unite |
+| `code` | TEXT | OUI | — | Code de l'unite |
+| `description` | TEXT | OUI | — | Description |
+| `ville` | TEXT | OUI | — | Ville |
+| `quartier` | TEXT | OUI | — | Quartier |
+| `adresse` | TEXT | OUI | — | Adresse |
+| `telephone` | TEXT | OUI | — | Telephone |
+| `email` | TEXT | OUI | — | Email |
+| `active` | BOOLEAN | NON | `TRUE` | Unite active |
+| `legacy_region_id` | UUID | OUI | — | Lien vers `regions_eglise(id)` pour migration progressive |
+| `legacy_district_id` | UUID | OUI | — | Lien vers `districts_eglise(id)` pour migration progressive |
+| `legacy_assemblee_id` | UUID | OUI | — | Lien vers `assemblees_locales(id)` pour migration progressive |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+| `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **CHECK** : `parent_id IS NULL OR parent_id <> id`
+
+---
+
+### 2.8 `church_unit_user_scopes`
+
+> Roles utilisateurs rattaches a un perimetre flexible.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` ON DELETE CASCADE |
+| `user_id` | UUID | NON | — | FK → `profiles(id)` ON DELETE CASCADE |
+| `unit_id` | UUID | NON | — | FK → `church_units(id)` ON DELETE CASCADE |
+| `role` | `role_utilisateur` | NON | — | Role sur ce perimetre |
+| `can_manage_children` | BOOLEAN | NON | `FALSE` | Peut gerer les sous-unites |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE** : `(user_id, unit_id, role)`
+
+---
+
+### 2.9 `familles`
 
 > Familles de fidèles pour le suivi familial.
 
@@ -181,7 +260,7 @@
 
 ---
 
-### 2.7 `membres`
+### 2.10 `membres`
 
 > Membres/fidèles de l'église avec toutes leurs informations.
 
@@ -217,7 +296,7 @@
 
 ---
 
-### 2.8 `programmes`
+### 2.11 `programmes`
 
 > Activités et programmes de l'église (cultes, évangélisations, etc.).
 
@@ -734,6 +813,14 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `profiles` | `id_region` | `regions_eglise(id)` | SET NULL |
 | `profiles` | `id_district` | `districts_eglise(id)` | SET NULL |
 | `profiles` | `id_assemblee_locale` | `assemblees_locales(id)` | SET NULL |
+| `profiles` | `primary_church_unit_id` | `church_units(id)` | SET NULL |
+| `church_unit_types` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_units` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_units` | `type_id` | `church_unit_types(id)` | RESTRICT |
+| `church_units` | `parent_id` | `church_units(id)` | CASCADE |
+| `church_unit_user_scopes` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_unit_user_scopes` | `user_id` | `profiles(id)` | CASCADE |
+| `church_unit_user_scopes` | `unit_id` | `church_units(id)` | CASCADE |
 | `districts_eglise` | `id_region` | `regions_eglise(id)` | CASCADE |
 | `assemblees_locales` | `id_district` | `districts_eglise(id)` | CASCADE |
 | `assemblees_locales` | `id_fidele_pasteur_responsable` | `membres(id)` | SET NULL |
@@ -757,6 +844,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | Table | Type | Expression |
 | ------- | ------ | ------------ |
 | `organizations` | UNIQUE | `code` |
+| `church_unit_types` | UNIQUE | `(organization_id, code)` |
+| `church_units` | CHECK | `parent_id IS NULL OR parent_id <> id` |
+| `church_units` | UNIQUE INDEX | `(organization_id, type_id, code)` si `code IS NOT NULL` |
+| `church_unit_user_scopes` | UNIQUE | `(user_id, unit_id, role)` |
 | `regions_eglise` | UNIQUE | `(organization_id, code)` |
 | `districts_eglise` | UNIQUE | `(organization_id, code)` |
 | `assemblees_locales` | UNIQUE | `(organization_id, code)` |
@@ -775,7 +866,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 
 ## 7. Politiques RLS
 
-> RLS est activé sur **toutes les 22 tables**. Toutes les fonctions helper sont `SECURITY DEFINER STABLE`.
+> RLS est active sur toutes les tables metier multi-tenant, y compris les tables de hierarchie flexible ajoutees en `00018`. Toutes les fonctions helper sont `SECURITY DEFINER STABLE`.
 
 ### Fonctions helper RLS
 
@@ -796,6 +887,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | ------- | -------- | ----------- | --------- |
 | `organizations` | Propre org | Admin national | Isolation org |
 | `profiles` | Même org | Propre profil / Admin | Multi-niveau |
+| `church_unit_types` | Même org | Admin national | Configuration niveaux |
+| `church_units` | Même org | Admin national | Hierarchie flexible |
+| `church_unit_user_scopes` | Même org | Admin national | Perimetres utilisateurs |
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
 | `assemblees_locales` | Même org | Admin / Resp. / Surint. / Trés. | Hiérarchique |
@@ -846,6 +940,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `report_bilan(UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan simplifié SYCEBNL : actif (cl.2-5) / passif (cl.1,4) |
 | `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumulé |
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
+| `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
 | `prefill_fiscal_dossier(UUID)` | plpgsql | DEFINER | Pré-remplit les champs du dossier fiscal depuis les écritures comptables via `fiscal_account_mapping` (sum_prefixes, balance_class, sum_accounts) |
 | `prefill_fiscal_dossier_from_import(UUID, UUID)` | plpgsql | DEFINER | Pré-remplit depuis une balance CSV importée (`imported_trial_balance_lines`) |
 | `validate_fiscal_dossier(UUID)` | plpgsql | DEFINER | Valide le dossier : champs requis, actif=passif, résultat=produits-charges, cohérence bilan/résultat. Passe statut `ready` si OK. |
@@ -873,7 +968,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~80 index**, dont ~65 index fonctionnels + 1 index GIN trigram.
+> **Total : ~90 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00018`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -888,6 +983,12 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_profiles_region` | `profiles` | `id_region` |
 | `idx_profiles_district` | `profiles` | `id_district` |
 | `idx_profiles_assemblee` | `profiles` | `id_assemblee_locale` |
+| `idx_church_units_code_per_type` | `church_units` | `(organization_id, type_id, code)` WHERE `code IS NOT NULL` |
+| `idx_church_units_organization` | `church_units` | `organization_id` |
+| `idx_church_units_parent` | `church_units` | `parent_id` |
+| `idx_church_units_legacy_region` | `church_units` | `legacy_region_id` WHERE NOT NULL |
+| `idx_church_units_legacy_district` | `church_units` | `legacy_district_id` WHERE NOT NULL |
+| `idx_church_units_legacy_assemblee` | `church_units` | `legacy_assemblee_id` WHERE NOT NULL |
 | `idx_regions_organization` | `regions_eglise` | `organization_id` |
 | `idx_regions_code` | `regions_eglise` | `(organization_id, code)` |
 | `idx_districts_organization` | `districts_eglise` | `organization_id` |
@@ -994,6 +1095,12 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 ```mermaid
 erDiagram
     organizations ||--o{ profiles : "utilisateurs"
+    organizations ||--o{ church_unit_types : "niveaux"
+    organizations ||--o{ church_units : "unites"
+    church_unit_types ||--o{ church_units : "type"
+    church_units ||--o{ church_units : "sous-unites"
+    church_units ||--o{ church_unit_user_scopes : "perimetres"
+    profiles ||--o{ church_unit_user_scopes : "roles"
     organizations ||--o{ regions_eglise : "régions"
     organizations ||--o{ comptes_comptables : "plan comptable"
     organizations ||--o{ exercices_comptables : "exercices"
@@ -1030,6 +1137,8 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00018** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
+| 2026-06-13 | Agent IA | **Migration 00017** : Branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et conservation de `logo_url`. L'application utilise une marque neutre par defaut et l'identite de l'organisation active. |
 | 2026-03-02 | Agent IA | **PR4** : `FiscalPdfService` — Génération PDF multi-pages dossier fiscal (COVER avec badge/watermark, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT). Rendu dynamique depuis template fields + valeurs. Header/footer cohérents avec pagination. Intégration dans wizard (bouton PDF). |
 | 2026-03-02 | Agent IA | **Migration 00015** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
 | 2026-03-02 | Agent IA | **Migration 00013** : 4 RPCs dossier fiscal — `prefill_fiscal_dossier` (pré-remplissage depuis écritures via mappings sum_prefixes/balance_class/sum_accounts), `prefill_fiscal_dossier_from_import` (depuis balance CSV), `validate_fiscal_dossier` (contrôles actif=passif + résultat + champs requis), `lock_fiscal_dossier` (verrouillage avec validation + contrôle rôle admin/resp_region). Toutes SECURITY DEFINER + vérification org. |

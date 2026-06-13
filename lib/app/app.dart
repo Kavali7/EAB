@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/product_branding.dart';
 import '../core/theme.dart';
 import '../providers/accounting_providers.dart';
 import '../providers/church_structure_providers.dart';
@@ -10,6 +11,7 @@ import '../providers/families_provider.dart';
 import '../providers/members_provider.dart';
 import '../providers/programs_provider.dart';
 import '../providers/user_profile_providers.dart';
+import '../features/church_units/application/church_units_provider.dart';
 import '../features/organization/application/organization_providers.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
@@ -94,6 +96,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
     ref.invalidate(regionsProvider);
     ref.invalidate(districtsProvider);
     ref.invalidate(assembleesLocalesProvider);
+    ref.invalidate(churchUnitsProvider);
     ref.invalidate(ecrituresComptablesProvider);
     ref.invalidate(journauxComptablesProvider);
     ref.invalidate(comptesComptablesProvider);
@@ -112,7 +115,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EAB - Gestion',
+      title: ProductBranding.appName,
       debugShowCheckedModeBanner: false,
       navigatorKey: _navigatorKey,
       theme: buildAppTheme(),

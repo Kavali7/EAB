@@ -15,6 +15,7 @@ import '../../models/tiers.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
+import '../../ui/ui.dart';
 import '../../widgets/app_shell.dart';
 import '../../widgets/info_card.dart';
 import '../../widgets/context_header.dart';
@@ -64,18 +65,24 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         ? 'Toutes les assemblees'
         : 'Assemblee active : ${assembleeById[assembleeActiveId]?.nom ?? assembleeActiveId}';
     final ecrituresJournal = _filtrerEcrituresJournal(ecrituresBase);
-    final assembleesAutorisees =
-        _assembleesAutorisees(profilCourant, assemblees, districts);
-    final peutCreerEcriture = assembleeActiveId != null &&
+    final assembleesAutorisees = _assembleesAutorisees(
+      profilCourant,
+      assemblees,
+      districts,
+    );
+    final peutCreerEcriture =
+        assembleeActiveId != null &&
         assembleesAutorisees.any((a) => a.id == assembleeActiveId);
-    final isJournalLoading = ecrituresAsync.isLoading ||
+    final isJournalLoading =
+        ecrituresAsync.isLoading ||
         journauxAsync.isLoading ||
         comptesAsync.isLoading ||
         centresAsync.isLoading ||
         tiersAsync.isLoading ||
         assembleesAsync.isLoading ||
         districtsAsync.isLoading;
-    final hasJournalError = ecrituresAsync.hasError ||
+    final hasJournalError =
+        ecrituresAsync.hasError ||
         journauxAsync.hasError ||
         comptesAsync.hasError ||
         centresAsync.hasError ||
@@ -96,13 +103,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         ),
         floatingActionButton: peutCreerEcriture
             ? FloatingActionButton.extended(
-                onPressed: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (context) =>
-                        const EcritureComptableFormDialog(),
-                  );
-                },
+                onPressed: () => _openEcritureForm(),
                 icon: const Icon(Icons.add),
                 label: const Text('Nouvelle ecriture'),
               )
@@ -123,13 +124,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     const Spacer(),
                     ElevatedButton.icon(
                       onPressed: peutCreerEcriture
-                          ? () async {
-                              await showDialog(
-                                context: context,
-                                builder: (context) =>
-                                    const EcritureComptableFormDialog(),
-                              );
-                            }
+                          ? () => _openEcritureForm()
                           : null,
                       icon: const Icon(Icons.add),
                       label: const Text('Nouvelle ecriture'),
@@ -145,8 +140,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                       width: 220,
                       child: DropdownButtonFormField<String?>(
                         isExpanded: true,
-                        decoration:
-                            const InputDecoration(labelText: 'Journal'),
+                        decoration: const InputDecoration(labelText: 'Journal'),
                         initialValue: _journalIdFilter,
                         items: [
                           const DropdownMenuItem<String?>(
@@ -163,7 +157,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                         onChanged: journauxAsync.isLoading
                             ? null
                             : (value) =>
-                                setState(() => _journalIdFilter = value),
+                                  setState(() => _journalIdFilter = value),
                       ),
                     ),
                     SizedBox(
@@ -213,204 +207,36 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                   child: isJournalLoading
                       ? const Center(child: CircularProgressIndicator())
                       : hasJournalError
-                          ? ErrorRetryWidget(
-                              message: 'Erreur lors du chargement des données comptables : '
-                                  '${ecrituresAsync.error ?? journauxAsync.error ?? comptesAsync.error ?? centresAsync.error ?? tiersAsync.error ?? assembleesAsync.error ?? districtsAsync.error}',
-                              onRetry: () {
-                                ref.invalidate(ecrituresComptablesProvider);
-                                ref.invalidate(journauxComptablesProvider);
-                                ref.invalidate(comptesComptablesProvider);
-                                ref.invalidate(centresAnalytiquesProvider);
-                                ref.invalidate(tiersProvider);
-                                ref.invalidate(assembleesLocalesProvider);
-                                ref.invalidate(districtsProvider);
-                              },
-                            )
-                          : Card(
-                              child: ecrituresJournal.isEmpty
-                                  ? const Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Text('Aucune ecriture.'),
-                                      ),
-                                    )
-                                  : SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: DataTable(
-                                        columns: const [
-                                          DataColumn(label: Text('Date')),
-                                          DataColumn(label: Text('Journal')),
-                                          DataColumn(label: Text('Reference')),
-                                          DataColumn(label: Text('Libelle')),
-                                          DataColumn(label: Text('Debit')),
-                                          DataColumn(label: Text('Credit')),
-                                          DataColumn(label: Text('Solde')),
-                                          DataColumn(label: Text('Actions')),
-                                        ],
-                                        rows: ecrituresJournal
-                                            .map(
-                                              (e) => DataRow(
-                                                cells: [
-                                                  DataCell(
-                                                    Text(
-                                                      dateFormatter.format(
-                                                        e.date,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Text(
-                                                      _journalLabel(
-                                                        e.idJournal,
-                                                        journalById,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Text(
-                                                      e.referencePiece ??
-                                                          '--',
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    SizedBox(
-                                                      width: 220,
-                                                      child: Text(
-                                                        e.libelle,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Text(
-                                                      currencyFormatter.format(
-                                                        _totalDebit(e),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Text(
-                                                      currencyFormatter.format(
-                                                        _totalCredit(e),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Text(
-                                                      currencyFormatter.format(
-                                                        _totalDebit(e) -
-                                                            _totalCredit(e),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        IconButton(
-                                                          icon: const Icon(
-                                                            Icons.visibility_outlined,
-                                                          ),
-                                                          tooltip:
-                                                              'Voir le detail',
-                                                          onPressed: () =>
-                                                              _showEcritureDetails(
-                                                            context,
-                                                            e,
-                                                            journalById,
-                                                            compteById,
-                                                            centreById,
-                                                            tiersById,
-                                                            assembleeById,
-                                                          ),
-                                                        ),
-                                                        IconButton(
-                                                          icon: const Icon(
-                                                            Icons.edit_outlined,
-                                                          ),
-                                                          tooltip:
-                                                              'Modifier cette ecriture',
-                                                          onPressed: _peutGererEcriture(
-                                                                  profilCourant,
-                                                                  assembleesAutorisees,
-                                                                  e)
-                                                              ? () async {
-                                                                  await showDialog(
-                                                                    context:
-                                                                        context,
-                                                                    builder:
-                                                                        (context) =>
-                                                                            EcritureComptableFormDialog(
-                                                                      ecritureExistante:
-                                                                          e,
-                                                                    ),
-                                                                  );
-                                                                }
-                                                              : null,
-                                                        ),
-                                                        IconButton(
-                                                          icon: const Icon(
-                                                            Icons.delete_outline,
-                                                          ),
-                                                          tooltip:
-                                                              'Supprimer cette ecriture',
-                                                          onPressed: _peutGererEcriture(
-                                                                  profilCourant,
-                                                                  assembleesAutorisees,
-                                                                  e)
-                                                              ? () async {
-                                                                  final confirm =
-                                                                      await showDialog<
-                                                                          bool>(
-                                                                    context:
-                                                                        context,
-                                                                    builder: (ctx) =>
-                                                                        AlertDialog(
-                                                                      title: const Text(
-                                                                          'Supprimer l\'ecriture'),
-                                                                      content:
-                                                                          const Text(
-                                                                              'Voulez-vous vraiment supprimer cette ecriture ?'),
-                                                                      actions: [
-                                                                        TextButton(
-                                                                          onPressed: () => Navigator.of(ctx)
-                                                                              .pop(false),
-                                                                          child:
-                                                                              const Text('Annuler'),
-                                                                        ),
-                                                                        ElevatedButton(
-                                                                          onPressed: () => Navigator.of(ctx)
-                                                                              .pop(true),
-                                                                          style:
-                                                                              ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                                                          child:
-                                                                              const Text('Supprimer'),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  );
-                                                                  if (confirm ==
-                                                                      true) {
-                                                                    await ref
-                                                                        .read(ecrituresComptablesProvider.notifier)
-                                                                        .supprimerEcriture(e.id);
-                                                                  }
-                                                                }
-                                                              : null,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ),
-                            ),
+                      ? ErrorRetryWidget(
+                          message:
+                              'Erreur lors du chargement des données comptables : '
+                              '${ecrituresAsync.error ?? journauxAsync.error ?? comptesAsync.error ?? centresAsync.error ?? tiersAsync.error ?? assembleesAsync.error ?? districtsAsync.error}',
+                          onRetry: () {
+                            ref.invalidate(ecrituresComptablesProvider);
+                            ref.invalidate(journauxComptablesProvider);
+                            ref.invalidate(comptesComptablesProvider);
+                            ref.invalidate(centresAnalytiquesProvider);
+                            ref.invalidate(tiersProvider);
+                            ref.invalidate(assembleesLocalesProvider);
+                            ref.invalidate(districtsProvider);
+                          },
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final compact = constraints.maxWidth < 720;
+                            return _buildJournalEntriesPanel(
+                              compact: compact,
+                              ecritures: ecrituresJournal,
+                              journalById: journalById,
+                              compteById: compteById,
+                              centreById: centreById,
+                              tiersById: tiersById,
+                              assembleeById: assembleeById,
+                              profil: profilCourant,
+                              assembleesAutorisees: assembleesAutorisees,
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -424,6 +250,158 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _openEcritureForm({EcritureComptable? ecriture}) async {
+    await showDialog(
+      context: context,
+      builder: (context) =>
+          EcritureComptableFormDialog(ecritureExistante: ecriture),
+    );
+  }
+
+  Future<void> _deleteEcriture(EcritureComptable ecriture) async {
+    final confirm = await EabDialog.confirm(
+      context,
+      title: 'Supprimer l ecriture',
+      message: 'Voulez-vous vraiment supprimer cette ecriture ?',
+      confirmLabel: 'Supprimer',
+      isDanger: true,
+    );
+    if (confirm == true) {
+      await ref
+          .read(ecrituresComptablesProvider.notifier)
+          .supprimerEcriture(ecriture.id);
+    }
+  }
+
+  Widget _buildJournalEntriesPanel({
+    required bool compact,
+    required List<EcritureComptable> ecritures,
+    required Map<String, JournalComptable> journalById,
+    required Map<String, CompteComptable> compteById,
+    required Map<String, CentreAnalytique> centreById,
+    required Map<String, Tiers> tiersById,
+    required Map<String, AssembleeLocale> assembleeById,
+    required ProfilUtilisateur? profil,
+    required List<AssembleeLocale> assembleesAutorisees,
+  }) {
+    if (ecritures.isEmpty) {
+      return const _EmptyAccountingState(message: 'Aucune ecriture.');
+    }
+
+    if (compact) {
+      return ListView.separated(
+        itemCount: ecritures.length,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final ecriture = ecritures[index];
+          final canManage = _peutGererEcriture(
+            profil,
+            assembleesAutorisees,
+            ecriture,
+          );
+          return _EcritureCard(
+            ecriture: ecriture,
+            journalLabel: _journalLabel(ecriture.idJournal, journalById),
+            totalDebit: _totalDebit(ecriture),
+            totalCredit: _totalCredit(ecriture),
+            canManage: canManage,
+            onView: () => _showEcritureDetails(
+              context,
+              ecriture,
+              journalById,
+              compteById,
+              centreById,
+              tiersById,
+              assembleeById,
+            ),
+            onEdit: canManage
+                ? () => _openEcritureForm(ecriture: ecriture)
+                : null,
+            onDelete: canManage ? () => _deleteEcriture(ecriture) : null,
+          );
+        },
+      );
+    }
+
+    return _TableFrame(
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Date')),
+          DataColumn(label: Text('Journal')),
+          DataColumn(label: Text('Reference')),
+          DataColumn(label: Text('Libelle')),
+          DataColumn(label: Text('Debit')),
+          DataColumn(label: Text('Credit')),
+          DataColumn(label: Text('Solde')),
+          DataColumn(label: Text('Actions')),
+        ],
+        rows: ecritures.map((ecriture) {
+          final debit = _totalDebit(ecriture);
+          final credit = _totalCredit(ecriture);
+          final canManage = _peutGererEcriture(
+            profil,
+            assembleesAutorisees,
+            ecriture,
+          );
+          return DataRow(
+            cells: [
+              DataCell(Text(dateFormatter.format(ecriture.date))),
+              DataCell(Text(_journalLabel(ecriture.idJournal, journalById))),
+              DataCell(Text(ecriture.referencePiece ?? '--')),
+              DataCell(
+                SizedBox(
+                  width: 240,
+                  child: Text(
+                    ecriture.libelle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              DataCell(Text(currencyFormatter.format(debit))),
+              DataCell(Text(currencyFormatter.format(credit))),
+              DataCell(Text(currencyFormatter.format(debit - credit))),
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.visibility_outlined),
+                      tooltip: 'Voir le detail',
+                      onPressed: () => _showEcritureDetails(
+                        context,
+                        ecriture,
+                        journalById,
+                        compteById,
+                        centreById,
+                        tiersById,
+                        assembleeById,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'Modifier cette ecriture',
+                      onPressed: canManage
+                          ? () => _openEcritureForm(ecriture: ecriture)
+                          : null,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Supprimer cette ecriture',
+                      onPressed: canManage
+                          ? () => _deleteEcriture(ecriture)
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -567,8 +545,11 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     ProfilUtilisateur? profil,
   ) {
     final options = _porteesDisponiblesPourProfil(profil);
-    final current =
-        options.contains(portee) ? portee : options.isNotEmpty ? options.first : PorteeComptable.assemblee;
+    final current = options.contains(portee)
+        ? portee
+        : options.isNotEmpty
+        ? options.first
+        : PorteeComptable.assemblee;
     return Row(
       children: [
         const Text('Portee comptable :'),
@@ -577,10 +558,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           value: current,
           items: options
               .map(
-                (p) => DropdownMenuItem(
-                  value: p,
-                  child: Text(_labelPortee(p)),
-                ),
+                (p) => DropdownMenuItem(value: p, child: Text(_labelPortee(p))),
               )
               .toList(),
           onChanged: (value) {
@@ -592,7 +570,9 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     );
   }
 
-  List<PorteeComptable> _porteesDisponiblesPourProfil(ProfilUtilisateur? profil) {
+  List<PorteeComptable> _porteesDisponiblesPourProfil(
+    ProfilUtilisateur? profil,
+  ) {
     if (profil == null) return const [PorteeComptable.assemblee];
     switch (profil.role) {
       case RoleUtilisateur.adminNational:
@@ -609,10 +589,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
           PorteeComptable.region,
         ];
       case RoleUtilisateur.surintendantDistrict:
-        return const [
-          PorteeComptable.assemblee,
-          PorteeComptable.district,
-        ];
+        return const [PorteeComptable.assemblee, PorteeComptable.district];
       case RoleUtilisateur.tresorierAssemblee:
         return const [PorteeComptable.assemblee];
     }
@@ -650,9 +627,13 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         final ecritures = _filtrerEcrituresSynthese(ecrituresBase);
         final synthese = _calculerSynthese(ecritures, comptesParId);
         final topCharges = _topComptes(synthese.chargesParCompte, comptesParId);
-        final topProduits =
-            _topComptes(synthese.produitsParCompte, comptesParId);
-        final resultatParMois = _resultatParMoisLimite(synthese.resultatParMois);
+        final topProduits = _topComptes(
+          synthese.produitsParCompte,
+          comptesParId,
+        );
+        final resultatParMois = _resultatParMoisLimite(
+          synthese.resultatParMois,
+        );
 
         return SingleChildScrollView(
           child: Column(
@@ -753,9 +734,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                         height: 240,
                         child: resultatParMois.isEmpty
                             ? const Center(child: Text('Aucune donnee.'))
-                            : LineChart(
-                                _resultatLineChart(resultatParMois),
-                              ),
+                            : LineChart(_resultatLineChart(resultatParMois)),
                       ),
                     ],
                   ),
@@ -770,14 +749,18 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
                     runSpacing: 12,
                     children: [
                       SizedBox(
-                        width: isWide ? (constraints.maxWidth / 2) - 12 : constraints.maxWidth,
+                        width: isWide
+                            ? (constraints.maxWidth / 2) - 12
+                            : constraints.maxWidth,
                         child: _buildTopTable(
                           'Top comptes de charges',
                           topCharges,
                         ),
                       ),
                       SizedBox(
-                        width: isWide ? (constraints.maxWidth / 2) - 12 : constraints.maxWidth,
+                        width: isWide
+                            ? (constraints.maxWidth / 2) - 12
+                            : constraints.maxWidth,
                         child: _buildTopTable(
                           'Top comptes de produits',
                           topProduits,
@@ -794,10 +777,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     );
   }
 
-  Widget _buildTopTable(
-    String title,
-    List<_CompteMontant> donnees,
-  ) {
+  Widget _buildTopTable(String title, List<_CompteMontant> donnees) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -812,21 +792,37 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
             if (donnees.isEmpty)
               const Text('Aucune donnee.')
             else
-              DataTable(
-                columns: const [
-                  DataColumn(label: Text('Compte')),
-                  DataColumn(label: Text('Montant')),
-                ],
-                rows: donnees
-                    .map(
-                      (d) => DataRow(
-                        cells: [
-                          DataCell(Text('${d.numero} - ${d.intitule}')),
-                          DataCell(Text(currencyFormatter.format(d.montant))),
-                        ],
-                      ),
-                    )
-                    .toList(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 560) {
+                    return Column(
+                      children: donnees
+                          .map((d) => _CompteMontantTile(donnee: d))
+                          .toList(),
+                    );
+                  }
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text('Compte')),
+                        DataColumn(label: Text('Montant')),
+                      ],
+                      rows: donnees
+                          .map(
+                            (d) => DataRow(
+                              cells: [
+                                DataCell(Text('${d.numero} - ${d.intitule}')),
+                                DataCell(
+                                  Text(currencyFormatter.format(d.montant)),
+                                ),
+                              ],
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  );
+                },
               ),
           ],
         ),
@@ -838,17 +834,18 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
     Map<String, double> montantsParCompte,
     Map<String, CompteComptable> comptesParId,
   ) {
-    final list = montantsParCompte.entries
-        .map(
-          (e) => _CompteMontant(
-            id: e.key,
-            numero: comptesParId[e.key]?.numero ?? e.key,
-            intitule: comptesParId[e.key]?.intitule ?? '',
-            montant: e.value,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.montant.compareTo(a.montant));
+    final list =
+        montantsParCompte.entries
+            .map(
+              (e) => _CompteMontant(
+                id: e.key,
+                numero: comptesParId[e.key]?.numero ?? e.key,
+                intitule: comptesParId[e.key]?.intitule ?? '',
+                montant: e.value,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.montant.compareTo(a.montant));
     return list.take(5).toList();
   }
 
@@ -985,105 +982,110 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen> {
         : null;
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Ecriture du ${dateFormatter.format(ecriture.date)}'),
-        content: SizedBox(
-          width: 680,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Journal : ${journal != null ? '${journal.code} - ${journal.intitule}' : ecriture.idJournal}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                if (ecriture.referencePiece != null &&
-                    ecriture.referencePiece!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('Reference : ${ecriture.referencePiece}'),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text('Libelle : ${ecriture.libelle}'),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    'Assemblee : ${_assembleeLabel(ecriture.idAssembleeLocale, assembleeById)}',
-                  ),
-                ),
-                if (centrePrincipal != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      'Centre principal : ${centrePrincipal.code} - ${centrePrincipal.nom}',
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                Text(
-                  'Lignes',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Compte')),
-                      DataColumn(label: Text('Libelle')),
-                      DataColumn(label: Text('Debit')),
-                      DataColumn(label: Text('Credit')),
-                      DataColumn(label: Text('Centre')),
-                      DataColumn(label: Text('Tiers')),
-                      DataColumn(label: Text('Mode')),
-                    ],
-                    rows: ecriture.lignes
-                        .map(
-                          (l) => DataRow(
-                            cells: [
-                              DataCell(Text(_compteLabel(l.idCompteComptable, compteById))),
-                              DataCell(
-                                SizedBox(
-                                  width: 200,
-                                  child: Text(
-                                    l.libelle ?? '--',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              DataCell(
-                                Text(currencyFormatter
-                                    .format((l.debit ?? 0).toDouble())),
-                              ),
-                              DataCell(
-                                Text(currencyFormatter
-                                    .format((l.credit ?? 0).toDouble())),
-                              ),
-                              DataCell(Text(_centreLabel(l.idCentreAnalytique, centreById))),
-                              DataCell(Text(_tiersLabel(l.idTiers, tiersById))),
-                              DataCell(Text(_modePaiementLabel(l.modePaiement))),
-                            ],
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
+      builder: (context) => EabDialog(
+        title: 'Ecriture du ${dateFormatter.format(ecriture.date)}',
+        width: 720,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Journal : ${journal != null ? '${journal.code} - ${journal.intitule}' : ecriture.idJournal}',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
+            if (ecriture.referencePiece != null &&
+                ecriture.referencePiece!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text('Reference : ${ecriture.referencePiece}'),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text('Libelle : ${ecriture.libelle}'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                'Assemblee : ${_assembleeLabel(ecriture.idAssembleeLocale, assembleeById)}',
+              ),
+            ),
+            if (centrePrincipal != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  'Centre principal : ${centrePrincipal.code} - ${centrePrincipal.nom}',
+                ),
+              ),
+            const SizedBox(height: 12),
+            Text('Lignes', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('Compte')),
+                  DataColumn(label: Text('Libelle')),
+                  DataColumn(label: Text('Debit')),
+                  DataColumn(label: Text('Credit')),
+                  DataColumn(label: Text('Centre')),
+                  DataColumn(label: Text('Tiers')),
+                  DataColumn(label: Text('Mode')),
+                ],
+                rows: ecriture.lignes
+                    .map(
+                      (l) => DataRow(
+                        cells: [
+                          DataCell(
+                            Text(_compteLabel(l.idCompteComptable, compteById)),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 200,
+                              child: Text(
+                                l.libelle ?? '--',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              currencyFormatter.format(
+                                (l.debit ?? 0).toDouble(),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              currencyFormatter.format(
+                                (l.credit ?? 0).toDouble(),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              _centreLabel(l.idCentreAnalytique, centreById),
+                            ),
+                          ),
+                          DataCell(Text(_tiersLabel(l.idTiers, tiersById))),
+                          DataCell(Text(_modePaiementLabel(l.modePaiement))),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ],
         ),
         actions: [
-          TextButton(
+          EabButton(
+            label: 'Fermer',
+            variant: EabButtonVariant.ghost,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
           ),
         ],
       ),
     );
   }
-
 }
 
 class SyntheseResultat {
@@ -1116,6 +1118,225 @@ class _CompteMontant {
   final String numero;
   final String intitule;
   final double montant;
+}
+
+class _CompteMontantTile extends StatelessWidget {
+  const _CompteMontantTile({required this.donnee});
+
+  final _CompteMontant donnee;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(donnee.numero, style: AppTextStyles.caption),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  donnee.intitule,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            currencyFormatter.format(donnee.montant),
+            style: AppTextStyles.subtitle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EcritureCard extends StatelessWidget {
+  const _EcritureCard({
+    required this.ecriture,
+    required this.journalLabel,
+    required this.totalDebit,
+    required this.totalCredit,
+    required this.canManage,
+    required this.onView,
+    this.onEdit,
+    this.onDelete,
+  });
+
+  final EcritureComptable ecriture;
+  final String journalLabel;
+  final double totalDebit;
+  final double totalCredit;
+  final bool canManage;
+  final VoidCallback onView;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final solde = totalDebit - totalCredit;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  ecriture.libelle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.subtitle,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Voir le detail',
+                onPressed: onView,
+                icon: const Icon(Icons.visibility_outlined),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '${dateFormatter.format(ecriture.date)} | $journalLabel',
+            style: AppTextStyles.caption,
+          ),
+          if (ecriture.referencePiece?.isNotEmpty ?? false) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Ref. ${ecriture.referencePiece}',
+              style: AppTextStyles.bodySmall,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          _AmountLine(label: 'Debit', value: totalDebit),
+          _AmountLine(label: 'Credit', value: totalCredit),
+          _AmountLine(label: 'Solde', value: solde, strong: true),
+          if (canManage) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Modifier',
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Supprimer',
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.error,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AmountLine extends StatelessWidget {
+  const _AmountLine({
+    required this.label,
+    required this.value,
+    this.strong = false,
+  });
+
+  final String label;
+  final double value;
+  final bool strong;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: AppTextStyles.caption)),
+          Text(
+            currencyFormatter.format(value),
+            style: AppTextStyles.body.copyWith(
+              fontWeight: strong ? FontWeight.w700 : FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableFrame extends StatelessWidget {
+  const _TableFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadius.lgAll,
+        child: Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyAccountingState extends StatelessWidget {
+  const _EmptyAccountingState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.lgAll,
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySmall,
+        ),
+      ),
+    );
+  }
 }
 
 class _JournalDateFilterField extends StatelessWidget {
@@ -1161,8 +1382,10 @@ class _JournalDateFilterField extends StatelessWidget {
                     const Icon(Icons.event),
                   ],
                 ),
-          suffixIconConstraints:
-              const BoxConstraints(minWidth: 72, minHeight: 48),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 72,
+            minHeight: 48,
+          ),
         ),
         child: Text(
           value != null ? dateFormatter.format(value!) : 'Aucune date',

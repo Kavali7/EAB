@@ -1,7 +1,3 @@
-/// Formulaire d'ajout / modification d'un fidèle — v2 avec UI Kit.
-///
-/// Utilise les composants du design system (EabTextField, EabSelectField,
-/// EabDateField, EabDialog, EabButton) pour garantir la cohérence visuelle.
 library;
 
 import 'package:flutter/material.dart';
@@ -9,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:eab/core/constants.dart';
+import 'package:eab/core/theme.dart';
 import 'package:eab/models/famille.dart';
 import 'package:eab/models/member.dart';
 import 'package:eab/providers/members_provider.dart';
@@ -20,7 +17,7 @@ const _roleLabels = {
   RoleFidele.ancien: 'Ancien',
   RoleFidele.diacre: 'Diacre',
   RoleFidele.diaconesse: 'Diaconesse',
-  RoleFidele.evangeliste: 'Évangéliste',
+  RoleFidele.evangeliste: 'Evangeliste',
   RoleFidele.autreOfficier: 'Autre officier',
 };
 
@@ -28,20 +25,19 @@ const _statutFideleLabels = {
   StatutFidele.actif: 'Actif',
   StatutFidele.inactif: 'Inactif',
   StatutFidele.parti: 'Parti',
-  StatutFidele.decede: 'Décédé',
-  StatutFidele.transfere: 'Transféré',
+  StatutFidele.decede: 'Decede',
+  StatutFidele.transfere: 'Transfere',
 };
 
 const _vulnerabiliteLabels = {
   VulnerabiliteFidele.orphelin: 'Orphelin',
   VulnerabiliteFidele.veuf: 'Veuf',
   VulnerabiliteFidele.veuve: 'Veuve',
-  VulnerabiliteFidele.handicape: 'Handicapé',
-  VulnerabiliteFidele.troisiemeAge: '3e âge',
+  VulnerabiliteFidele.handicape: 'Handicape',
+  VulnerabiliteFidele.troisiemeAge: '3e age',
   VulnerabiliteFidele.autre: 'Autre',
 };
 
-/// Ouvre le formulaire d'ajout/modification d'un fidèle.
 Future<void> showMemberFormV2(
   BuildContext context, {
   Member? member,
@@ -55,6 +51,7 @@ Future<void> showMemberFormV2(
 
 class _MemberFormV2 extends ConsumerStatefulWidget {
   const _MemberFormV2({this.member, required this.families});
+
   final Member? member;
   final List<Famille> families;
 
@@ -91,27 +88,27 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
   @override
   void initState() {
     super.initState();
-    final m = widget.member;
-    if (m != null) {
-      _nameCtrl.text = m.fullName;
-      _phoneCtrl.text = m.phone ?? '';
-      _emailCtrl.text = m.email ?? '';
-      _addressCtrl.text = m.address ?? '';
-      _gender = m.gender;
-      _maritalStatus = m.maritalStatus;
-      _statutMatrimonial = m.statutMatrimonial;
-      _birthDate = m.dateNaissance ?? m.birthDate;
-      _dateConversion = m.dateConversion;
-      _dateBapteme = m.dateBapteme ?? m.baptismDate;
-      _dateMainAssociation = m.dateMainAssociation;
-      _dateEntree = m.dateEntree;
-      _dateSortie = m.dateSortie;
-      _dateDeces = m.dateDeces;
-      _role = m.role;
-      _statut = m.statut;
-      _vulnerabilites = {...m.vulnerabilites};
-      _motifSortieCtrl.text = m.motifSortie ?? '';
-      _idFamille = m.idFamille;
+    final member = widget.member;
+    if (member != null) {
+      _nameCtrl.text = member.fullName;
+      _phoneCtrl.text = member.phone ?? '';
+      _emailCtrl.text = member.email ?? '';
+      _addressCtrl.text = member.address ?? '';
+      _gender = member.gender;
+      _maritalStatus = member.maritalStatus;
+      _statutMatrimonial = member.statutMatrimonial;
+      _birthDate = member.dateNaissance ?? member.birthDate;
+      _dateConversion = member.dateConversion;
+      _dateBapteme = member.dateBapteme ?? member.baptismDate;
+      _dateMainAssociation = member.dateMainAssociation;
+      _dateEntree = member.dateEntree;
+      _dateSortie = member.dateSortie;
+      _dateDeces = member.dateDeces;
+      _role = member.role;
+      _statut = member.statut;
+      _vulnerabilites = {...member.vulnerabilites};
+      _motifSortieCtrl.text = member.motifSortie ?? '';
+      _idFamille = member.idFamille;
     }
   }
 
@@ -128,258 +125,301 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
   @override
   Widget build(BuildContext context) {
     return EabDialog(
-      title: _isEditing ? 'Modifier un fidèle' : 'Nouveau fidèle',
-      width: 580,
+      title: _isEditing ? 'Modifier un fidele' : 'Nouveau fidele',
+      width: 780,
       content: Form(
         key: _formKey,
         autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // --- Identité ---
-            EabTextField(
-              label: 'Nom complet',
-              controller: _nameCtrl,
-              prefixIcon: Icons.person,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Nom obligatoire' : null,
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final twoColumns = constraints.maxWidth >= 620;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: EabSelectField<Gender>(
-                    label: 'Genre',
-                    value: _gender,
-                    items: Gender.values
-                        .map((g) => DropdownMenuItem(
-                              value: g,
-                              child: Text(genderLabels[g]!),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _gender = v),
-                    validator: (v) =>
-                        v == null ? 'Genre obligatoire' : null,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.fieldGap),
-                Expanded(
-                  child: EabSelectField<MaritalStatus>(
-                    label: 'Statut marital',
-                    value: _maritalStatus,
-                    items: MaritalStatus.values
-                        .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(maritalStatusLabels[s]!),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _maritalStatus = v),
-                    validator: (v) =>
-                        v == null ? 'Statut marital obligatoire' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            EabSelectField<StatutMatrimonial>(
-              label: 'Statut matrimonial',
-              value: _statutMatrimonial,
-              items: StatutMatrimonial.values
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
-                  .toList(),
-              onChanged: (v) => setState(() => _statutMatrimonial = v),
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-
-            // --- Rôle & statut ---
-            Row(
-              children: [
-                Expanded(
-                  child: EabSelectField<RoleFidele>(
-                    label: 'Rôle dans l\'assemblée',
-                    value: _role,
-                    items: RoleFidele.values
-                        .map((r) => DropdownMenuItem(
-                              value: r,
-                              child: Text(_roleLabels[r]!),
-                            ))
-                        .toList(),
-                    onChanged: (v) =>
-                        setState(() => _role = v ?? RoleFidele.membre),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.fieldGap),
-                Expanded(
-                  child: EabSelectField<StatutFidele>(
-                    label: 'Statut du fidèle',
-                    value: _statut,
-                    items: StatutFidele.values
-                        .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(_statutFideleLabels[s]!),
-                            ))
-                        .toList(),
-                    onChanged: (v) =>
-                        setState(() => _statut = v ?? StatutFidele.actif),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-
-            // --- Dates ---
-            Row(
-              children: [
-                Expanded(
-                  child: EabDateField(
-                    label: 'Date de naissance',
-                    value: _birthDate,
-                    onChanged: (d) => setState(() => _birthDate = d),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.fieldGap),
-                Expanded(
-                  child: EabDateField(
-                    label: 'Date d\'entrée',
-                    value: _dateEntree,
-                    onChanged: (d) => setState(() => _dateEntree = d),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            Row(
-              children: [
-                Expanded(
-                  child: EabDateField(
-                    label: 'Date de conversion',
-                    value: _dateConversion,
-                    onChanged: (d) => setState(() => _dateConversion = d),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.fieldGap),
-                Expanded(
-                  child: EabDateField(
-                    label: 'Date de baptême',
-                    value: _dateBapteme,
-                    onChanged: (d) => setState(() => _dateBapteme = d),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            Row(
-              children: [
-                Expanded(
-                  child: EabDateField(
-                    label: 'Date main d\'association',
-                    value: _dateMainAssociation,
-                    onChanged: (d) =>
-                        setState(() => _dateMainAssociation = d),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.fieldGap),
-                Expanded(
-                  child: EabSelectField<String?>(
-                    label: 'Famille',
-                    value: _idFamille,
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Aucune'),
+                _FormSection(
+                  title: 'Identite',
+                  icon: Icons.badge_outlined,
+                  child: Column(
+                    children: [
+                      EabTextField(
+                        label: 'Nom complet',
+                        controller: _nameCtrl,
+                        prefixIcon: Icons.person_outline,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Nom obligatoire'
+                            : null,
                       ),
-                      ...widget.families.map(
-                        (f) => DropdownMenuItem(
-                          value: f.id,
-                          child: Text(f.nom),
-                        ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      _ResponsiveFields(
+                        twoColumns: twoColumns,
+                        children: [
+                          EabSelectField<Gender>(
+                            label: 'Genre',
+                            value: _gender,
+                            items: Gender.values
+                                .map(
+                                  (gender) => DropdownMenuItem(
+                                    value: gender,
+                                    child: Text(genderLabels[gender]!),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) =>
+                                setState(() => _gender = value),
+                            validator: (value) =>
+                                value == null ? 'Genre obligatoire' : null,
+                          ),
+                          EabSelectField<MaritalStatus>(
+                            label: 'Statut marital',
+                            value: _maritalStatus,
+                            items: MaritalStatus.values
+                                .map(
+                                  (status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(maritalStatusLabels[status]!),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) =>
+                                setState(() => _maritalStatus = value),
+                            validator: (value) => value == null
+                                ? 'Statut marital obligatoire'
+                                : null,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      EabSelectField<StatutMatrimonial>(
+                        label: 'Statut matrimonial',
+                        value: _statutMatrimonial,
+                        items: StatutMatrimonial.values
+                            .map(
+                              (status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _statutMatrimonial = value),
                       ),
                     ],
-                    onChanged: (v) => setState(() => _idFamille = v),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _FormSection(
+                  title: 'Role et rattachement',
+                  icon: Icons.account_tree_outlined,
+                  child: Column(
+                    children: [
+                      _ResponsiveFields(
+                        twoColumns: twoColumns,
+                        children: [
+                          EabSelectField<RoleFidele>(
+                            label: 'Role dans l\'assemblee',
+                            value: _role,
+                            items: RoleFidele.values
+                                .map(
+                                  (role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(_roleLabels[role]!),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) => setState(
+                              () => _role = value ?? RoleFidele.membre,
+                            ),
+                          ),
+                          EabSelectField<StatutFidele>(
+                            label: 'Statut du fidele',
+                            value: _statut,
+                            items: StatutFidele.values
+                                .map(
+                                  (status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(_statutFideleLabels[status]!),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) => setState(
+                              () => _statut = value ?? StatutFidele.actif,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      EabSelectField<String?>(
+                        label: 'Famille',
+                        value: _idFamille,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Aucune'),
+                          ),
+                          ...widget.families.map(
+                            (family) => DropdownMenuItem(
+                              value: family.id,
+                              child: Text(family.nom),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => _idFamille = value),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _FormSection(
+                  title: 'Dates de parcours',
+                  icon: Icons.event_available_outlined,
+                  child: Column(
+                    children: [
+                      _ResponsiveFields(
+                        twoColumns: twoColumns,
+                        children: [
+                          EabDateField(
+                            label: 'Date de naissance',
+                            value: _birthDate,
+                            onChanged: (date) =>
+                                setState(() => _birthDate = date),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          ),
+                          EabDateField(
+                            label: 'Date d\'entree',
+                            value: _dateEntree,
+                            onChanged: (date) =>
+                                setState(() => _dateEntree = date),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      _ResponsiveFields(
+                        twoColumns: twoColumns,
+                        children: [
+                          EabDateField(
+                            label: 'Date de conversion',
+                            value: _dateConversion,
+                            onChanged: (date) =>
+                                setState(() => _dateConversion = date),
+                          ),
+                          EabDateField(
+                            label: 'Date de bapteme',
+                            value: _dateBapteme,
+                            onChanged: (date) =>
+                                setState(() => _dateBapteme = date),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      EabDateField(
+                        label: 'Date main d\'association',
+                        value: _dateMainAssociation,
+                        onChanged: (date) =>
+                            setState(() => _dateMainAssociation = date),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_statut == StatutFidele.parti ||
+                    _statut == StatutFidele.transfere ||
+                    _statut == StatutFidele.decede) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _FormSection(
+                    title: 'Sortie du registre',
+                    icon: Icons.logout_outlined,
+                    child: Column(
+                      children: [
+                        if (_statut == StatutFidele.parti ||
+                            _statut == StatutFidele.transfere) ...[
+                          EabDateField(
+                            label: 'Date de sortie',
+                            value: _dateSortie,
+                            onChanged: (date) =>
+                                setState(() => _dateSortie = date),
+                          ),
+                          const SizedBox(height: AppSpacing.fieldGap),
+                          EabTextField(
+                            label: 'Motif de sortie',
+                            controller: _motifSortieCtrl,
+                          ),
+                        ],
+                        if (_statut == StatutFidele.decede)
+                          EabDateField(
+                            label: 'Date de deces',
+                            value: _dateDeces,
+                            onChanged: (date) =>
+                                setState(() => _dateDeces = date),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                _FormSection(
+                  title: 'Vulnerabilites',
+                  icon: Icons.volunteer_activism_outlined,
+                  child: Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: VulnerabiliteFidele.values
+                        .map(
+                          (vulnerability) => FilterChip(
+                            label: Text(
+                              _vulnerabiliteLabels[vulnerability] ??
+                                  vulnerability.name,
+                            ),
+                            selected: _vulnerabilites.contains(vulnerability),
+                            onSelected: (selected) {
+                              setState(() {
+                                selected
+                                    ? _vulnerabilites.add(vulnerability)
+                                    : _vulnerabilites.remove(vulnerability);
+                              });
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _FormSection(
+                  title: 'Contact',
+                  icon: Icons.contact_phone_outlined,
+                  child: Column(
+                    children: [
+                      _ResponsiveFields(
+                        twoColumns: twoColumns,
+                        children: [
+                          EabTextField(
+                            label: 'Telephone',
+                            controller: _phoneCtrl,
+                            prefixIcon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          EabTextField(
+                            label: 'Email',
+                            controller: _emailCtrl,
+                            prefixIcon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      EabTextField(
+                        label: 'Adresse',
+                        controller: _addressCtrl,
+                        prefixIcon: Icons.location_on_outlined,
+                        maxLines: 2,
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-
-            // --- Champs conditionnels ---
-            if (_statut == StatutFidele.parti ||
-                _statut == StatutFidele.transfere) ...[
-              EabDateField(
-                label: 'Date de sortie',
-                value: _dateSortie,
-                onChanged: (d) => setState(() => _dateSortie = d),
-              ),
-              const SizedBox(height: AppSpacing.fieldGap),
-              EabTextField(
-                label: 'Motif de sortie',
-                controller: _motifSortieCtrl,
-              ),
-              const SizedBox(height: AppSpacing.fieldGap),
-            ],
-            if (_statut == StatutFidele.decede) ...[
-              EabDateField(
-                label: 'Date de décès',
-                value: _dateDeces,
-                onChanged: (d) => setState(() => _dateDeces = d),
-              ),
-              const SizedBox(height: AppSpacing.fieldGap),
-            ],
-
-            // --- Vulnérabilités ---
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Vulnérabilités',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: VulnerabiliteFidele.values
-                  .map(
-                    (v) => FilterChip(
-                      label: Text(_vulnerabiliteLabels[v] ?? v.name),
-                      selected: _vulnerabilites.contains(v),
-                      onSelected: (sel) {
-                        setState(() {
-                          sel
-                              ? _vulnerabilites.add(v)
-                              : _vulnerabilites.remove(v);
-                        });
-                      },
-                    ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-
-            // --- Contact ---
-            EabTextField(
-              label: 'Téléphone',
-              controller: _phoneCtrl,
-              prefixIcon: Icons.phone,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            EabTextField(
-              label: 'Email',
-              controller: _emailCtrl,
-              prefixIcon: Icons.email,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: AppSpacing.fieldGap),
-            EabTextField(
-              label: 'Adresse',
-              controller: _addressCtrl,
-              prefixIcon: Icons.location_on,
-              maxLines: 2,
-            ),
-          ],
+            );
+          },
         ),
       ),
       actions: [
@@ -389,7 +429,7 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
           onPressed: () => Navigator.pop(context),
         ),
         EabButton(
-          label: _isEditing ? 'Mettre à jour' : 'Enregistrer',
+          label: _isEditing ? 'Mettre a jour' : 'Enregistrer',
           variant: EabButtonVariant.primary,
           isLoading: _isSaving,
           onPressed: _submit,
@@ -398,38 +438,32 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Validation et soumission
-  // ---------------------------------------------------------------------------
-
   bool _validateDates() {
     if (_birthDate == null) {
       _snack('Veuillez renseigner la date de naissance.');
       return false;
     }
     if (_dateEntree == null) {
-      _snack('Veuillez renseigner la date d\'entrée.');
+      _snack('Veuillez renseigner la date d\'entree.');
       return false;
     }
     if (_dateBapteme != null) {
       if (_birthDate != null && _dateBapteme!.isBefore(_birthDate!)) {
-        _snack('La date de baptême doit être après la naissance.');
+        _snack('La date de bapteme doit etre apres la naissance.');
         return false;
       }
-      if (_dateConversion != null &&
-          _dateBapteme!.isBefore(_dateConversion!)) {
-        _snack('La date de baptême doit être après la conversion.');
+      if (_dateConversion != null && _dateBapteme!.isBefore(_dateConversion!)) {
+        _snack('La date de bapteme doit etre apres la conversion.');
         return false;
       }
     }
-    if ((_statut == StatutFidele.parti ||
-            _statut == StatutFidele.transfere) &&
+    if ((_statut == StatutFidele.parti || _statut == StatutFidele.transfere) &&
         _dateSortie == null) {
       _snack('Veuillez renseigner la date de sortie.');
       return false;
     }
     if (_statut == StatutFidele.decede && _dateDeces == null) {
-      _snack('Veuillez renseigner la date de décès.');
+      _snack('Veuillez renseigner la date de deces.');
       return false;
     }
     return true;
@@ -468,8 +502,9 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
       baptismDate: _dateBapteme,
       phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
       email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-      address:
-          _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+      address: _addressCtrl.text.trim().isEmpty
+          ? null
+          : _addressCtrl.text.trim(),
       dateNaissance: _birthDate,
       statutMatrimonial: _statutMatrimonial,
       dateConversion: _dateConversion,
@@ -497,7 +532,7 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fidèle enregistré avec succès.')),
+          const SnackBar(content: Text('Fidele enregistre avec succes.')),
         );
         Navigator.pop(context);
       }
@@ -507,8 +542,78 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _FormSection extends StatelessWidget {
+  const _FormSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 18),
+              const SizedBox(width: 8),
+              Text(title, style: AppTextStyles.subtitle),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ResponsiveFields extends StatelessWidget {
+  const _ResponsiveFields({required this.twoColumns, required this.children});
+
+  final bool twoColumns;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!twoColumns) {
+      return Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1)
+              const SizedBox(height: AppSpacing.fieldGap),
+          ],
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          Expanded(child: children[i]),
+          if (i < children.length - 1)
+            const SizedBox(width: AppSpacing.fieldGap),
+        ],
+      ],
     );
   }
 }

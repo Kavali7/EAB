@@ -23,21 +23,21 @@ class SearchResult {
   });
 
   factory SearchResult.fromJson(Map<String, dynamic> j) => SearchResult(
-        category: j['category'] ?? '',
-        recordId: j['record_id'] ?? '',
-        title: j['title'] ?? '',
-        subtitle: j['subtitle'],
-        route: j['route'] ?? '',
-        relevance: (j['relevance'] as num?)?.toDouble() ?? 0,
-      );
+    category: j['category'] ?? '',
+    recordId: j['record_id'] ?? '',
+    title: j['title'] ?? '',
+    subtitle: j['subtitle'],
+    route: j['route'] ?? '',
+    relevance: (j['relevance'] as num?)?.toDouble() ?? 0,
+  );
 
   /// Icône par catégorie.
   String get categoryLabel => switch (category) {
-        'membre' => 'Membre',
-        'programme' => 'Programme',
-        'ecriture' => 'Écriture',
-        _ => category,
-      };
+    'membre' => 'Membre',
+    'programme' => 'Programme',
+    'ecriture' => 'Écriture',
+    _ => category,
+  };
 }
 
 /// Repository de recherche globale.
@@ -47,14 +47,16 @@ class SearchRepository {
 
   SupabaseClient get _sb => _dataService.client;
 
-  Future<List<SearchResult>> search(String orgId, String query,
-      {int limit = 20}) async {
+  Future<List<SearchResult>> search(
+    String orgId,
+    String query, {
+    int limit = 20,
+  }) async {
     if (query.trim().length < 2) return [];
-    final data = await _sb.rpc('global_search', params: {
-      'p_org_id': orgId,
-      'p_query': query.trim(),
-      'p_limit': limit,
-    });
+    final data = await _sb.rpc(
+      'global_search',
+      params: {'p_org_id': orgId, 'p_query': query.trim(), 'p_limit': limit},
+    );
     return (data as List).map((e) => SearchResult.fromJson(e)).toList();
   }
 }

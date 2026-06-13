@@ -42,8 +42,9 @@ class FiscalFieldWidget extends StatelessWidget {
                   field.label,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight:
-                        field.isBold ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: field.isBold
+                        ? FontWeight.bold
+                        : FontWeight.w500,
                     color: field.isHighlighted
                         ? AppColors.primary
                         : AppColors.textPrimary,
@@ -54,14 +55,18 @@ class FiscalFieldWidget extends StatelessWidget {
               if (field.required)
                 const Padding(
                   padding: EdgeInsets.only(left: 4),
-                  child: Text('*',
-                      style: TextStyle(color: Colors.red, fontSize: 14)),
+                  child: Text(
+                    '*',
+                    style: TextStyle(color: Colors.red, fontSize: 14),
+                  ),
                 ),
               if (field.isComputed) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.info.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
@@ -69,9 +74,10 @@ class FiscalFieldWidget extends StatelessWidget {
                   child: const Text(
                     'Auto',
                     style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.info),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.info,
+                    ),
                   ),
                 ),
               ],
@@ -108,8 +114,7 @@ class FiscalFieldWidget extends StatelessWidget {
 
   Widget _buildMoneyField(bool isLocked) {
     final formatter = NumberFormat('#,##0', 'fr_FR');
-    final displayValue =
-        value != null ? formatter.format(_toNum(value)) : '';
+    final displayValue = value != null ? formatter.format(_toNum(value)) : '';
 
     if (isLocked) {
       return Container(
@@ -164,9 +169,7 @@ class FiscalFieldWidget extends StatelessWidget {
 
     return TextFormField(
       initialValue: _toStr(value),
-      decoration: InputDecoration(
-        hintText: field.placeholder,
-      ),
+      decoration: InputDecoration(hintText: field.placeholder),
       onChanged: (v) => onChanged?.call(v),
     );
   }
@@ -237,7 +240,7 @@ class FiscalFieldWidget extends StatelessWidget {
     }
 
     return DropdownButtonFormField<String>(
-      value: options.contains(_toStr(value)) ? _toStr(value) : null,
+      initialValue: options.contains(_toStr(value)) ? _toStr(value) : null,
       decoration: InputDecoration(hintText: field.placeholder),
       items: options
           .map((o) => DropdownMenuItem(value: o, child: Text(o)))

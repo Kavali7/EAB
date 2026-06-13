@@ -34,8 +34,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dossierAsync =
-        ref.watch(currentFiscalDossierProvider(widget.dossierId));
+    final dossierAsync = ref.watch(
+      currentFiscalDossierProvider(widget.dossierId),
+    );
 
     return dossierAsync.when(
       data: (dossier) {
@@ -43,6 +44,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           return AppShell(
             title: 'Dossier introuvable',
             currentRoute: '/fiscal-dossiers',
+            showBackButton: true,
+            backRoute: '/fiscal-dossiers',
             body: const Center(child: Text('Dossier fiscal introuvable.')),
           );
         }
@@ -51,11 +54,15 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       loading: () => AppShell(
         title: 'Chargement...',
         currentRoute: '/fiscal-dossiers',
+        showBackButton: true,
+        backRoute: '/fiscal-dossiers',
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => AppShell(
         title: 'Erreur',
         currentRoute: '/fiscal-dossiers',
+        showBackButton: true,
+        backRoute: '/fiscal-dossiers',
         body: ErrorState(
           message: '$e',
           onRetry: () =>
@@ -66,8 +73,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   }
 
   Widget _buildWizard(FiscalDossier dossier) {
-    final pagesAsync =
-        ref.watch(fiscalTemplatePagesProvider(dossier.templateId));
+    final pagesAsync = ref.watch(
+      fiscalTemplatePagesProvider(dossier.templateId),
+    );
     final valuesAsync = ref.watch(fiscalValuesProvider(dossier.id));
 
     return pagesAsync.when(
@@ -78,12 +86,15 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
             _localValues.putIfAbsent(entry.key, () => entry.value.value);
           }
 
-          final isLocked = dossier.status == FiscalDossierStatus.locked ||
+          final isLocked =
+              dossier.status == FiscalDossierStatus.locked ||
               dossier.status == FiscalDossierStatus.submitted;
 
           return AppShell(
             title: dossier.label ?? 'Dossier fiscal',
             currentRoute: '/fiscal-dossiers',
+            showBackButton: true,
+            backRoute: '/fiscal-dossiers',
             actions: _buildActions(dossier, isLocked),
             body: LayoutBuilder(
               builder: (ctx, constraints) {
@@ -100,22 +111,30 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         loading: () => AppShell(
           title: dossier.label ?? 'Dossier fiscal',
           currentRoute: '/fiscal-dossiers',
+          showBackButton: true,
+          backRoute: '/fiscal-dossiers',
           body: const Center(child: CircularProgressIndicator()),
         ),
         error: (e, _) => AppShell(
           title: 'Erreur',
           currentRoute: '/fiscal-dossiers',
+          showBackButton: true,
+          backRoute: '/fiscal-dossiers',
           body: ErrorState(message: '$e'),
         ),
       ),
       loading: () => AppShell(
         title: 'Chargement...',
         currentRoute: '/fiscal-dossiers',
+        showBackButton: true,
+        backRoute: '/fiscal-dossiers',
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => AppShell(
         title: 'Erreur',
         currentRoute: '/fiscal-dossiers',
+        showBackButton: true,
+        backRoute: '/fiscal-dossiers',
         body: ErrorState(message: '$e'),
       ),
     );
@@ -133,7 +152,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           onPressed: _isLoading ? null : () => _prefill(dossier),
           icon: const Icon(Icons.auto_fix_high, size: 18),
           label: const Text('Pré-remplir'),
-          style: TextButton.styleFrom(foregroundColor: Colors.white),
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
         ),
         const SizedBox(width: 4),
         // Valider
@@ -141,7 +160,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           onPressed: _isLoading ? null : () => _validate(dossier),
           icon: const Icon(Icons.check_circle_outline, size: 18),
           label: const Text('Valider'),
-          style: TextButton.styleFrom(foregroundColor: Colors.white),
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
         ),
         const SizedBox(width: 4),
       ],
@@ -150,7 +169,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         onPressed: _isLoading ? null : () => _exportPdf(dossier),
         icon: const Icon(Icons.picture_as_pdf, size: 18),
         label: const Text('PDF'),
-        style: TextButton.styleFrom(foregroundColor: Colors.white),
+        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
       ),
       if (!isLocked) ...[
         const SizedBox(width: 4),
@@ -169,7 +188,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: Colors.white),
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
           ),
         ),
     ];
@@ -211,8 +232,10 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
               itemBuilder: (ctx, i) {
                 final page = pages[i];
                 final isSelected = i == _selectedPage;
-                final hasError = _lastValidation?.errors
-                        .any((e) => e.pageCode == page.code) ??
+                final hasError =
+                    _lastValidation?.errors.any(
+                      (e) => e.pageCode == page.code,
+                    ) ??
                     false;
                 return ListTile(
                   dense: true,
@@ -223,8 +246,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                     page.title,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -262,6 +286,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     }
 
     final currentPage = pages[_selectedPage.clamp(0, pages.length - 1)];
+    final canGoBack = _selectedPage > 0;
+    final canGoNext = _selectedPage < pages.length - 1;
 
     return Column(
       children: [
@@ -274,24 +300,27 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
               Text(
                 'Page ${_selectedPage + 1} / ${pages.length}',
                 style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   currentPage.title,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
         ),
+        _buildMobileCommandBar(dossier, isLocked),
         // Page content
-        Expanded(
-          child: _renderPage(currentPage, dossier, isLocked),
-        ),
+        Expanded(child: _renderPage(currentPage, dossier, isLocked)),
         // Sticky navigation buttons
         Container(
           padding: const EdgeInsets.all(12),
@@ -301,26 +330,37 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           ),
           child: Row(
             children: [
-              if (_selectedPage > 0)
+              if (canGoBack)
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () =>
-                        setState(() => _selectedPage--),
+                    onPressed: () => setState(() => _selectedPage--),
                     icon: const Icon(Icons.arrow_back, size: 16),
                     label: const Text('Précédent'),
                   ),
                 ),
-              if (_selectedPage > 0 && _selectedPage < pages.length - 1)
+              if (canGoBack && (canGoNext || !isLocked))
                 const SizedBox(width: 12),
-              if (_selectedPage < pages.length - 1)
+              if (canGoNext)
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      await _saveCurrentPage(dossier);
+                      if (!isLocked) {
+                        await _saveCurrentPage(dossier);
+                      }
                       setState(() => _selectedPage++);
                     },
                     icon: const Icon(Icons.arrow_forward, size: 16),
                     label: const Text('Suivant'),
+                  ),
+                ),
+              if (!canGoNext && !isLocked)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _saveCurrentPage(dossier),
+                    icon: const Icon(Icons.save_outlined, size: 16),
+                    label: const Text('Enregistrer'),
                   ),
                 ),
             ],
@@ -333,6 +373,59 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   // ═════════════════════════════════════════════════════════════════════════
   // Page renderer
   // ═════════════════════════════════════════════════════════════════════════
+
+  Widget _buildMobileCommandBar(FiscalDossier dossier, bool isLocked) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            if (!isLocked) ...[
+              _CommandButton(
+                label: 'Pre-remplir',
+                icon: Icons.auto_fix_high,
+                onPressed: _isLoading ? null : () => _prefill(dossier),
+              ),
+              const SizedBox(width: 8),
+              _CommandButton(
+                label: 'Valider',
+                icon: Icons.check_circle_outline,
+                onPressed: _isLoading ? null : () => _validate(dossier),
+              ),
+              const SizedBox(width: 8),
+            ],
+            _CommandButton(
+              label: 'PDF',
+              icon: Icons.picture_as_pdf_outlined,
+              onPressed: _isLoading ? null : () => _exportPdf(dossier),
+            ),
+            if (!isLocked) ...[
+              const SizedBox(width: 8),
+              _CommandButton(
+                label: 'Verrouiller',
+                icon: Icons.lock_outline,
+                onPressed: _isLoading ? null : () => _lock(dossier),
+              ),
+            ],
+            if (_isLoading) ...[
+              const SizedBox(width: 12),
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _renderPage(
     FiscalTemplatePage page,
@@ -359,11 +452,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
               Text(
                 page.title,
                 style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (_lastValidation != null &&
-                  _lastValidation!.errors
-                      .any((e) => e.pageCode == page.code)) ...[
+                  _lastValidation!.errors.any(
+                    (e) => e.pageCode == page.code,
+                  )) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -371,29 +467,37 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                     color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.3)),
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: _lastValidation!.errors
                         .where((e) => e.pageCode == page.code)
-                        .map((e) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.warning_amber,
-                                      size: 14, color: Colors.red),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      e.message,
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.red),
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning_amber,
+                                  size: 14,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    e.message,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ))
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -419,18 +523,20 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                       ),
                       const SizedBox(height: 4),
                     ],
-                    ...sectionFields.map((field) => FiscalFieldWidget(
-                          field: field,
-                          value: _localValues[field.fieldKey],
-                          readOnly: isLocked,
-                          onChanged: isLocked
-                              ? null
-                              : (v) {
-                                  setState(() {
-                                    _localValues[field.fieldKey] = v;
-                                  });
-                                },
-                        )),
+                    ...sectionFields.map(
+                      (field) => FiscalFieldWidget(
+                        field: field,
+                        value: _localValues[field.fieldKey],
+                        readOnly: isLocked,
+                        onChanged: isLocked
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _localValues[field.fieldKey] = v;
+                                });
+                              },
+                      ),
+                    ),
                   ],
                 );
               }),
@@ -440,8 +546,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _isLoading ? null : () => _saveCurrentPage(dossier),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _saveCurrentPage(dossier),
                     icon: const Icon(Icons.save_outlined, size: 18),
                     label: const Text('Enregistrer'),
                   ),
@@ -473,8 +580,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Enregistré ✓'),
-              backgroundColor: Colors.green),
+            content: Text('Enregistré ✓'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
@@ -501,7 +609,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Pré-remplissage terminé : ${result['filled']} champs remplis.'),
+              'Pré-remplissage terminé : ${result['filled']} champs remplis.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -540,7 +649,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '${result.errorCount} erreur(s) de validation détectée(s).'),
+                '${result.errorCount} erreur(s) de validation détectée(s).',
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -561,12 +671,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     final profile = ref.read(profilUtilisateurCourantProvider);
     final role = profile?.role;
 
-    if (role != RoleUtilisateur.adminNational && role != RoleUtilisateur.responsableRegion) {
+    if (role != RoleUtilisateur.adminNational &&
+        role != RoleUtilisateur.responsableRegion) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Seuls les administrateurs et responsables de région peuvent verrouiller.'),
+              'Seuls les administrateurs et responsables de région peuvent verrouiller.',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -574,23 +686,11 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Verrouiller le dossier ?'),
-        content: const Text(
-            'Le dossier ne pourra plus être modifié après verrouillage.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verrouiller'),
-          ),
-        ],
-      ),
+    final confirmed = await EabDialog.confirm(
+      context,
+      title: 'Verrouiller le dossier ?',
+      message: 'Le dossier ne pourra plus etre modifie apres verrouillage.',
+      confirmLabel: 'Verrouiller',
     );
 
     if (confirmed != true) return;
@@ -613,8 +713,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text(result['message'] ?? 'Erreur de verrouillage.'),
+              content: Text(result['message'] ?? 'Erreur de verrouillage.'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -668,7 +767,10 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur PDF : $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erreur PDF : $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -698,5 +800,31 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       default:
         return const Icon(Icons.description_outlined, size: 18);
     }
+  }
+}
+
+class _CommandButton extends StatelessWidget {
+  const _CommandButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 17),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
   }
 }

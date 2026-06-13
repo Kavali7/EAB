@@ -3,6 +3,7 @@
 /// Version C1 : Google Fonts (Inter), tokens finalisés,
 /// micro-animations, accessibilité (focus visible, contrastes).
 library;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -12,20 +13,24 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // Principales
-  static const Color primary = Color(0xFF0B2E4B);
-  static const Color primaryLight = Color(0xFF1A4A6E);
-  static const Color primaryDark = Color(0xFF061E33);
-  static const Color secondary = Color(0xFFF2C94C);
-  static const Color secondaryLight = Color(0xFFF5D778);
-  static const Color accent = Color(0xFF3B82F6);
+  static const Color primary = Color(0xFF0D3B4C);
+  static const Color primaryLight = Color(0xFF176174);
+  static const Color primaryDark = Color(0xFF082A36);
+  static const Color secondary = Color(0xFFD89B27);
+  static const Color secondaryLight = Color(0xFFFFE8B6);
+  static const Color accent = Color(0xFF2563EB);
+  static const Color teal = Color(0xFF0F766E);
+  static const Color indigo = Color(0xFF4F46E5);
 
   // Neutres
-  static const Color background = Color(0xFFF5F7FA);
+  static const Color background = Color(0xFFF4F6F8);
   static const Color surface = Colors.white;
   static const Color surfaceElevated = Color(0xFFFAFBFC);
-  static const Color textPrimary = Color(0xFF1F2933);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textTertiary = Color(0xFF9CA3AF);
+  static const Color sidebar = Color(0xFF0B2633);
+  static const Color sidebarMuted = Color(0xFF9FB5C0);
+  static const Color textPrimary = Color(0xFF14212A);
+  static const Color textSecondary = Color(0xFF667085);
+  static const Color textTertiary = Color(0xFF98A2B3);
 
   // États
   static const Color success = Color(0xFF16A34A);
@@ -38,8 +43,8 @@ class AppColors {
   static const Color infoLight = Color(0xFFDBEAFE);
 
   // Séparateurs & bordures
-  static const Color divider = Color(0xFFE5E7EB);
-  static const Color border = Color(0xFFD1D5DB);
+  static const Color divider = Color(0xFFE6EAF0);
+  static const Color border = Color(0xFFD7DEE8);
   static const Color borderFocus = Color(0xFF3B82F6);
 
   // Overlay
@@ -59,12 +64,14 @@ class AppRadius {
   static const double md = 8;
   static const double lg = 12;
   static const double xl = 16;
+  static const double xxl = 20;
   static const double full = 999;
 
   static BorderRadius get smAll => BorderRadius.circular(sm);
   static BorderRadius get mdAll => BorderRadius.circular(md);
   static BorderRadius get lgAll => BorderRadius.circular(lg);
   static BorderRadius get xlAll => BorderRadius.circular(xl);
+  static BorderRadius get xxlAll => BorderRadius.circular(xxl);
 }
 
 class AppElevation {
@@ -74,25 +81,25 @@ class AppElevation {
   static const double high = 6;
 
   static List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.02),
-          blurRadius: 4,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.02),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
 
   static List<BoxShadow> get elevatedShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
 }
 
 class AppAnimation {
@@ -122,9 +129,9 @@ class AppAccessibility {
 
   /// Décoration pour les éléments focusés
   static BoxDecoration get focusDecoration => BoxDecoration(
-        border: Border.all(color: focusColor, width: focusWidth),
-        borderRadius: AppRadius.mdAll,
-      );
+    border: Border.all(color: focusColor, width: focusWidth),
+    borderRadius: AppRadius.mdAll,
+  );
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -135,79 +142,79 @@ class AppTextStyles {
   static TextStyle get _base => GoogleFonts.inter();
 
   static TextStyle get heading1 => _base.copyWith(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        height: 1.2,
-        letterSpacing: -0.5,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
+    letterSpacing: 0,
+    color: AppColors.textPrimary,
+  );
 
   static TextStyle get heading2 => _base.copyWith(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
-        letterSpacing: -0.3,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
+    letterSpacing: 0,
+    color: AppColors.textPrimary,
+  );
 
   static TextStyle get heading3 => _base.copyWith(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
+    color: AppColors.textPrimary,
+  );
 
   // Legacy compat
   static TextStyle get title => heading3;
   static TextStyle get sectionTitle => heading3.copyWith(fontSize: 16);
 
   static TextStyle get subtitle => _base.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
 
   static TextStyle get body => _base.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.5,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+    color: AppColors.textPrimary,
+  );
 
   static TextStyle get bodySmall => _base.copyWith(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: AppColors.textSecondary,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+  );
 
   // Legacy compat
   static TextStyle get secondary => bodySmall;
 
   static TextStyle get caption => _base.copyWith(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.3,
-        color: AppColors.textTertiary,
-      );
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0,
+    color: AppColors.textTertiary,
+  );
 
   static TextStyle get label => _base.copyWith(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.2,
-        color: AppColors.textSecondary,
-      );
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0,
+    color: AppColors.textSecondary,
+  );
 
   static TextStyle get buttonText => _base.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0,
+  );
 
   static TextStyle get mono => GoogleFonts.jetBrainsMono(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: AppColors.textPrimary,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textPrimary,
+  );
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -241,8 +248,8 @@ ThemeData buildAppTheme() {
 
     // ── AppBar ──
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
@@ -250,7 +257,7 @@ ThemeData buildAppTheme() {
       titleTextStyle: GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Colors.white,
+        color: AppColors.textPrimary,
       ),
     ),
 
@@ -267,9 +274,9 @@ ThemeData buildAppTheme() {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: AppElevation.low,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
         minimumSize: const Size(0, AppAccessibility.minTapTarget),
         textStyle: AppTextStyles.buttonText,
       ),
@@ -316,25 +323,31 @@ ThemeData buildAppTheme() {
       errorStyle: TextStyle(color: AppColors.error, fontSize: 12),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.surfaceElevated,
     ),
 
     // ── Cards ──
     cardTheme: CardThemeData(
       color: AppColors.surface,
-      elevation: AppElevation.low,
-      shadowColor: Colors.black.withValues(alpha: 0.06),
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.lgAll,
+        side: const BorderSide(color: AppColors.divider),
+      ),
       margin: const EdgeInsets.symmetric(vertical: 6),
     ),
 
     // ── TabBar ──
     tabBarTheme: TabBarThemeData(
-      labelColor: Colors.white,
-      unselectedLabelColor: Colors.white70,
+      labelColor: AppColors.primary,
+      unselectedLabelColor: AppColors.textSecondary,
       indicatorColor: AppColors.secondary,
       labelStyle: AppTextStyles.subtitle,
-      unselectedLabelStyle: AppTextStyles.body.copyWith(color: Colors.white70),
+      unselectedLabelStyle: AppTextStyles.body.copyWith(
+        color: AppColors.textSecondary,
+      ),
     ),
 
     // ── Divider ──
@@ -347,7 +360,9 @@ ThemeData buildAppTheme() {
 
     // ── DataTable ──
     dataTableTheme: DataTableThemeData(
-      headingTextStyle: AppTextStyles.label.copyWith(fontWeight: FontWeight.w600),
+      headingTextStyle: AppTextStyles.label.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
       dataTextStyle: AppTextStyles.body.copyWith(fontSize: 13),
       headingRowHeight: 44,
       dataRowMinHeight: 40,

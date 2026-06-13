@@ -65,7 +65,9 @@ class EabDialog extends StatelessWidget {
         ),
         EabButton(
           label: confirmLabel,
-          variant: isDanger ? EabButtonVariant.danger : EabButtonVariant.primary,
+          variant: isDanger
+              ? EabButtonVariant.danger
+              : EabButtonVariant.primary,
           onPressed: () => Navigator.pop(context, true),
         ),
       ],
@@ -74,30 +76,38 @@ class EabDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final compact = media.size.width < 640;
+    final effectiveWidth = compact ? media.size.width - 24 : width;
+    final maxHeight = media.size.height - media.viewInsets.vertical - 32;
     final body = scrollable
         ? SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.dialogPadding,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpacing.lg : AppSpacing.dialogPadding,
               vertical: AppSpacing.lg,
             ),
             child: content,
           )
         : Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.dialogPadding,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpacing.lg : AppSpacing.dialogPadding,
               vertical: AppSpacing.lg,
             ),
             child: content,
           );
 
     return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 24,
+        vertical: compact ? 16 : 24,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.dialogRadius),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: width,
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxWidth: effectiveWidth.clamp(280, width).toDouble(),
+          maxHeight: maxHeight.clamp(320, media.size.height).toDouble(),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -134,14 +144,32 @@ class EabDialog extends StatelessWidget {
             if (actions != null && actions!.isNotEmpty) ...[
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: actions!.expand(
-                    (a) => [a, const SizedBox(width: AppSpacing.buttonGap)],
-                  ).toList()
-                    ..removeLast(),
+                padding: EdgeInsets.all(
+                  compact ? AppSpacing.md : AppSpacing.lg,
                 ),
+                child: compact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children:
+                            actions!
+                                .expand(
+                                  (action) => [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: action,
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                  ],
+                                )
+                                .toList()
+                              ..removeLast(),
+                      )
+                    : Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: AppSpacing.buttonGap,
+                        runSpacing: AppSpacing.sm,
+                        children: actions!,
+                      ),
               ),
             ],
           ],

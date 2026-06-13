@@ -9,6 +9,7 @@ class Organization {
   const Organization({
     required this.id,
     required this.nom,
+    this.sigle,
     this.description,
     this.logoUrl,
     this.couleurPrimaire,
@@ -24,6 +25,7 @@ class Organization {
 
   final String id;
   final String nom;
+  final String? sigle;
   final String? description;
   final String? logoUrl;
   final String? couleurPrimaire;
@@ -40,6 +42,7 @@ class Organization {
     return Organization(
       id: json['id'] as String,
       nom: json['nom'] as String? ?? json['name'] as String? ?? 'Organisation',
+      sigle: json['sigle'] as String? ?? json['code'] as String?,
       description: json['description'] as String?,
       logoUrl: json['logo_url'] as String?,
       couleurPrimaire: json['couleur_primaire'] as String?,
@@ -57,34 +60,36 @@ class Organization {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'nom': nom,
-        'description': description,
-        'logo_url': logoUrl,
-        'couleur_primaire': couleurPrimaire,
-        'couleur_secondaire': couleurSecondaire,
-        'adresse': adresse,
-        'telephone': telephone,
-        'email': email,
-        'site_web': siteWeb,
-        'devise': devise,
-        'parametres': parametres,
-      };
+    'id': id,
+    'name': nom,
+    'sigle': sigle,
+    'description': description,
+    'logo_url': logoUrl,
+    'couleur_primaire': couleurPrimaire,
+    'couleur_secondaire': couleurSecondaire,
+    'adresse': adresse,
+    'telephone': telephone,
+    'email': email,
+    'site_web': siteWeb,
+    'devise': devise,
+    'parametres': parametres,
+  };
 
   /// JSON sans 'id' — pour les appels UPDATE Supabase.
   Map<String, dynamic> toUpdateJson() => {
-        'nom': nom,
-        'description': description,
-        'logo_url': logoUrl,
-        'couleur_primaire': couleurPrimaire,
-        'couleur_secondaire': couleurSecondaire,
-        'adresse': adresse,
-        'telephone': telephone,
-        'email': email,
-        'site_web': siteWeb,
-        'devise': devise,
-        'parametres': parametres,
-      };
+    'name': nom,
+    'sigle': sigle,
+    'description': description,
+    'logo_url': logoUrl,
+    'couleur_primaire': couleurPrimaire,
+    'couleur_secondaire': couleurSecondaire,
+    'adresse': adresse,
+    'telephone': telephone,
+    'email': email,
+    'site_web': siteWeb,
+    'devise': devise,
+    'parametres': parametres,
+  };
 
   /// Parse la couleur primaire hexadécimale en Color Flutter.
   Color get primaryColor {

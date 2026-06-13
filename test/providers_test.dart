@@ -1,7 +1,9 @@
 import 'package:eab/core/constants.dart';
+import 'package:eab/core/services/in_memory_data_service.dart';
 import 'package:eab/models/accounting_entry.dart';
 import 'package:eab/models/member.dart';
 import 'package:eab/providers/accounting_provider.dart';
+import 'package:eab/providers/data_service_provider.dart';
 import 'package:eab/providers/members_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +14,9 @@ void main() {
   const uuid = Uuid();
 
   test('Members notifier add and remove', () async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [dataServiceProvider.overrideWithValue(InMemoryDataService())],
+    );
     addTearDown(container.dispose);
 
     final initial = await container.read(membersProvider.future);
@@ -37,7 +41,9 @@ void main() {
   });
 
   test('Accounting notifier updates totals', () async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [dataServiceProvider.overrideWithValue(InMemoryDataService())],
+    );
     addTearDown(container.dispose);
 
     await container.read(accountingEntriesProvider.future);

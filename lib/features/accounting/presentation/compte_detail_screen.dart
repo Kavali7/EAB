@@ -1,18 +1,16 @@
-/// Fiche détaillée d'un compte comptable.
-///
-/// Affiche le numéro, intitulé, nature, et les mouvements récents.
-/// Flèche retour pour revenir à la liste.
+/// Fiche detaillee d'un compte comptable.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
 import 'package:eab/models/compte_comptable.dart';
 import 'package:eab/models/compta_enums.dart';
-import 'package:eab/models/ecriture_comptable.dart';
 import 'package:eab/providers/accounting_providers.dart';
+import 'package:eab/ui/ui.dart';
+import 'package:eab/widgets/app_shell.dart';
 
 class CompteDetailScreen extends ConsumerWidget {
   const CompteDetailScreen({super.key, required this.compte});
@@ -22,310 +20,383 @@ class CompteDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
-    final dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
-    final numberFormat = NumberFormat.currency(
-      locale: 'fr_FR',
-      symbol: 'FCFA',
-      decimalDigits: 0,
-    );
-    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Retour',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('${compte.numero} — ${compte.intitule}'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── En-tête du compte ──
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
+    return AppShell(
+      title: compte.numero,
+      currentRoute: '/accounting-settings',
+      showBackButton: true,
+      backRoute: '/accounting-settings',
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 720;
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 980),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(
+                  compact ? AppSpacing.lg : AppSpacing.pagePadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor:
-                          _natureColor(compte.nature).withValues(alpha: 0.15),
-                      child: Text(
-                        compte.numero.substring(
-                            0, compte.numero.length > 2 ? 2 : compte.numero.length),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: _natureColor(compte.nature),
+                    _CompteHeader(compte: compte),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text('Mouvements recents', style: AppTextStyles.heading3),
+                    const SizedBox(height: AppSpacing.md),
+                    ecrituresAsync.when(
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(AppSpacing.xxl),
+                          child: CircularProgressIndicator(),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            compte.intitule,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _natureColor(compte.nature)
-                                      .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(12),
+                      error: (err, _) => _InfoPanel(message: 'Erreur : $err'),
+                      data: (ecritures) {
+                        final mouvements = <_Mouvement>[];
+                        for (final e in ecritures) {
+                          for (final l in e.lignes) {
+                            if (l.idCompteComptable == compte.id) {
+                              mouvements.add(
+                                _Mouvement(
+                                  date: e.date,
+                                  libelle: l.libelle ?? e.libelle,
+                                  debit: l.debit ?? 0,
+                                  credit: l.credit ?? 0,
+                                  statut: e.statut,
                                 ),
-                                child: Text(
-                                  _natureLabel(compte.nature),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: _natureColor(compte.nature),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'N° ${compte.numero}',
-                                style: TextStyle(
-                                    color: Colors.grey[600], fontSize: 13),
-                              ),
-                              if (compte.niveau != null) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Niveau ${compte.niveau}',
-                                  style: TextStyle(
-                                      color: Colors.grey[500], fontSize: 12),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Badge actif/inactif
-                    Chip(
-                      label: Text(
-                        compte.actif ? 'Actif' : 'Inactif',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: compte.actif ? Colors.green : Colors.red,
-                        ),
-                      ),
-                      backgroundColor: compte.actif
-                          ? Colors.green.shade50
-                          : Colors.red.shade50,
-                      side: BorderSide(
-                        color: compte.actif
-                            ? Colors.green.shade200
-                            : Colors.red.shade200,
-                      ),
-                      visualDensity: VisualDensity.compact,
+                              );
+                            }
+                          }
+                        }
+                        mouvements.sort((a, b) => b.date.compareTo(a.date));
+                        final recent = mouvements.take(30).toList();
+                        final solde = mouvements.fold<double>(
+                          0,
+                          (sum, m) => sum + _signedAmount(m, compte.nature),
+                        );
+
+                        if (recent.isEmpty) {
+                          return const _InfoPanel(
+                            message: 'Aucun mouvement sur ce compte.',
+                          );
+                        }
+
+                        return Column(
+                          children: [
+                            _SoldeCard(solde: solde),
+                            const SizedBox(height: AppSpacing.md),
+                            if (compact)
+                              _MouvementsList(mouvements: recent)
+                            else
+                              _MouvementsTable(mouvements: recent),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // ── Mouvements récents ──
-            _sectionTitle(context, Icons.receipt_long, 'Mouvements récents'),
-            ecrituresAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              error: (err, _) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Erreur : $err'),
-                ),
-              ),
-              data: (ecritures) {
-                // Filtrer les écritures qui touchent ce compte
-                final mouvements = <_Mouvement>[];
-                for (final e in ecritures) {
-                  for (final l in e.lignes) {
-                    if (l.idCompteComptable == compte.id) {
-                      mouvements.add(_Mouvement(
-                        date: e.date,
-                        libelle: e.libelle,
-                        debit: l.debit,
-                        credit: l.credit,
-                        statut: e.statut,
-                      ));
-                    }
-                  }
-                }
-
-                // Trier par date décroissante, garder les 30 derniers
-                mouvements.sort((a, b) => b.date.compareTo(a.date));
-                final recent = mouvements.take(30).toList();
-
-                if (recent.isEmpty) {
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.inbox_outlined,
-                                size: 40, color: Colors.grey[400]),
-                            const SizedBox(height: 8),
-                            Text('Aucun mouvement sur ce compte',
-                                style: TextStyle(color: Colors.grey[500])),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                // Calcul du solde cumulé
-                double solde = 0;
-                for (final m in mouvements.reversed) {
-                  if (compte.nature == NatureCompte.actif ||
-                      compte.nature == NatureCompte.charge) {
-                    solde += m.debit - m.credit;
-                  } else {
-                    solde += m.credit - m.debit;
-                  }
-                }
-
-                return Column(
-                  children: [
-                    // Solde actuel
-                    Card(
-                      color: _soldeColor(solde).withValues(alpha: 0.05),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Icon(Icons.account_balance_wallet,
-                                color: _soldeColor(solde)),
-                            const SizedBox(width: 12),
-                            Text('Solde actuel',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[700])),
-                            const Spacer(),
-                            Text(
-                              numberFormat.format(solde),
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: _soldeColor(solde),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Tableau des mouvements
-                    Card(
-                      child: DataTable(
-                        columnSpacing: 16,
-                        headingRowColor: WidgetStateProperty.all(
-                          ChurchTheme.navy.withValues(alpha: 0.05),
-                        ),
-                        columns: const [
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Libellé')),
-                          DataColumn(
-                              label: Text('Débit'), numeric: true),
-                          DataColumn(
-                              label: Text('Crédit'), numeric: true),
-                        ],
-                        rows: recent.map((m) {
-                          return DataRow(cells: [
-                            DataCell(Text(dateFormat.format(m.date),
-                                style: const TextStyle(fontSize: 12))),
-                            DataCell(
-                              ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 200),
-                                child: Text(
-                                  m.libelle,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ),
-                            DataCell(Text(
-                              m.debit > 0
-                                  ? numberFormat.format(m.debit)
-                                  : '',
-                              style: const TextStyle(fontSize: 12),
-                            )),
-                            DataCell(Text(
-                              m.credit > 0
-                                  ? numberFormat.format(m.credit)
-                                  : '',
-                              style: const TextStyle(fontSize: 12),
-                            )),
-                          ]);
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _sectionTitle(BuildContext context, IconData icon, String title) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: ChurchTheme.navy),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: ChurchTheme.navy,
-                  ),
+  static double _signedAmount(_Mouvement mouvement, NatureCompte nature) {
+    if (nature == NatureCompte.actif || nature == NatureCompte.charge) {
+      return mouvement.debit - mouvement.credit;
+    }
+    return mouvement.credit - mouvement.debit;
+  }
+}
+
+class _CompteHeader extends StatelessWidget {
+  const _CompteHeader({required this.compte});
+
+  final CompteComptable compte;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _natureColor(compte.nature);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: AppRadius.lgAll,
             ),
+            child: Text(
+              compte.numero.substring(
+                0,
+                compte.numero.length > 2 ? 2 : compte.numero.length,
+              ),
+              style: AppTextStyles.subtitle.copyWith(color: color),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(compte.intitule, style: AppTextStyles.heading3),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    _Badge(label: _natureLabel(compte.nature), color: color),
+                    _Badge(
+                      label: compte.actif ? 'Actif' : 'Inactif',
+                      color: compte.actif ? AppColors.success : AppColors.error,
+                    ),
+                    if (compte.niveau != null)
+                      _Badge(
+                        label: 'Niveau ${compte.niveau}',
+                        color: AppColors.textSecondary,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SoldeCard extends StatelessWidget {
+  const _SoldeCard({required this.solde});
+
+  final double solde;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = solde >= 0 ? AppColors.success : AppColors.error;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        final label = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.account_balance_wallet_outlined, color: color),
+            const SizedBox(width: AppSpacing.md),
+            Text('Solde actuel', style: AppTextStyles.subtitle),
           ],
+        );
+        final amount = Text(
+          currencyFormatter.format(solde),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.heading3.copyWith(color: color),
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: AppRadius.lgAll,
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    label,
+                    const SizedBox(height: AppSpacing.sm),
+                    amount,
+                  ],
+                )
+              : Row(
+                  children: [
+                    label,
+                    const Spacer(),
+                    Flexible(child: amount),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _MouvementsList extends StatelessWidget {
+  const _MouvementsList({required this.mouvements});
+
+  final List<_Mouvement> mouvements;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: mouvements
+          .map(
+            (m) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppRadius.lgAll,
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(m.libelle, style: AppTextStyles.subtitle),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      dateFormatter.format(m.date),
+                      style: AppTextStyles.caption,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _AmountRow(label: 'Debit', value: m.debit),
+                    _AmountRow(label: 'Credit', value: m.credit),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _MouvementsTable extends StatelessWidget {
+  const _MouvementsTable({required this.mouvements});
+
+  final List<_Mouvement> mouvements;
+
+  @override
+  Widget build(BuildContext context) {
+    return _TableFrame(
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Date')),
+          DataColumn(label: Text('Libelle')),
+          DataColumn(label: Text('Debit')),
+          DataColumn(label: Text('Credit')),
+          DataColumn(label: Text('Statut')),
+        ],
+        rows: mouvements
+            .map(
+              (m) => DataRow(
+                cells: [
+                  DataCell(Text(dateFormatter.format(m.date))),
+                  DataCell(Text(m.libelle)),
+                  DataCell(
+                    Text(m.debit > 0 ? currencyFormatter.format(m.debit) : '-'),
+                  ),
+                  DataCell(
+                    Text(
+                      m.credit > 0 ? currencyFormatter.format(m.credit) : '-',
+                    ),
+                  ),
+                  DataCell(Text(_statutLabel(m.statut))),
+                ],
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({required this.label, required this.value});
+
+  final String label;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Text(label, style: AppTextStyles.caption)),
+        Text(currencyFormatter.format(value), style: AppTextStyles.subtitle),
+      ],
+    );
+  }
+}
+
+class _TableFrame extends StatelessWidget {
+  const _TableFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadius.lgAll,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: child,
         ),
-      );
+      ),
+    );
+  }
+}
 
-  static Color _natureColor(NatureCompte n) => switch (n) {
-        NatureCompte.actif => Colors.blue,
-        NatureCompte.passif => Colors.purple,
-        NatureCompte.charge => Colors.red,
-        NatureCompte.produit => Colors.green,
-      };
+class _InfoPanel extends StatelessWidget {
+  const _InfoPanel({required this.message});
 
-  static String _natureLabel(NatureCompte n) => switch (n) {
-        NatureCompte.actif => 'Actif',
-        NatureCompte.passif => 'Passif',
-        NatureCompte.charge => 'Charge',
-        NatureCompte.produit => 'Produit',
-      };
+  final String message;
 
-  static Color _soldeColor(double solde) =>
-      solde >= 0 ? Colors.green.shade700 : Colors.red.shade700;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: AppTextStyles.bodySmall,
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: AppRadius.smAll,
+      ),
+      child: Text(label, style: AppTextStyles.caption.copyWith(color: color)),
+    );
+  }
 }
 
 class _Mouvement {
@@ -342,4 +413,36 @@ class _Mouvement {
   final double debit;
   final double credit;
   final StatutEcriture statut;
+}
+
+Color _natureColor(NatureCompte nature) {
+  return switch (nature) {
+    NatureCompte.actif => AppColors.info,
+    NatureCompte.passif => AppColors.indigo,
+    NatureCompte.charge => AppColors.error,
+    NatureCompte.produit => AppColors.success,
+    NatureCompte.horsActiviteOrdinaire => AppColors.warning,
+    NatureCompte.engagement => AppColors.teal,
+    NatureCompte.autre => AppColors.textSecondary,
+  };
+}
+
+String _natureLabel(NatureCompte nature) {
+  return switch (nature) {
+    NatureCompte.actif => 'Actif',
+    NatureCompte.passif => 'Passif',
+    NatureCompte.charge => 'Charge',
+    NatureCompte.produit => 'Produit',
+    NatureCompte.horsActiviteOrdinaire => 'Hors activite',
+    NatureCompte.engagement => 'Engagement',
+    NatureCompte.autre => 'Autre',
+  };
+}
+
+String _statutLabel(StatutEcriture statut) {
+  return switch (statut) {
+    StatutEcriture.brouillon => 'Brouillon',
+    StatutEcriture.validee => 'Validee',
+    StatutEcriture.cloturee => 'Cloturee',
+  };
 }

@@ -11,6 +11,8 @@ import 'package:eab/core/theme.dart';
 import 'package:eab/models/famille.dart';
 import 'package:eab/models/member.dart';
 import 'package:eab/providers/members_provider.dart';
+import 'package:eab/ui/ui.dart';
+import 'package:eab/widgets/app_shell.dart';
 import 'member_detail_screen.dart';
 
 class FamilleDetailScreen extends ConsumerWidget {
@@ -33,121 +35,145 @@ class FamilleDetailScreen extends ConsumerWidget {
         .cast<Member>()
         .toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Retour',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('Famille ${famille.nom}'),
-      ),
+    return AppShell(
+      title: 'Famille ${famille.nom}',
+      currentRoute: '/members',
+      showBackButton: true,
+      backRoute: '/members',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── En-tête famille ──
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: ChurchTheme.navy.withValues(alpha: 0.1),
-                      child: Icon(Icons.family_restroom,
-                          size: 32, color: ChurchTheme.navy),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 980),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.pagePadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── En-tête famille ──
+                  Card(
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
                         children: [
-                          Text(
-                            'Famille ${famille.nom}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          CircleAvatar(
+                            radius: 32,
+                            backgroundColor: ChurchTheme.navy.withValues(
+                              alpha: 0.1,
+                            ),
+                            child: Icon(
+                              Icons.family_restroom,
+                              size: 32,
+                              color: ChurchTheme.navy,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${enfants.length} enfant${enfants.length > 1 ? "s" : ""}',
-                            style: TextStyle(color: Colors.grey[600]),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Famille ${famille.nom}',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${enfants.length} enfant${enfants.length > 1 ? "s" : ""}',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Parents ──
+                  _sectionTitle(context, Icons.people, 'Parents'),
+                  if (epoux != null || epouse != null)
+                    Card(
+                      child: Column(
+                        children: [
+                          if (epoux != null)
+                            _memberTile(context, epoux, 'Époux'),
+                          if (epoux != null && epouse != null)
+                            const Divider(height: 1),
+                          if (epouse != null)
+                            _memberTile(context, epouse, 'Épouse'),
+                        ],
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Aucun parent renseigné',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  // ── Enfants ──
+                  _sectionTitle(
+                    context,
+                    Icons.child_care,
+                    'Enfants (${enfants.length})',
+                  ),
+                  if (enfants.isNotEmpty)
+                    Card(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: enfants.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, i) =>
+                            _memberTile(context, enfants[i], 'Enfant'),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Aucun enfant renseigné',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  // ── Statistiques ──
+                  _sectionTitle(context, Icons.analytics, 'Statistiques'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Wrap(
+                        spacing: 24,
+                        runSpacing: 12,
+                        children: [
+                          _stat(
+                            'Membres',
+                            '${(epoux != null ? 1 : 0) + (epouse != null ? 1 : 0) + enfants.length}',
+                          ),
+                          _stat('Enfants', '${enfants.length}'),
+                          _stat(
+                            'Officiers',
+                            '${[epoux, epouse, ...enfants].where((m) => m != null && m.estOfficier).length}',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // ── Parents ──
-            _sectionTitle(context, Icons.people, 'Parents'),
-            if (epoux != null || epouse != null)
-              Card(
-                child: Column(
-                  children: [
-                    if (epoux != null) _memberTile(context, epoux, 'Époux'),
-                    if (epoux != null && epouse != null) const Divider(height: 1),
-                    if (epouse != null) _memberTile(context, epouse, 'Épouse'),
-                  ],
-                ),
-              )
-            else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Aucun parent renseigné',
-                      style: TextStyle(color: Colors.grey[500])),
-                ),
-              ),
-            const SizedBox(height: 20),
-
-            // ── Enfants ──
-            _sectionTitle(
-                context, Icons.child_care, 'Enfants (${enfants.length})'),
-            if (enfants.isNotEmpty)
-              Card(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: enfants.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, i) =>
-                      _memberTile(context, enfants[i], 'Enfant'),
-                ),
-              )
-            else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Aucun enfant renseigné',
-                      style: TextStyle(color: Colors.grey[500])),
-                ),
-              ),
-            const SizedBox(height: 20),
-
-            // ── Statistiques ──
-            _sectionTitle(context, Icons.analytics, 'Statistiques'),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  spacing: 24,
-                  runSpacing: 12,
-                  children: [
-                    _stat('Membres', '${(epoux != null ? 1 : 0) + (epouse != null ? 1 : 0) + enfants.length}'),
-                    _stat('Enfants', '${enfants.length}'),
-                    _stat('Officiers', '${[epoux, epouse, ...enfants].where((m) => m != null && m.estOfficier).length}'),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -169,17 +195,22 @@ class FamilleDetailScreen extends ConsumerWidget {
           child: Text(
             member.fullName.isNotEmpty ? member.fullName[0].toUpperCase() : '?',
             style: TextStyle(
-                fontWeight: FontWeight.bold, color: ChurchTheme.navy),
+              fontWeight: FontWeight.bold,
+              color: ChurchTheme.navy,
+            ),
           ),
         ),
-        title: Text(member.fullName,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(role, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        title: Text(
+          member.fullName,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          role,
+          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+        ),
         trailing: const Icon(Icons.chevron_right, size: 18),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => MemberDetailScreen(member: member),
-          ),
+          MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
         ),
       );
 
@@ -193,22 +224,25 @@ class FamilleDetailScreen extends ConsumerWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: ChurchTheme.navy,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: ChurchTheme.navy,
+              ),
             ),
           ],
         ),
       );
 
   Widget _stat(String label, String value) => Column(
-        children: [
-          Text(value,
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: ChurchTheme.navy)),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        ],
-      );
+    children: [
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: ChurchTheme.navy,
+        ),
+      ),
+      Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+    ],
+  );
 }

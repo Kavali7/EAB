@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/budget_comptable.dart';
 import '../../models/centre_analytique.dart';
@@ -13,9 +14,10 @@ import '../../models/profil_utilisateur.dart';
 import '../../providers/accounting_providers.dart';
 import '../../providers/church_structure_providers.dart';
 import '../../providers/user_profile_providers.dart';
+import '../../ui/ui.dart';
+import '../../widgets/app_shell.dart';
 import '../../widgets/context_header.dart';
 import '../../widgets/error_retry_widget.dart';
-import '../../core/theme.dart';
 
 class AccountingBudgetsScreen extends ConsumerStatefulWidget {
   const AccountingBudgetsScreen({super.key});
@@ -40,33 +42,41 @@ class _AccountingBudgetsScreenState
     final districtsAsync = ref.watch(districtsProvider);
     final ecritures = ref.watch(ecrituresFiltreesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Budgets'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ContextHeader(showPorteeComptable: true),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _buildContent(
-                profil: profil,
-                budgetsAsync: budgetsAsync,
-                lignesBudgetsAsync: lignesBudgetsAsync,
-                comptesAsync: comptesAsync,
-                centresAsync: centresAsync,
-                assembleesAsync: assembleesAsync,
-                districtsAsync: districtsAsync,
-                ecritures: ecritures,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppShell(
+      title: 'Budgets',
+      currentRoute: '/accounting-budgets',
+      showBackButton: true,
+      backRoute: '/accounting',
       floatingActionButton: _buildFabAjoutBudget(profil),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
+          return Padding(
+            padding: EdgeInsets.all(
+              compact ? AppSpacing.lg : AppSpacing.pagePadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ContextHeader(showPorteeComptable: true),
+                const SizedBox(height: AppSpacing.cardGap),
+                Expanded(
+                  child: _buildContent(
+                    profil: profil,
+                    budgetsAsync: budgetsAsync,
+                    lignesBudgetsAsync: lignesBudgetsAsync,
+                    comptesAsync: comptesAsync,
+                    centresAsync: centresAsync,
+                    assembleesAsync: assembleesAsync,
+                    districtsAsync: districtsAsync,
+                    ecritures: ecritures,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -94,10 +104,15 @@ class _AccountingBudgetsScreenState
         centresAsync.hasError ||
         assembleesAsync.hasError ||
         districtsAsync.hasError) {
-      final err = budgetsAsync.error ?? lignesBudgetsAsync.error ?? comptesAsync.error ??
-          centresAsync.error ?? assembleesAsync.error ?? districtsAsync.error;
+      final err =
+          budgetsAsync.error ??
+          lignesBudgetsAsync.error ??
+          comptesAsync.error ??
+          centresAsync.error ??
+          assembleesAsync.error ??
+          districtsAsync.error;
       return ErrorRetryWidget(
-        message: 'Erreur lors du chargement des données budgets : $err',
+        message: 'Erreur lors du chargement des donnees budgets : $err',
         onRetry: () {
           ref.invalidate(budgetsComptablesProvider);
           ref.invalidate(lignesBudgetsProvider);
@@ -123,7 +138,6 @@ class _AccountingBudgetsScreenState
     final budgetsFiltres = budgets.where((b) {
       if (b.exercice != _exerciceSelectionne) return false;
       if (profil?.role == RoleUtilisateur.adminNational) return true;
-      // Controle simple : budget rattaché à une assemblee ou centre autorise
       if (b.idAssembleeLocale != null) {
         return idsAutorises.contains(b.idAssembleeLocale);
       }
@@ -136,231 +150,375 @@ class _AccountingBudgetsScreenState
       return false;
     }).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text(
-              'Exercice',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(width: 8),
-            DropdownButton<int>(
-              value: _exerciceSelectionne,
-              items: () {
-                final years = <int>{
-                  DateTime.now().year - 1,
-                  DateTime.now().year,
-                  DateTime.now().year + 1,
-                  2025,
-                }.toList()
-                  ..sort();
-                return years
-                    .map(
-                      (an) =>
-                          DropdownMenuItem(value: an, child: Text('$an')),
-                    )
-                    .toList();
-              }(),
-              onChanged: (v) {
-                if (v != null) setState(() => _exerciceSelectionne = v);
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: budgetsFiltres.isEmpty
-              ? const Center(child: Text('Aucun budget pour cet exercice.'))
-              : ListView.builder(
-                  itemCount: budgetsFiltres.length,
-                  itemBuilder: (context, index) {
-                    final budget = budgetsFiltres[index];
-                    final lignes = lignesBudgets
-                        .where((l) => l.idBudget == budget.id)
-                        .toList();
-                    final resume = _calculerResumeBudget(
-                      budget,
-                      lignes,
-                      ecritures,
-                      comptesParId,
-                    );
-                    final ecartGlobal = resume.realiseTotal - resume.budgetTotal;
-                    final tauxGlobal = resume.budgetTotal == 0
-                        ? null
-                        : (resume.realiseTotal / resume.budgetTotal);
-                    final assemblee =
-                        budget.idAssembleeLocale != null ? assembleesParId[budget.idAssembleeLocale] : null;
-                    final centre =
-                        budget.idCentreAnalytique != null ? centresParId[budget.idCentreAnalytique!] : null;
-                    return Card(
-                      child: ExpansionTile(
-                        title: Text(budget.libelle ?? 'Budget ${budget.exercice}'),
-                        subtitle: Text([
-                          if (assemblee != null) 'Assemblee: ${assemblee.nom}',
-                          if (centre != null) 'Centre: ${centre.code}'
-                        ].join(' • ')),
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  spacing: 12,
-                                  runSpacing: 8,
-                                  children: [
-                                    _smallInfo(
-                                      'Budget prevu',
-                                      currencyFormatter.format(resume.budgetTotal),
-                                    ),
-                                    _smallInfo(
-                                      'Realise',
-                                      currencyFormatter.format(resume.realiseTotal),
-                                    ),
-                                    _smallInfo(
-                                      'Ecart',
-                                      currencyFormatter.format(ecartGlobal),
-                                      valueColor: ecartGlobal >= 0
-                                          ? AppColors.success
-                                          : AppColors.error,
-                                    ),
-                                    _smallInfo(
-                                      'Taux global',
-                                      _texteTaux(tauxGlobal),
-                                      valueColor: _couleurTaux(tauxGlobal),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: DataTable(
-                                    columns: const [
-                                      DataColumn(label: Text('Compte')),
-                                      DataColumn(label: Text('Budget')),
-                                      DataColumn(label: Text('Realise')),
-                                      DataColumn(label: Text('Ecart')),
-                                      DataColumn(label: Text('Taux')),
-                                      DataColumn(label: Text('Actions')),
-                                    ],
-                                    rows: lignes.map((l) {
-                                      final compte = comptesParId[l.idCompteComptable];
-                                      final realise = resume.realisesParLigne[l.id] ?? 0;
-                                      final ecart = realise - l.montantPrevu;
-                                      final taux = l.montantPrevu == 0
-                                          ? null
-                                          : (realise / l.montantPrevu);
-                                      return DataRow(
-                                        cells: [
-                                          DataCell(
-                                            Text(
-                                              compte != null
-                                                  ? '${compte.numero} - ${compte.intitule}'
-                                                  : l.idCompteComptable,
-                                            ),
-                                          ),
-                                          DataCell(
-                                            Text(currencyFormatter
-                                                .format(l.montantPrevu)),
-                                          ),
-                                          DataCell(
-                                            Text(currencyFormatter
-                                                .format(realise)),
-                                          ),
-                                          DataCell(
-                                            Text(currencyFormatter.format(ecart)),
-                                          ),
-                                          DataCell(
-                                            Text(
-                                              _texteTaux(taux),
-                                              style: TextStyle(
-                                                color: _couleurTaux(taux),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                          DataCell(
-                                            IconButton(
-                                              icon: const Icon(Icons.edit_outlined),
-                                              onPressed: () => _ouvrirDialogLigneBudget(
-                                                budget,
-                                                l,
-                                                comptes,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList()
-                                      ..add(
-                                        DataRow(
-                                          cells: [
-                                            const DataCell(Text('')),
-                                            const DataCell(Text('')),
-                                            const DataCell(Text('')),
-                                            const DataCell(Text('')),
-                                            const DataCell(Text('')),
-                                            DataCell(
-                                              TextButton.icon(
-                                                onPressed: () =>
-                                                    _ouvrirDialogLigneBudget(
-                                                  budget,
-                                                  null,
-                                                  comptes,
-                                                ),
-                                                icon: const Icon(Icons.add),
-                                                label: const Text('Ajouter une ligne'),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+    final cards = budgetsFiltres.map((budget) {
+      final lignes = lignesBudgets
+          .where((l) => l.idBudget == budget.id)
+          .toList();
+      final resume = _calculerResumeBudget(
+        budget,
+        lignes,
+        ecritures,
+        comptesParId,
+      );
+      return _BudgetCardData(
+        budget: budget,
+        lignes: lignes,
+        resume: resume,
+        assemblee: budget.idAssembleeLocale != null
+            ? assembleesParId[budget.idAssembleeLocale]
+            : null,
+        centre: budget.idCentreAnalytique != null
+            ? centresParId[budget.idCentreAnalytique!]
+            : null,
+      );
+    }).toList();
+
+    final totalBudget = cards.fold<double>(
+      0,
+      (sum, card) => sum + card.resume.budgetTotal,
+    );
+    final totalRealise = cards.fold<double>(
+      0,
+      (sum, card) => sum + card.resume.realiseTotal,
+    );
+    final ecartGlobal = totalRealise - totalBudget;
+    final tauxGlobal = totalBudget == 0 ? null : totalRealise / totalBudget;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 760;
+        return SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1180),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildToolbar(compact: compact),
+                  const SizedBox(height: AppSpacing.cardGap),
+                  _buildSummaryGrid(
+                    compact: compact,
+                    totalBudget: totalBudget,
+                    totalRealise: totalRealise,
+                    ecartGlobal: ecartGlobal,
+                    tauxGlobal: tauxGlobal,
+                  ),
+                  const SizedBox(height: AppSpacing.cardGap),
+                  if (cards.isEmpty)
+                    _emptyCard('Aucun budget pour cet exercice.')
+                  else
+                    for (final card in cards)
+                      _buildBudgetCard(
+                        data: card,
+                        comptesParId: comptesParId,
+                        comptes: comptes,
+                        compact: compact,
                       ),
-                    );
-                  },
-                ),
-        ),
-      ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _smallInfo(String label, String value, {Color? valueColor}) {
+  Widget _buildToolbar({required bool compact}) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                color: valueColor,
-                fontWeight: valueColor != null ? FontWeight.w700 : null,
-              ),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [_yearSelector()],
+              )
+            : Row(children: [SizedBox(width: 220, child: _yearSelector())]),
       ),
     );
   }
 
+  Widget _yearSelector() {
+    final years = <int>{
+      DateTime.now().year - 1,
+      DateTime.now().year,
+      DateTime.now().year + 1,
+      2025,
+    }.toList()..sort();
+    return DropdownButtonFormField<int>(
+      initialValue: _exerciceSelectionne,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Exercice',
+        border: OutlineInputBorder(),
+      ),
+      items: years
+          .map((an) => DropdownMenuItem(value: an, child: Text('$an')))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _exerciceSelectionne = v);
+      },
+    );
+  }
+
+  Widget _buildSummaryGrid({
+    required bool compact,
+    required double totalBudget,
+    required double totalRealise,
+    required double ecartGlobal,
+    required double? tauxGlobal,
+  }) {
+    final items = [
+      _SummaryTile(
+        label: 'Budget prevu',
+        value: currencyFormatter.format(totalBudget),
+        icon: Icons.account_balance_wallet_outlined,
+        color: AppColors.primary,
+      ),
+      _SummaryTile(
+        label: 'Realise',
+        value: currencyFormatter.format(totalRealise),
+        icon: Icons.trending_up,
+        color: AppColors.indigo,
+      ),
+      _SummaryTile(
+        label: 'Ecart',
+        value: currencyFormatter.format(ecartGlobal),
+        icon: ecartGlobal >= 0
+            ? Icons.add_circle_outline
+            : Icons.remove_circle_outline,
+        color: ecartGlobal >= 0 ? AppColors.success : AppColors.error,
+      ),
+      _SummaryTile(
+        label: 'Taux global',
+        value: _texteTaux(tauxGlobal),
+        icon: Icons.percent,
+        color: _couleurTaux(tauxGlobal),
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = compact
+            ? 1
+            : constraints.maxWidth >= 1040
+            ? 4
+            : 2;
+        final width =
+            (constraints.maxWidth - (columns - 1) * AppSpacing.cardGap) /
+            columns;
+        return Wrap(
+          spacing: AppSpacing.cardGap,
+          runSpacing: AppSpacing.cardGap,
+          children: [
+            for (final item in items) SizedBox(width: width, child: item),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBudgetCard({
+    required _BudgetCardData data,
+    required Map<String, CompteComptable> comptesParId,
+    required List<CompteComptable> comptes,
+    required bool compact,
+  }) {
+    final budget = data.budget;
+    final resume = data.resume;
+    final ecartGlobal = resume.realiseTotal - resume.budgetTotal;
+    final tauxGlobal = resume.budgetTotal == 0
+        ? null
+        : resume.realiseTotal / resume.budgetTotal;
+    final subtitle = [
+      if (data.assemblee != null) 'Assemblee: ${data.assemblee!.nom}',
+      if (data.centre != null) 'Centre: ${data.centre!.code}',
+    ].join(' - ');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.cardGap),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.cardPadding,
+          vertical: AppSpacing.sm,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(
+          AppSpacing.cardPadding,
+          0,
+          AppSpacing.cardPadding,
+          AppSpacing.cardPadding,
+        ),
+        title: Text(
+          budget.libelle ?? 'Budget ${budget.exercice}',
+          style: AppTextStyles.sectionTitle,
+        ),
+        subtitle: subtitle.isEmpty ? null : Text(subtitle),
+        children: [
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _smallInfo(
+                'Budget prevu',
+                currencyFormatter.format(resume.budgetTotal),
+              ),
+              _smallInfo(
+                'Realise',
+                currencyFormatter.format(resume.realiseTotal),
+              ),
+              _smallInfo(
+                'Ecart',
+                currencyFormatter.format(ecartGlobal),
+                valueColor: ecartGlobal >= 0
+                    ? AppColors.success
+                    : AppColors.error,
+              ),
+              _smallInfo(
+                'Taux',
+                _texteTaux(tauxGlobal),
+                valueColor: _couleurTaux(tauxGlobal),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (data.lignes.isEmpty)
+            _emptyBox('Aucune ligne budgetaire.')
+          else
+            for (final ligne in data.lignes)
+              _buildBudgetLineCard(
+                budget: budget,
+                ligne: ligne,
+                compte: comptesParId[ligne.idCompteComptable],
+                realise: resume.realisesParLigne[ligne.id] ?? 0,
+                comptes: comptes,
+              ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: compact ? double.infinity : null,
+            child: OutlinedButton.icon(
+              onPressed: () => _ouvrirDialogLigneBudget(budget, null, comptes),
+              icon: const Icon(Icons.add),
+              label: const Text('Ajouter une ligne'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetLineCard({
+    required BudgetComptable budget,
+    required LigneBudgetComptable ligne,
+    required CompteComptable? compte,
+    required double realise,
+    required List<CompteComptable> comptes,
+  }) {
+    final ecart = realise - ligne.montantPrevu;
+    final taux = ligne.montantPrevu == 0 ? null : realise / ligne.montantPrevu;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  compte != null
+                      ? '${compte.numero} - ${compte.intitule}'
+                      : ligne.idCompteComptable,
+                  style: AppTextStyles.subtitle,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Modifier',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () =>
+                    _ouvrirDialogLigneBudget(budget, ligne, comptes),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _metricChip(
+                'Budget',
+                currencyFormatter.format(ligne.montantPrevu),
+              ),
+              _metricChip('Realise', currencyFormatter.format(realise)),
+              _metricChip(
+                'Ecart',
+                currencyFormatter.format(ecart),
+                color: ecart >= 0 ? AppColors.success : AppColors.error,
+              ),
+              _metricChip('Taux', _texteTaux(taux), color: _couleurTaux(taux)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricChip(String label, String value, {Color? color}) {
+    return Chip(
+      label: Text('$label : $value'),
+      labelStyle: TextStyle(color: color, fontWeight: FontWeight.w600),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _smallInfo(String label, String value, {Color? valueColor}) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 150),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.caption),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            value,
+            style: AppTextStyles.subtitle.copyWith(color: valueColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyCard(String message) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        child: _emptyBox(message),
+      ),
+    );
+  }
+
+  Widget _emptyBox(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(message, style: AppTextStyles.bodySmall),
+    );
+  }
+
   Widget? _buildFabAjoutBudget(ProfilUtilisateur? profil) {
-    final peutCreer = profil != null;
-    if (!peutCreer) return null;
+    if (profil == null) return null;
     return FloatingActionButton.extended(
       onPressed: () => _ouvrirDialogBudget(null),
       icon: const Icon(Icons.add),
@@ -369,12 +527,9 @@ class _AccountingBudgetsScreenState
   }
 
   Future<void> _ouvrirDialogBudget(BudgetComptable? budget) async {
-    final assembleesAsync = ref.read(assembleesLocalesProvider);
-    final centresAsync = ref.read(centresAnalytiquesProvider);
-    final tiersAsync = ref.read(tiersProvider);
-    final assemblees = assembleesAsync.value ?? [];
-    final centres = centresAsync.value ?? [];
-    final bailleurs = (tiersAsync.value ?? [])
+    final assemblees = ref.read(assembleesLocalesProvider).value ?? [];
+    final centres = ref.read(centresAnalytiquesProvider).value ?? [];
+    final bailleurs = (ref.read(tiersProvider).value ?? [])
         .where((t) => t.type == TypeTiers.bailleur)
         .toList();
 
@@ -387,110 +542,114 @@ class _AccountingBudgetsScreenState
 
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(budget == null ? 'Nouveau budget' : 'Modifier le budget'),
-        content: SizedBox(
-          width: 520,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  initialValue: exercice.toString(),
-                  decoration: const InputDecoration(labelText: 'Exercice'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      v == null || int.tryParse(v) == null ? 'Exercice requis' : null,
-                  onSaved: (v) => exercice = int.tryParse(v ?? '') ?? exercice,
+      builder: (context) => EabDialog(
+        title: budget == null ? 'Nouveau budget' : 'Modifier le budget',
+        width: 560,
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                initialValue: exercice.toString(),
+                decoration: const InputDecoration(labelText: 'Exercice'),
+                keyboardType: TextInputType.number,
+                validator: (v) => v == null || int.tryParse(v) == null
+                    ? 'Exercice requis'
+                    : null,
+                onSaved: (v) => exercice = int.tryParse(v ?? '') ?? exercice,
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              TextFormField(
+                initialValue: libelle,
+                decoration: const InputDecoration(labelText: 'Libelle'),
+                onSaved: (v) => libelle = v?.trim() ?? '',
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              DropdownButtonFormField<String?>(
+                isExpanded: true,
+                initialValue: idAssemblee,
+                decoration: const InputDecoration(labelText: 'Assemblee'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Aucune'),
+                  ),
+                  ...assemblees.map(
+                    (a) => DropdownMenuItem<String?>(
+                      value: a.id,
+                      child: Text(a.nom),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => idAssemblee = v,
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              DropdownButtonFormField<String?>(
+                isExpanded: true,
+                initialValue: idCentre,
+                decoration: const InputDecoration(
+                  labelText: 'Centre analytique',
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  initialValue: libelle,
-                  decoration: const InputDecoration(labelText: 'Libelle'),
-                  onSaved: (v) => libelle = v?.trim() ?? '',
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Aucun'),
+                  ),
+                  ...centres.map(
+                    (c) => DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Text('${c.code} - ${c.nom}'),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => idCentre = v,
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              DropdownButtonFormField<String?>(
+                isExpanded: true,
+                initialValue: idBailleur,
+                decoration: const InputDecoration(
+                  labelText: 'Bailleur (optionnel)',
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: idAssemblee,
-                  decoration: const InputDecoration(labelText: 'Assemblee'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Aucune'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Aucun'),
+                  ),
+                  ...bailleurs.map(
+                    (t) => DropdownMenuItem<String?>(
+                      value: t.id,
+                      child: Text(t.nom),
                     ),
-                    ...assemblees.map(
-                      (a) => DropdownMenuItem<String?>(
-                        value: a.id,
-                        child: Text(a.nom),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) => idAssemblee = v,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: idCentre,
-                  decoration: const InputDecoration(labelText: 'Centre analytique'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Aucun'),
-                    ),
-                    ...centres.map(
-                      (c) => DropdownMenuItem<String?>(
-                        value: c.id,
-                        child: Text('${c.code} - ${c.nom}'),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) => idCentre = v,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  isExpanded: true,
-                  initialValue: idBailleur,
-                  decoration:
-                      const InputDecoration(labelText: 'Bailleur (optionnel)'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Aucun'),
-                    ),
-                    ...bailleurs.map(
-                      (t) => DropdownMenuItem<String?>(
-                        value: t.id,
-                        child: Text(t.nom),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) => idBailleur = v,
-                ),
-              ],
-            ),
+                  ),
+                ],
+                onChanged: (v) => idBailleur = v,
+              ),
+            ],
           ),
         ),
         actions: [
-          TextButton(
+          EabButton(
+            label: 'Annuler',
+            variant: EabButtonVariant.ghost,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          EabButton(
+            label: 'Enregistrer',
             onPressed: () {
               if (!formKey.currentState!.validate()) return;
               formKey.currentState!.save();
               final notifier = ref.read(budgetsComptablesProvider.notifier);
               final nouveau = BudgetComptable(
-                id: budget?.id ?? 'budget_${DateTime.now().millisecondsSinceEpoch}',
+                id:
+                    budget?.id ??
+                    'budget_${DateTime.now().millisecondsSinceEpoch}',
                 exercice: exercice,
                 idAssembleeLocale: idAssemblee,
                 idCentreAnalytique: idCentre,
                 idTiersBailleur: idBailleur,
-                libelle: libelle.isEmpty
-                    ? 'Budget $exercice'
-                    : libelle,
+                libelle: libelle.isEmpty ? 'Budget $exercice' : libelle,
                 estVerrouille: budget?.estVerrouille ?? false,
               );
               if (budget == null) {
@@ -500,7 +659,6 @@ class _AccountingBudgetsScreenState
               }
               Navigator.of(context).pop();
             },
-            child: const Text('Enregistrer'),
           ),
         ],
       ),
@@ -519,73 +677,72 @@ class _AccountingBudgetsScreenState
 
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(ligne == null ? 'Ajouter une ligne' : 'Modifier la ligne'),
-        content: SizedBox(
-          width: 480,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: idCompte,
-                  decoration: const InputDecoration(labelText: 'Compte'),
-                  items: comptes
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Text('${c.numero} - ${c.intitule}'),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => idCompte = v,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Compte requis' : null,
+      builder: (context) => EabDialog(
+        title: ligne == null ? 'Ajouter une ligne' : 'Modifier la ligne',
+        width: 520,
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                initialValue: idCompte,
+                decoration: const InputDecoration(labelText: 'Compte'),
+                items: comptes
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c.id,
+                        child: Text('${c.numero} - ${c.intitule}'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => idCompte = v,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Compte requis' : null,
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              TextFormField(
+                initialValue: montant.toStringAsFixed(0),
+                decoration: const InputDecoration(labelText: 'Montant prevu'),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  final parsed = v != null
+                      ? double.tryParse(v.replaceAll(',', '.'))
+                      : null;
+                  return parsed == null ? 'Montant requis' : null;
+                },
+                onSaved: (v) => montant = double.parse(v!.replaceAll(',', '.')),
+              ),
+              const SizedBox(height: AppSpacing.fieldGap),
+              TextFormField(
+                initialValue: montantRevu?.toStringAsFixed(0),
+                decoration: const InputDecoration(
+                  labelText: 'Montant revu (optionnel)',
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  initialValue: montant.toStringAsFixed(0),
-                  decoration:
-                      const InputDecoration(labelText: 'Montant prevu'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    final parsed =
-                        v != null ? double.tryParse(v.replaceAll(',', '.')) : null;
-                    if (parsed == null) return 'Montant requis';
-                    return null;
-                  },
-                  onSaved: (v) =>
-                      montant = double.parse(v!.replaceAll(',', '.')),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  initialValue: montantRevu?.toStringAsFixed(0),
-                  decoration:
-                      const InputDecoration(labelText: 'Montant revu (optionnel)'),
-                  keyboardType: TextInputType.number,
-                  onSaved: (v) => montantRevu =
-                      v != null && v.trim().isNotEmpty
-                          ? double.tryParse(v.replaceAll(',', '.'))
-                          : null,
-                ),
-              ],
-            ),
+                keyboardType: TextInputType.number,
+                onSaved: (v) => montantRevu = v != null && v.trim().isNotEmpty
+                    ? double.tryParse(v.replaceAll(',', '.'))
+                    : null,
+              ),
+            ],
           ),
         ),
         actions: [
-          TextButton(
+          EabButton(
+            label: 'Annuler',
+            variant: EabButtonVariant.ghost,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          EabButton(
+            label: 'Enregistrer',
             onPressed: () {
               if (!formKey.currentState!.validate()) return;
               formKey.currentState!.save();
               final notifier = ref.read(lignesBudgetsProvider.notifier);
               final nouvelleLigne = LigneBudgetComptable(
-                id: ligne?.id ??
+                id:
+                    ligne?.id ??
                     'ligbud_${DateTime.now().millisecondsSinceEpoch}',
                 idBudget: budget.id,
                 idCompteComptable: idCompte!,
@@ -599,7 +756,6 @@ class _AccountingBudgetsScreenState
               }
               Navigator.of(context).pop();
             },
-            child: const Text('Enregistrer'),
           ),
         ],
       ),
@@ -655,8 +811,10 @@ class _AccountingBudgetsScreenState
       case RoleUtilisateur.responsableRegion:
         final idRegion = profil.idRegion;
         if (idRegion == null) return {};
-        final districtIds =
-            districts.where((d) => d.idRegion == idRegion).map((d) => d.id).toSet();
+        final districtIds = districts
+            .where((d) => d.idRegion == idRegion)
+            .map((d) => d.id)
+            .toSet();
         return assemblees
             .where((a) => districtIds.contains(a.idDistrict))
             .map((a) => a.id)
@@ -687,6 +845,73 @@ class _AccountingBudgetsScreenState
   String _texteTaux(double? taux) {
     if (taux == null || taux.isNaN || taux.isInfinite) return '-';
     return '${(taux * 100).toStringAsFixed(0)} %';
+  }
+}
+
+class _BudgetCardData {
+  const _BudgetCardData({
+    required this.budget,
+    required this.lignes,
+    required this.resume,
+    required this.assemblee,
+    required this.centre,
+  });
+
+  final BudgetComptable budget;
+  final List<LigneBudgetComptable> lignes;
+  final _ResumeBudget resume;
+  final AssembleeLocale? assemblee;
+  final CentreAnalytique? centre;
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppTextStyles.caption),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    value,
+                    style: AppTextStyles.heading3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

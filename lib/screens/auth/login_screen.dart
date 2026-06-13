@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/product_branding.dart';
 import '../../core/theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,14 +39,14 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      // Navigation gérée par app.dart via onAuthStateChange — pas de navigation ici
     } on AuthException catch (e) {
       setState(() {
         _errorMessage = _translateAuthError(e.message);
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
-        _errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet.';
+        _errorMessage =
+            'Connexion impossible. Verifiez votre acces internet puis reessayez.';
       });
     } finally {
       if (mounted) {
@@ -62,228 +63,396 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Veuillez confirmer votre email avant de vous connecter.';
     }
     if (message.contains('Too many requests')) {
-      return 'Trop de tentatives. Veuillez réessayer plus tard.';
+      return 'Trop de tentatives. Veuillez reessayer plus tard.';
     }
     return 'Erreur : $message';
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width >= 980;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
-        child: ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo / Titre
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.church,
-                    size: 48,
-                    color: Colors.white,
-                  ),
+      body: Row(
+        children: [
+          if (isWide) const Expanded(child: _BrandPanel()),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWide ? 56 : 24,
+                  vertical: 28,
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'EAB',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Gestion d\'Église et Comptabilité',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Formulaire
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!isWide) ...[
+                        const _CompactBrand(),
+                        const SizedBox(height: 28),
+                      ],
+                      Text(
+                        'Connexion',
+                        style: AppTextStyles.heading1.copyWith(fontSize: 30),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Accedez a votre espace de pilotage.',
+                        style: AppTextStyles.bodySmall.copyWith(fontSize: 15),
+                      ),
+                      const SizedBox(height: 28),
+                      _LoginForm(
+                        formKey: _formKey,
+                        emailController: _emailController,
+                        passwordController: _passwordController,
+                        obscurePassword: _obscurePassword,
+                        isLoading: _isLoading,
+                        errorMessage: _errorMessage,
+                        onTogglePassword: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                        onSubmit: _login,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Connexion',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                          Text(
+                            'Pas encore de compte ?',
+                            style: AppTextStyles.bodySmall,
                           ),
-                          const SizedBox(height: 24),
-
-                          // Email
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Adresse email',
-                              prefixIcon: Icon(Icons.email_outlined),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Veuillez entrer votre email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Adresse email invalide';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Mot de passe
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _login(),
-                            decoration: InputDecoration(
-                              labelText: 'Mot de passe',
-                              prefixIcon: const Icon(Icons.lock_outlined),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                                onPressed: () {
-                                  setState(() =>
-                                      _obscurePassword = !_obscurePassword);
-                                },
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer votre mot de passe';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Mot de passe oublié
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.of(context)
-                                    .pushNamed('/forgot-password');
-                              },
-                              child: const Text('Mot de passe oublié ?'),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Erreur
-                          if (_errorMessage != null)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppColors.error.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.error_outline,
-                                      color: AppColors.error, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: const TextStyle(
-                                        color: AppColors.error,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          // Bouton connexion
-                          SizedBox(
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Se connecter',
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                            ),
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(context).pushNamed('/signup'),
+                            child: const Text('S\'inscrire'),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                // Lien inscription
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+class _BrandPanel extends StatelessWidget {
+  const _BrandPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.sidebar,
+      child: Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: _BrandPatternPainter())),
+          Padding(
+            padding: const EdgeInsets.all(56),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _LogoMark(size: 58),
+                const SizedBox(height: 42),
+                Text(
+                  ProductBranding.appName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.heading1.copyWith(
+                    color: Colors.white,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Gestion d\'eglise, comptabilite SYSCEBNL et suivi administratif dans un seul espace de travail.',
+                  style: AppTextStyles.body.copyWith(
+                    color: const Color(0xFFD7E4EA),
+                    fontSize: 18,
+                    height: 1.55,
+                  ),
+                ),
+                const Spacer(),
+                const Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
-                    const Text(
-                      'Pas encore de compte ? ',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    _CapabilityChip(
+                      icon: Icons.groups_outlined,
+                      label: 'Membres',
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/signup');
-                      },
-                      child: const Text(
-                        'S\'inscrire',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    _CapabilityChip(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: 'Comptabilite',
+                    ),
+                    _CapabilityChip(
+                      icon: Icons.assessment_outlined,
+                      label: 'Rapports',
                     ),
                   ],
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactBrand extends StatelessWidget {
+  const _CompactBrand();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        _LogoMark(size: 48),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            ProductBranding.appName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+            ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoginForm extends StatelessWidget {
+  const _LoginForm({
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.obscurePassword,
+    required this.isLoading,
+    required this.errorMessage,
+    required this.onTogglePassword,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool obscurePassword;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.xlAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Adresse email',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Veuillez entrer votre email';
+                }
+                if (!value.contains('@')) {
+                  return 'Adresse email invalide';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: passwordController,
+              obscureText: obscurePassword,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => onSubmit(),
+              decoration: InputDecoration(
+                labelText: 'Mot de passe',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  tooltip: obscurePassword
+                      ? 'Afficher le mot de passe'
+                      : 'Masquer le mot de passe',
+                  icon: Icon(
+                    obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: onTogglePassword,
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Veuillez entrer votre mot de passe';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/forgot-password'),
+                child: const Text('Mot de passe oublie ?'),
+              ),
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: AppRadius.mdAll,
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        errorMessage!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : onSubmit,
+                icon: isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.login),
+                label: Text(isLoading ? 'Connexion...' : 'Se connecter'),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _LogoMark extends StatelessWidget {
+  const _LogoMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(size * 0.22),
+      ),
+      child: Icon(
+        Icons.church,
+        size: size * 0.56,
+        color: AppColors.primaryDark,
+      ),
+    );
+  }
+}
+
+class _CapabilityChip extends StatelessWidget {
+  const _CapabilityChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0x14FFFFFF),
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: const Color(0x22FFFFFF)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.secondaryLight, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = const Color(0x10FFFFFF)
+      ..strokeWidth = 1;
+    const gap = 42.0;
+    for (double x = -size.height; x < size.width; x += gap) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        linePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

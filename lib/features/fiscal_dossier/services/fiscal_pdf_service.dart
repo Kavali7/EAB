@@ -17,6 +17,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:printing/printing.dart';
 
+import 'package:eab/core/product_branding.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 
 // Lazy-initialized formatters (safely after locale init)
@@ -52,7 +53,7 @@ class FiscalPdfService {
     final doc = pw.Document(
       title: 'Dossier Fiscal SYSCEBNL — $orgName',
       author: orgName,
-      creator: 'EAB — Gestion Comptable',
+      creator: '${ProductBranding.appName} - Gestion comptable',
       theme: fontRegular != null
           ? pw.ThemeData.withFont(base: fontRegular, bold: fontBold)
           : null,
@@ -65,21 +66,56 @@ class FiscalPdfService {
         case 'COVER':
           _addCoverPage(doc, orgName, page, values, generatedAt, watermark);
         case 'IDENTITY':
-          _addIdentityPage(doc, orgName, page, values, generatedAt, pages.length);
+          _addIdentityPage(
+            doc,
+            orgName,
+            page,
+            values,
+            generatedAt,
+            pages.length,
+          );
         case 'BILAN_ACTIF':
-          _addFinancialPage(doc, orgName, page, values, generatedAt, pages.length,
-              sectionTitle: 'BILAN — ACTIF',
-              highlightColor: PdfColors.blue800);
+          _addFinancialPage(
+            doc,
+            orgName,
+            page,
+            values,
+            generatedAt,
+            pages.length,
+            sectionTitle: 'BILAN — ACTIF',
+            highlightColor: PdfColors.blue800,
+          );
         case 'BILAN_PASSIF':
-          _addFinancialPage(doc, orgName, page, values, generatedAt, pages.length,
-              sectionTitle: 'BILAN — PASSIF',
-              highlightColor: PdfColors.indigo800);
+          _addFinancialPage(
+            doc,
+            orgName,
+            page,
+            values,
+            generatedAt,
+            pages.length,
+            sectionTitle: 'BILAN — PASSIF',
+            highlightColor: PdfColors.indigo800,
+          );
         case 'RESULTAT':
-          _addFinancialPage(doc, orgName, page, values, generatedAt, pages.length,
-              sectionTitle: 'COMPTE DE RÉSULTAT',
-              highlightColor: PdfColors.green800);
+          _addFinancialPage(
+            doc,
+            orgName,
+            page,
+            values,
+            generatedAt,
+            pages.length,
+            sectionTitle: 'COMPTE DE RÉSULTAT',
+            highlightColor: PdfColors.green800,
+          );
         default:
-          _addGenericPage(doc, orgName, page, values, generatedAt, pages.length);
+          _addGenericPage(
+            doc,
+            orgName,
+            page,
+            values,
+            generatedAt,
+            pages.length,
+          );
       }
     }
 
@@ -88,10 +124,7 @@ class FiscalPdfService {
 
   /// Affiche la prévisualisation d'impression.
   static Future<void> preview(pw.Document doc, String title) async {
-    await Printing.layoutPdf(
-      onLayout: (_) async => doc.save(),
-      name: title,
-    );
+    await Printing.layoutPdf(onLayout: (_) async => doc.save(), name: title);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -111,7 +144,8 @@ class FiscalPdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(0),
         build: (ctx) {
-          final exerciceLabel = _val(values, 'exercice.label') ?? 'Exercice fiscal';
+          final exerciceLabel =
+              _val(values, 'exercice.label') ?? 'Exercice fiscal';
           final dateDebut = _val(values, 'exercice.date_debut');
           final dateFin = _val(values, 'exercice.date_fin');
           final periode = (dateDebut != null && dateFin != null)
@@ -147,7 +181,9 @@ class FiscalPdfService {
                     // Badge SYSCEBNL
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 8),
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       decoration: pw.BoxDecoration(
                         color: PdfColors.blueGrey800,
                         borderRadius: pw.BorderRadius.circular(4),
@@ -195,7 +231,9 @@ class FiscalPdfService {
                       padding: const pw.EdgeInsets.all(20),
                       decoration: pw.BoxDecoration(
                         border: pw.Border.all(
-                            color: PdfColors.blueGrey300, width: 1),
+                          color: PdfColors.blueGrey300,
+                          width: 1,
+                        ),
                         borderRadius: pw.BorderRadius.circular(4),
                       ),
                       child: pw.Column(
@@ -234,13 +272,17 @@ class FiscalPdfService {
                       pw.Text(
                         'Responsable : $responsable',
                         style: const pw.TextStyle(
-                            fontSize: 11, color: PdfColors.grey700),
+                          fontSize: 11,
+                          color: PdfColors.grey700,
+                        ),
                       ),
                     pw.SizedBox(height: 8),
                     pw.Text(
                       'Document généré le ${_dateFmt.format(generatedAt)}',
                       style: const pw.TextStyle(
-                          fontSize: 9, color: PdfColors.grey500),
+                        fontSize: 9,
+                        color: PdfColors.grey500,
+                      ),
                     ),
                   ],
                 ),
@@ -267,24 +309,33 @@ class FiscalPdfService {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (ctx) =>
-            _pageHeader(orgName, page.title, generatedAt),
+        header: (ctx) => _pageHeader(orgName, page.title, generatedAt),
         footer: (ctx) => _pageFooter(ctx, generatedAt),
         build: (ctx) => [
           pw.SizedBox(height: 8),
           _sectionTitle('Identification de l\'entité'),
           _infoRow('Dénomination', _val(values, 'org.name') ?? orgName),
           _infoRow('Exercice', _val(values, 'exercice.label') ?? '—'),
-          _infoRow('Date début', _formatDate(_val(values, 'exercice.date_debut'))),
+          _infoRow(
+            'Date début',
+            _formatDate(_val(values, 'exercice.date_debut')),
+          ),
           _infoRow('Date fin', _formatDate(_val(values, 'exercice.date_fin'))),
           _infoRow('Devise', _val(values, 'currency') ?? 'FCFA'),
-          _infoRow('Mode de production', _val(values, 'mode_production') ?? '—'),
+          _infoRow(
+            'Mode de production',
+            _val(values, 'mode_production') ?? '—',
+          ),
           _infoRow('Responsable', _val(values, 'responsable.nom') ?? '—'),
           pw.SizedBox(height: 16),
           // Render any additional fields from the template
           ..._renderAdditionalFields(page, values, [
-            'org.name', 'exercice.label', 'exercice.date_debut',
-            'exercice.date_fin', 'currency', 'mode_production',
+            'org.name',
+            'exercice.label',
+            'exercice.date_debut',
+            'exercice.date_fin',
+            'currency',
+            'mode_production',
             'responsable.nom',
           ]),
         ],
@@ -309,8 +360,7 @@ class FiscalPdfService {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (ctx) =>
-            _pageHeader(orgName, sectionTitle, generatedAt),
+        header: (ctx) => _pageHeader(orgName, sectionTitle, generatedAt),
         footer: (ctx) => _pageFooter(ctx, generatedAt),
         build: (ctx) {
           final widgets = <pw.Widget>[];
@@ -332,7 +382,9 @@ class FiscalPdfService {
                 pw.Container(
                   margin: const pw.EdgeInsets.only(top: 12, bottom: 4),
                   padding: const pw.EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: pw.BoxDecoration(
                     color: PdfColors.grey100,
                     border: pw.Border(
@@ -355,8 +407,10 @@ class FiscalPdfService {
             widgets.add(
               pw.Table(
                 border: pw.TableBorder(
-                  horizontalInside:
-                      pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+                  horizontalInside: pw.BorderSide(
+                    color: PdfColors.grey200,
+                    width: 0.5,
+                  ),
                 ),
                 columnWidths: {
                   0: const pw.FlexColumnWidth(3),
@@ -364,8 +418,7 @@ class FiscalPdfService {
                 },
                 children: fields.map((field) {
                   final rawValue = values[field.fieldKey];
-                  final displayValue =
-                      _formatFieldValue(field, rawValue);
+                  final displayValue = _formatFieldValue(field, rawValue);
 
                   return pw.TableRow(
                     decoration: field.isBold || field.isHighlighted
@@ -374,7 +427,9 @@ class FiscalPdfService {
                     children: [
                       pw.Padding(
                         padding: const pw.EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         child: pw.Text(
                           field.label,
                           style: pw.TextStyle(
@@ -387,7 +442,9 @@ class FiscalPdfService {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         child: pw.Align(
                           alignment: pw.Alignment.centerRight,
                           child: pw.Text(
@@ -432,8 +489,7 @@ class FiscalPdfService {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (ctx) =>
-            _pageHeader(orgName, page.title, generatedAt),
+        header: (ctx) => _pageHeader(orgName, page.title, generatedAt),
         footer: (ctx) => _pageFooter(ctx, generatedAt),
         build: (ctx) {
           final widgets = <pw.Widget>[];
@@ -469,19 +525,30 @@ class FiscalPdfService {
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(orgName,
-                    style: pw.TextStyle(
-                        fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                pw.Text('Dossier Fiscal SYSCEBNL',
-                    style: const pw.TextStyle(
-                        fontSize: 8, color: PdfColors.grey600)),
+                pw.Text(
+                  orgName,
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  'Dossier Fiscal SYSCEBNL',
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
               ],
             ),
-            pw.Text(pageTitle,
-                style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blueGrey800)),
+            pw.Text(
+              pageTitle,
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blueGrey800,
+              ),
+            ),
           ],
         ),
         pw.Divider(thickness: 1.5, color: PdfColors.blueGrey800),
@@ -538,8 +605,7 @@ class FiscalPdfService {
             width: 160,
             child: pw.Text(
               label,
-              style: pw.TextStyle(
-                  fontSize: 10, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
             ),
           ),
           pw.Text(' :  ', style: const pw.TextStyle(fontSize: 10)),
