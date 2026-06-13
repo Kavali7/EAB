@@ -3,13 +3,13 @@
 > consultez et mettez à jour [`docs/BACKEND_REFERENCE.md`](docs/BACKEND_REFERENCE.md).**
 > C'est la source de vérité unique du backend. Voir aussi [`AGENTS.md`](AGENTS.md).
 
-# EAB - Gestion d'Église et Comptabilité SYSCEBNL
+# Gestion Eglise - Gestion d'eglise et comptabilite SYSCEBNL
 
 ## 📋 Présentation
 
-**EAB** (Église - Administration - Budget) est une application de gestion complète destinée aux organisations ecclésiastiques. Elle permet de gérer :
+**Gestion Eglise** est une application web personnalisable de gestion complete destinee aux organisations ecclesiastiques. Les donnees **EAB** sont conservees comme compte de demonstration pour montrer un cas multi-niveaux complet. Elle permet de gerer :
 
-- 🏛️ **Structure ecclésiastique** : Régions, Districts, Assemblées locales
+- 🏛️ **Structure ecclesiastique** : eglise unique ou hierarchie configurable multi-niveaux
 - 👥 **Membres / Fidèles** : Informations personnelles, vie spirituelle, familles
 - 📅 **Programmes / Activités** : Cultes, évangélisations, baptêmes, etc.
 - 💰 **Comptabilité SYSCEBNL** : Conforme au Système Comptable des Entités à But Non Lucratif

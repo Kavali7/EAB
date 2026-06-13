@@ -4,7 +4,7 @@
 
 Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiques (C1-C4), haute priorité (H1-H5), et **moyenne (M1-M6) terminées**. Le chantier restant se concentre sur : (1) les items résiduels des phases 1-2, (2) les fonctionnalités de phase 4 retenues pour la V1.
 
-> **Dernière mise à jour** : 2026-03-07
+> **Derniere mise a jour** : 2026-06-13
 
 ---
 
@@ -39,18 +39,27 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [x] Raccourcis d'actions rapides (nouvelle écriture, nouveau membre, rapport du mois)
 - [x] Résumé par rôle : admin voit toutes les assemblées, trésorier voit son assemblée
 
-### C3. Multi-Tenant Complet ✅
+### C3. Multi-Tenant / Webapp personnalisable
 
 **Pourquoi** : L'app doit fonctionner pour n'importe quelle église, pas seulement EAB.
 
 **Travail** :
 
-- [x] Onboarding : écran de création d'organisation (nom, logo, couleurs)
-- [x] Thème dynamique par organisation (couleur primaire, logo dans le sidebar)
-- [x] Nom de l'organisation dans l'AppBar au lieu de "EAB"
+- [x] Branding neutre par defaut (`Gestion Eglise`) et EAB conserve comme compte demo
+- [x] Identite organisation personnalisable : nom, sigle, logo URL, couleurs, contact
+- [x] Migration `00017_organization_branding.sql`
+- [x] Fondation hierarchie flexible : `church_unit_types`, `church_units`, `church_unit_user_scopes`
+- [x] Backfill EAB demo vers la nouvelle hierarchie configurable
+- [x] Lecture UI du panneau `Architecture configurable` sur l'ecran Structure
+- [ ] CRUD complet des niveaux/unites flexibles dans l'interface
+- [ ] Bascule progressive des membres, programmes et comptabilite vers `church_units`
+- [ ] Gestion avancee des sous-comptes utilisateurs par perimetre flexible
+- [ ] Onboarding : écran de création d'organisation (nom, logo, couleurs)
+- [ ] Thème dynamique complet par organisation sur toute l'app
+- [x] Nom de l'organisation dans l'AppBar / navigation au lieu de "EAB"
 - [x] Plan comptable modèle fourni lors de la création d'une organisation
 - [x] Catégories de recettes/dépenses paramétrables par organisation (parametres JSON)
-- [x] Invitation d'utilisateurs dans une organisation existante
+- [ ] Invitation d'utilisateurs dans une organisation existante avec rattachement `church_unit_user_scopes`
 
 ### C4. Export PDF / Excel ✅
 

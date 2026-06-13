@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Dernière mise à jour** : 2026-03-07
-- **Fichiers de migration** : `supabase/migrations/00001` → `00016`
+- **Derniere mise a jour** : 2026-06-13
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00018`
 
 ---
 
@@ -72,6 +72,15 @@
 | `code` | TEXT | OUI | — | Code unique (UNIQUE) |
 | `description` | TEXT | OUI | — | Description |
 | `logo_url` | TEXT | OUI | — | URL du logo |
+| `sigle` | TEXT | OUI | — | Sigle affiche dans l'interface |
+| `couleur_primaire` | TEXT | OUI | — | Couleur principale |
+| `couleur_secondaire` | TEXT | OUI | — | Couleur secondaire |
+| `adresse` | TEXT | OUI | — | Adresse |
+| `telephone` | TEXT | OUI | — | Telephone |
+| `email` | TEXT | OUI | — | Email |
+| `site_web` | TEXT | OUI | — | Site web |
+| `devise` | TEXT | NON | `'FCFA'` | Devise |
+| `parametres` | JSONB | NON | `'{}'::jsonb` | Parametres organisation |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | Date de création |
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Dernière modification |
 
@@ -92,6 +101,7 @@
 | `id_region` | UUID | OUI | — | FK → `regions_eglise(id)` ON DELETE SET NULL |
 | `id_district` | UUID | OUI | — | FK → `districts_eglise(id)` ON DELETE SET NULL |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` ON DELETE SET NULL |
+| `primary_church_unit_id` | UUID | OUI | — | FK → `church_units(id)` ON DELETE SET NULL |
 | `avatar_url` | TEXT | OUI | — | URL de l'avatar |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
@@ -161,7 +171,27 @@
 
 ---
 
-### 2.6 `familles`
+### 2.6 `church_unit_types` / `church_units` / `church_unit_user_scopes`
+
+> Hierarchie flexible ajoutee par `00018`. Elle permet une eglise unique, une structure multi-niveaux ou une structure differente de Region -> District -> Assemblee.
+
+| Table | Role |
+| ----- | ---- |
+| `church_unit_types` | Definit les niveaux configurables par organisation (`organization`, `region`, `district`, `local_church`, etc.) |
+| `church_units` | Contient les noeuds de structure avec `parent_id`, type, infos de contact et liens legacy vers EAB demo |
+| `church_unit_user_scopes` | Rattache un utilisateur et un role a une unite precise |
+
+Points importants :
+- les anciennes tables `regions_eglise`, `districts_eglise`, `assemblees_locales` restent conservees ;
+- les donnees EAB existantes sont recopiees dans `church_units` comme compte demo ;
+- `profiles.primary_church_unit_id` prepare le rattachement principal d'un utilisateur ;
+- `get_church_unit_descendants(UUID)` retourne une unite et toutes ses sous-unites.
+
+**RLS** : ✅ isolation par `organization_id`, mutations reservees aux admins nationaux dans cette premiere fondation.
+
+---
+
+### 2.9 `familles`
 
 > Familles de fidèles pour le suivi familial.
 
@@ -181,7 +211,7 @@
 
 ---
 
-### 2.7 `membres`
+### 2.10 `membres`
 
 > Membres/fidèles de l'église avec toutes leurs informations.
 
@@ -217,7 +247,7 @@
 
 ---
 
-### 2.8 `programmes`
+### 2.11 `programmes`
 
 > Activités et programmes de l'église (cultes, évangélisations, etc.).
 
@@ -1030,6 +1060,8 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00018** : hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`), backfill des donnees EAB comme demo, `profiles.primary_church_unit_id`, `get_church_unit_descendants(UUID)`, index et RLS. |
+| 2026-06-13 | Agent IA | **Migration 00017** : branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et marque produit neutre par defaut. |
 | 2026-03-07 | Agent IA | **Migration 00016** : Fix RPCs `open_exercice` et `cloturer_exercice`. Corrigé `m.user_id` (colonne inexistante sur `membres`) → `profiles.id = auth.uid()` pour la vérification d'appartenance à l'organisation. Fix côté Flutter : helper `_getOrgId()` qui récupère `organization_id` depuis `profiles` au lieu de `appMetadata` (qui ne contient pas cette donnée). Ajout `try/catch` + `SnackBar` err sur formulaires d'insertion comptable. Fix DataTable overflow (`columnSpacing: 24`, `horizontalMargin: 12`). |
 | 2026-03-02 | Agent IA | **PR4** : `FiscalPdfService` — Génération PDF multi-pages dossier fiscal (COVER avec badge/watermark, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT). Rendu dynamique depuis template fields + valeurs. Header/footer cohérents avec pagination. Intégration dans wizard (bouton PDF). |
 | 2026-03-02 | Agent IA | **Migration 00015** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
