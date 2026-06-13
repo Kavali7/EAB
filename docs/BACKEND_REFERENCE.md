@@ -240,7 +240,29 @@
 
 ---
 
-### 2.9 `familles`
+### 2.9 `organization_user_invitations`
+
+> Invitations de sous-comptes rattachees a une organisation et, optionnellement, a un perimetre `church_units`.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `uuid_generate_v4()` | PK |
+| `organization_id` | UUID | NON | — | FK → `organizations(id)` ON DELETE CASCADE |
+| `email` | TEXT | NON | — | Email invite, normalise en minuscules |
+| `role` | `role_utilisateur` | NON | `'tresorier_assemblee'` | Role a appliquer au profil |
+| `primary_church_unit_id` | UUID | OUI | — | FK → `church_units(id)` ON DELETE SET NULL |
+| `can_manage_children` | BOOLEAN | NON | `FALSE` | Peut gerer les sous-unites du perimetre |
+| `invited_by` | UUID | OUI | — | FK → `profiles(id)` ON DELETE SET NULL |
+| `accepted_by` | UUID | OUI | — | FK → `profiles(id)` ON DELETE SET NULL |
+| `accepted_at` / `revoked_at` | TIMESTAMPTZ | OUI | — | Cycle de vie de l'invitation |
+| `expires_at` | TIMESTAMPTZ | NON | `NOW() + 14 days` | Expiration |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **UNIQUE partiel** : `(organization_id, email)` si invitation active.
+
+---
+
+### 2.10 `familles`
 
 > Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Ce champ est synchronise avec `id_assemblee_locale` quand l'unite flexible pointe vers une assemblee legacy.
@@ -263,7 +285,7 @@
 
 ---
 
-### 2.10 `membres`
+### 2.11 `membres`
 
 > Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_member_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -302,7 +324,7 @@
 
 ---
 
-### 2.11 `programmes`
+### 2.12 `programmes`
 
 > Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_program_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -872,6 +894,8 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_units` | CHECK | `parent_id IS NULL OR parent_id <> id` |
 | `church_units` | UNIQUE INDEX | `(organization_id, type_id, code)` si `code IS NOT NULL` |
 | `church_unit_user_scopes` | UNIQUE | `(user_id, unit_id, role)` |
+| `organization_user_invitations` | UNIQUE INDEX | `(organization_id, email)` si invitation active |
+| `organization_user_invitations` | CHECK | `email = lower(trim(email))` et contient `@` |
 | `regions_eglise` | UNIQUE | `(organization_id, code)` |
 | `districts_eglise` | UNIQUE | `(organization_id, code)` |
 | `assemblees_locales` | UNIQUE | `(organization_id, code)` |
@@ -920,6 +944,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_unit_types` | Même org | Admin national | Configuration niveaux |
 | `church_units` | Même org | Admin national | Hierarchie flexible |
 | `church_unit_user_scopes` | Même org | Admin national | Perimetres utilisateurs |
+| `organization_user_invitations` | Admin national propre org | Admin national propre org | Sous-comptes |
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
 | `assemblees_locales` | Même org | Admin / Resp. / Surint. / Trés. | Hiérarchique |
@@ -948,7 +973,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | Fonction | Langage | Sécurité | Description |
 | ---------- | --------- | ---------- | ------------- |
 | `update_updated_at_column()` | plpgsql | — | Met `updated_at = NOW()` avant UPDATE |
-| `handle_new_user()` | plpgsql | DEFINER | Crée profil `tresorier_assemblee` à l'inscription |
+| `handle_new_user()` | plpgsql | DEFINER | Crée le profil a l'inscription ; applique une invitation active si l'email correspond |
+| `normalize_user_role(TEXT)` | plpgsql | — | Normalise les roles camelCase/snake_case en `role_utilisateur` |
+| `invite_user_to_org(UUID, TEXT, TEXT, UUID, BOOLEAN)` | plpgsql | DEFINER | Cree ou met a jour une invitation de sous-compte et rattache l'utilisateur si le compte existe deja |
 | `verify_ecriture_equilibree()` | plpgsql | — | Vérifie débit = crédit (écritures validées) |
 | `prevent_modification_validated_ecriture()` | plpgsql | — | Bloque modification écritures validées/clôturées |
 | `validate_ecriture(UUID)` | plpgsql | DEFINER | Valide une écriture après vérification équilibre |
@@ -1012,9 +1039,14 @@ Migration `00022` ajoute :
 
 Ces triggers synchronisent `church_unit_id` avec `id_assemblee_locale` pour les objets comptables operationnels.
 
+Migration `00023` remplace `handle_new_user()` pour appliquer les invitations de sous-comptes :
+
+- si l'email d'inscription correspond a une invitation active, le profil recoit `organization_id`, `role`, `primary_church_unit_id` et le perimetre `church_unit_user_scopes` ;
+- sinon, le comportement historique cree un profil `tresorier_assemblee` sans organisation.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
-Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables` (20 tables).
+Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations` (21 tables).
 
 ### Triggers métier
 
@@ -1051,6 +1083,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_church_units_legacy_region` | `church_units` | `legacy_region_id` WHERE NOT NULL |
 | `idx_church_units_legacy_district` | `church_units` | `legacy_district_id` WHERE NOT NULL |
 | `idx_church_units_legacy_assemblee` | `church_units` | `legacy_assemblee_id` WHERE NOT NULL |
+| `idx_org_user_invitations_*` | `organization_user_invitations` | `organization_id`, `email`, `primary_church_unit_id`, unique actif `(organization_id, email)` |
 | `idx_regions_organization` | `regions_eglise` | `organization_id` |
 | `idx_regions_code` | `regions_eglise` | `(organization_id, code)` |
 | `idx_districts_organization` | `districts_eglise` | `organization_id` |
@@ -1157,11 +1190,13 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 ```mermaid
 erDiagram
     organizations ||--o{ profiles : "utilisateurs"
+    organizations ||--o{ organization_user_invitations : "invitations"
     organizations ||--o{ church_unit_types : "niveaux"
     organizations ||--o{ church_units : "unites"
     church_unit_types ||--o{ church_units : "type"
     church_units ||--o{ church_units : "sous-unites"
     church_units ||--o{ church_unit_user_scopes : "perimetres"
+    church_units ||--o{ organization_user_invitations : "perimetres invites"
     church_units ||--o{ ecritures_comptables : "ecritures"
     church_units ||--o{ budgets_comptables : "budgets"
     church_units ||--o{ immobilisations_comptables : "immobilisations"
@@ -1203,6 +1238,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00023** : Ajout des invitations de sous-comptes (`organization_user_invitations`), RPC `invite_user_to_org`, normalisation des roles et adaptation de `handle_new_user()` pour rattacher automatiquement un nouvel inscrit a son organisation, son role et son perimetre `church_units`. |
 | 2026-06-13 | Agent IA | **Migration 00022** : Rattachement progressif de la comptabilite operationnelle a `church_units` via `church_unit_id` (`centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`, `immobilisations_comptables`, `releves_bancaires`). Backfill depuis les assemblees legacy, triggers de synchronisation, index et politiques RLS hybrides pour les objets comptables rattaches a un perimetre. |
 | 2026-06-13 | Agent IA | **Migration 00021** : Rattachement progressif de `rapports_mensuels_eab` a `church_units` via `church_unit_id`. `id_assemblee_locale` devient nullable pour les rapports sur niveaux non locaux, backfill depuis les assemblees legacy, trigger de synchronisation, index unique par unite/periode et politiques RLS hybrides. |
 | 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |

@@ -34,10 +34,13 @@ class OrganizationRepository {
     required String? couleurPrimaire,
     required String? couleurSecondaire,
   }) async {
-    await _dataService.client.from('organizations').update({
-      'couleur_primaire': couleurPrimaire,
-      'couleur_secondaire': couleurSecondaire,
-    }).eq('id', orgId);
+    await _dataService.client
+        .from('organizations')
+        .update({
+          'couleur_primaire': couleurPrimaire,
+          'couleur_secondaire': couleurSecondaire,
+        })
+        .eq('id', orgId);
   }
 
   /// Invite un utilisateur par email.
@@ -45,12 +48,18 @@ class OrganizationRepository {
     required String orgId,
     required String email,
     required String role,
+    String? primaryChurchUnitId,
+    bool canManageChildren = false,
   }) async {
-    // Appel RPC pour inviter un utilisateur
-    await _dataService.client.rpc('invite_user_to_org', params: {
-      'p_org_id': orgId,
-      'p_email': email,
-      'p_role': role,
-    });
+    await _dataService.client.rpc(
+      'invite_user_to_org',
+      params: {
+        'p_org_id': orgId,
+        'p_email': email,
+        'p_role': role,
+        'p_primary_church_unit_id': primaryChurchUnitId,
+        'p_can_manage_children': canManageChildren,
+      },
+    );
   }
 }

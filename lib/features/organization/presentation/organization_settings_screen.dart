@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/errors/error_handler.dart';
+import 'package:eab/core/errors/app_exceptions.dart';
+import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/section_card.dart';
@@ -38,6 +42,8 @@ class _OrganizationSettingsScreenState
   final _couleurSecondaireCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
+  String? _inviteChurchUnitId;
+  bool _inviteCanManageChildren = false;
   bool _saving = false;
   bool _inviting = false;
 
@@ -109,6 +115,14 @@ class _OrganizationSettingsScreenState
 
   Future<void> _inviteUser(String orgId) async {
     if (_inviteEmailCtrl.text.trim().isEmpty) return;
+    if (_inviteRole != 'adminNational' && _inviteChurchUnitId == null) {
+      context.showError(
+        const BusinessRuleException(
+          'Choisissez le perimetre de ce sous-compte.',
+        ),
+      );
+      return;
+    }
     setState(() => _inviting = true);
     try {
       final repo = ref.read(organizationRepositoryProvider);
@@ -116,9 +130,15 @@ class _OrganizationSettingsScreenState
         orgId: orgId,
         email: _inviteEmailCtrl.text.trim(),
         role: _inviteRole,
+        primaryChurchUnitId: _inviteChurchUnitId,
+        canManageChildren: _inviteCanManageChildren,
       );
       _inviteEmailCtrl.clear();
-      if (mounted) context.showSuccess('Invitation envoyee.');
+      if (mounted) {
+        context.showSuccess(
+          'Invitation enregistree. Le compte sera rattache a l inscription.',
+        );
+      }
     } catch (e) {
       if (mounted) context.showError(e);
     } finally {
@@ -129,6 +149,7 @@ class _OrganizationSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final orgAsync = ref.watch(currentOrganizationProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
 
     return AppShell(
       title: 'Parametres organisation',
@@ -173,7 +194,11 @@ class _OrganizationSettingsScreenState
                           const SizedBox(height: AppSpacing.cardGap),
                           _saveActions(org, compact: compact),
                           const SizedBox(height: AppSpacing.xl),
-                          _inviteSection(compact: compact, orgId: org.id),
+                          _inviteSection(
+                            compact: compact,
+                            orgId: org.id,
+                            churchUnits: churchUnitsAsync.value ?? const [],
+                          ),
                         ],
                       ),
                     ),
@@ -358,7 +383,17 @@ class _OrganizationSettingsScreenState
     return Align(alignment: Alignment.centerRight, child: button);
   }
 
-  Widget _inviteSection({required bool compact, required String orgId}) {
+  Widget _inviteSection({
+    required bool compact,
+    required String orgId,
+    required List<ChurchUnit> churchUnits,
+  }) {
+    final scopedUnits = accountingScopeUnits(churchUnits);
+    if (_inviteChurchUnitId != null &&
+        !scopedUnits.any((unit) => unit.id == _inviteChurchUnitId)) {
+      _inviteChurchUnitId = null;
+    }
+
     final button = EabButton(
       label: 'Inviter',
       variant: EabButtonVariant.primary,
@@ -369,41 +404,90 @@ class _OrganizationSettingsScreenState
 
     return SectionCard(
       title: 'Inviter un utilisateur',
-      child: ResponsiveFormRow(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          EabTextField(
-            label: 'Email',
-            controller: _inviteEmailCtrl,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _inviteRole,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Role',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem(
-                value: 'adminNational',
-                child: Text('Admin national'),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Email',
+                controller: _inviteEmailCtrl,
+                keyboardType: TextInputType.emailAddress,
               ),
-              DropdownMenuItem(
-                value: 'responsableRegion',
-                child: Text('Responsable region'),
-              ),
-              DropdownMenuItem(
-                value: 'surintendantDistrict',
-                child: Text('Surintendant district'),
-              ),
-              DropdownMenuItem(
-                value: 'tresorierAssemblee',
-                child: Text('Tresorier assemblee'),
+              DropdownButtonFormField<String>(
+                initialValue: _inviteRole,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'adminNational',
+                    child: Text('Admin national'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'responsableRegion',
+                    child: Text('Responsable region'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'surintendantDistrict',
+                    child: Text('Surintendant district'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'tresorierAssemblee',
+                    child: Text('Tresorier assemblee'),
+                  ),
+                ],
+                onChanged: (v) => setState(() {
+                  _inviteRole = v!;
+                  if (_inviteRole == 'adminNational') {
+                    _inviteCanManageChildren = true;
+                  }
+                }),
               ),
             ],
-            onChanged: (v) => setState(() => _inviteRole = v!),
           ),
-          compact ? SizedBox(width: double.infinity, child: button) : button,
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              DropdownButtonFormField<String?>(
+                initialValue: _inviteChurchUnitId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Perimetre',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Toute l organisation'),
+                  ),
+                  ...scopedUnits.map(
+                    (unit) => DropdownMenuItem<String?>(
+                      value: unit.id,
+                      child: Text(
+                        '${unit.typeLabel} - ${churchUnitLabel(unit)}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _inviteChurchUnitId = v),
+              ),
+              CheckboxListTile(
+                value: _inviteCanManageChildren,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Autoriser les sous-niveaux'),
+                onChanged: (v) =>
+                    setState(() => _inviteCanManageChildren = v ?? false),
+              ),
+              compact
+                  ? SizedBox(width: double.infinity, child: button)
+                  : button,
+            ],
+          ),
         ],
       ),
     );
