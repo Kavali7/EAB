@@ -135,7 +135,8 @@ _RapportMensuelEab _$RapportMensuelEabFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       annee: (json['annee'] as num).toInt(),
       mois: (json['mois'] as num).toInt(),
-      idAssembleeLocale: json['idAssembleeLocale'] as String,
+      idAssembleeLocale: json['idAssembleeLocale'] as String?,
+      churchUnitId: json['churchUnitId'] as String?,
       statsMembres: StatsMembresMensuelles.fromJson(
         json['statsMembres'] as Map<String, dynamic>,
       ),
@@ -157,6 +158,7 @@ Map<String, dynamic> _$RapportMensuelEabToJson(_RapportMensuelEab instance) =>
       'annee': instance.annee,
       'mois': instance.mois,
       'idAssembleeLocale': instance.idAssembleeLocale,
+      'churchUnitId': instance.churchUnitId,
       'statsMembres': instance.statsMembres,
       'statsActivites': instance.statsActivites,
       'statsFinances': instance.statsFinances,

@@ -7,6 +7,8 @@ import '../models/ecriture_comptable.dart';
 import '../models/member.dart';
 import '../models/program.dart';
 import '../models/rapport_mensuel_eab.dart';
+import '../features/church_units/application/church_units_provider.dart';
+import '../features/church_units/data/church_unit_model.dart';
 import 'accounting_providers.dart';
 import 'members_provider.dart';
 import 'programs_provider.dart';
@@ -15,12 +17,12 @@ class RapportMensuelParams {
   const RapportMensuelParams({
     required this.annee,
     required this.mois,
-    required this.idAssembleeLocale,
+    required this.churchUnitId,
   });
 
   final int annee;
   final int mois;
-  final String idAssembleeLocale;
+  final String churchUnitId;
 
   @override
   bool operator ==(Object other) {
@@ -28,65 +30,139 @@ class RapportMensuelParams {
     return other is RapportMensuelParams &&
         other.annee == annee &&
         other.mois == mois &&
-        other.idAssembleeLocale == idAssembleeLocale;
+        other.churchUnitId == churchUnitId;
   }
 
   @override
-  int get hashCode => Object.hash(annee, mois, idAssembleeLocale);
+  int get hashCode => Object.hash(annee, mois, churchUnitId);
 }
 
 final rapportMensuelEabProvider =
-    FutureProvider.family<RapportMensuelEab, RapportMensuelParams>(
-  (ref, params) async {
-    // 1) Charger les donnees necessaires
-    final membres = await ref.watch(membersProvider.future);
-    final programmes = await ref.watch(programsProvider.future);
-    final ecritures = await ref.watch(ecrituresComptablesProvider.future);
-    final comptes = await ref.watch(comptesComptablesProvider.future);
+    FutureProvider.family<RapportMensuelEab, RapportMensuelParams>((
+      ref,
+      params,
+    ) async {
+      // 1) Charger les donnees necessaires
+      final membres = await ref.watch(membersProvider.future);
+      final programmes = await ref.watch(programsProvider.future);
+      final ecritures = await ref.watch(ecrituresComptablesProvider.future);
+      final comptes = await ref.watch(comptesComptablesProvider.future);
+      final churchUnits = await ref.watch(churchUnitsProvider.future);
 
-    final debutMois = DateTime(params.annee, params.mois, 1);
-    final finMois = DateTime(params.annee, params.mois + 1, 0);
+      final debutMois = DateTime(params.annee, params.mois, 1);
+      final finMois = DateTime(params.annee, params.mois + 1, 0);
+      final scope = _RapportScope.fromUnits(churchUnits, params.churchUnitId);
 
-    // 2) Filtrer par assemblee et par mois
-    final membresAssemblee = membres
-        .where((m) => m.idAssembleeLocale == params.idAssembleeLocale)
-        .toList();
+      // 2) Filtrer par unite flexible, avec compatibilite assemblee legacy.
+      final membresAssemblee = membres
+          .where((m) => _memberInScope(m, scope))
+          .toList();
 
-    final programmesMois = programmes.where((p) {
-      if (p.idAssembleeLocale != params.idAssembleeLocale) return false;
-      final d = p.date;
-      return !d.isBefore(debutMois) && !d.isAfter(finMois);
-    }).toList();
+      final programmesMois = programmes.where((p) {
+        if (!_programInScope(p, scope)) return false;
+        final d = p.date;
+        return !d.isBefore(debutMois) && !d.isAfter(finMois);
+      }).toList();
 
-    final ecrituresMois = ecritures.where((e) {
-      if (e.idAssembleeLocale != params.idAssembleeLocale) return false;
-      return !e.date.isBefore(debutMois) && !e.date.isAfter(finMois);
-    }).toList();
+      final ecrituresMois = ecritures.where((e) {
+        if (!_ecritureInScope(e, scope)) return false;
+        return !e.date.isBefore(debutMois) && !e.date.isAfter(finMois);
+      }).toList();
 
-    // 3) Calculs
-    final statsMembres = _calculerStatsMembresMensuelles(
-      membresAssemblee,
-      debutMois,
-      finMois,
+      // 3) Calculs
+      final statsMembres = _calculerStatsMembresMensuelles(
+        membresAssemblee,
+        debutMois,
+        finMois,
+      );
+      final statsActivites = _calculerStatsActivitesMensuelles(programmesMois);
+      final statsFinances = _calculerStatsFinancieresMensuelles(
+        ecrituresMois,
+        comptes,
+      );
+
+      final idRapport =
+          'rapport_${params.churchUnitId}_${params.annee}_${params.mois}';
+
+      return RapportMensuelEab(
+        id: idRapport,
+        annee: params.annee,
+        mois: params.mois,
+        idAssembleeLocale: scope.primaryLegacyAssembleeId,
+        churchUnitId: params.churchUnitId,
+        statsMembres: statsMembres,
+        statsActivites: statsActivites,
+        statsFinances: statsFinances,
+      );
+    });
+
+class _RapportScope {
+  const _RapportScope({
+    required this.unitIds,
+    required this.legacyAssembleeIds,
+    required this.primaryLegacyAssembleeId,
+  });
+
+  final Set<String> unitIds;
+  final Set<String> legacyAssembleeIds;
+  final String? primaryLegacyAssembleeId;
+
+  factory _RapportScope.fromUnits(List<ChurchUnit> units, String unitId) {
+    final childrenByParent = <String?, List<ChurchUnit>>{};
+    for (final unit in units) {
+      childrenByParent.putIfAbsent(unit.parentId, () => []).add(unit);
+    }
+
+    final scopedIds = <String>{};
+    void visit(String id) {
+      if (!scopedIds.add(id)) return;
+      for (final child in childrenByParent[id] ?? const <ChurchUnit>[]) {
+        visit(child.id);
+      }
+    }
+
+    visit(unitId);
+
+    final selected = units.where((unit) => unit.id == unitId).firstOrNull;
+    final legacyIds = <String>{
+      for (final unit in units)
+        if (scopedIds.contains(unit.id) &&
+            unit.legacyAssembleeId != null &&
+            unit.legacyAssembleeId!.isNotEmpty)
+          unit.legacyAssembleeId!,
+    };
+
+    return _RapportScope(
+      unitIds: scopedIds,
+      legacyAssembleeIds: legacyIds,
+      primaryLegacyAssembleeId: selected?.legacyAssembleeId,
     );
-    final statsActivites = _calculerStatsActivitesMensuelles(programmesMois);
-    final statsFinances =
-        _calculerStatsFinancieresMensuelles(ecrituresMois, comptes);
+  }
+}
 
-    final idRapport =
-        'rapport_${params.idAssembleeLocale}_${params.annee}_${params.mois}';
+bool _memberInScope(Member member, _RapportScope scope) {
+  final unitId = member.churchUnitId;
+  if (unitId != null && scope.unitIds.contains(unitId)) return true;
 
-    return RapportMensuelEab(
-      id: idRapport,
-      annee: params.annee,
-      mois: params.mois,
-      idAssembleeLocale: params.idAssembleeLocale,
-      statsMembres: statsMembres,
-      statsActivites: statsActivites,
-      statsFinances: statsFinances,
-    );
-  },
-);
+  final legacyAssembleeId = member.idAssembleeLocale;
+  return legacyAssembleeId != null &&
+      scope.legacyAssembleeIds.contains(legacyAssembleeId);
+}
+
+bool _programInScope(Program program, _RapportScope scope) {
+  final unitId = program.churchUnitId;
+  if (unitId != null && scope.unitIds.contains(unitId)) return true;
+
+  final legacyAssembleeId = program.idAssembleeLocale;
+  return legacyAssembleeId != null &&
+      scope.legacyAssembleeIds.contains(legacyAssembleeId);
+}
+
+bool _ecritureInScope(EcritureComptable ecriture, _RapportScope scope) {
+  final legacyAssembleeId = ecriture.idAssembleeLocale;
+  return legacyAssembleeId != null &&
+      scope.legacyAssembleeIds.contains(legacyAssembleeId);
+}
 
 StatsMembresMensuelles _calculerStatsMembresMensuelles(
   List<Member> membres,
@@ -163,8 +239,7 @@ StatsMembresMensuelles _calculerStatsMembresMensuelles(
         _estDansMois(m.dateSortie!, debutMois, finMois)) {
       departAssemblage++;
     }
-    if (m.dateDeces != null &&
-        _estDansMois(m.dateDeces!, debutMois, finMois)) {
+    if (m.dateDeces != null && _estDansMois(m.dateDeces!, debutMois, finMois)) {
       deces++;
     }
   }

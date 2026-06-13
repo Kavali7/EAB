@@ -955,7 +955,7 @@ as double,
 /// @nodoc
 mixin _$RapportMensuelEab {
 
- String get id; int get annee; int get mois; String get idAssembleeLocale;// Statistiques calculees
+ String get id; int get annee; int get mois; String? get idAssembleeLocale; String? get churchUnitId;// Statistiques calculees
  StatsMembresMensuelles get statsMembres; StatsActivitesMensuelles get statsActivites; StatsFinancieresMensuelles get statsFinances;// Champs texte (remplis plus tard via l'UI)
  String? get resumeActivites; String? get projetsRealisations; String? get projetsMoisSuivant; String? get observations;
 /// Create a copy of RapportMensuelEab
@@ -970,16 +970,16 @@ $RapportMensuelEabCopyWith<RapportMensuelEab> get copyWith => _$RapportMensuelEa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RapportMensuelEab&&(identical(other.id, id) || other.id == id)&&(identical(other.annee, annee) || other.annee == annee)&&(identical(other.mois, mois) || other.mois == mois)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.statsMembres, statsMembres) || other.statsMembres == statsMembres)&&(identical(other.statsActivites, statsActivites) || other.statsActivites == statsActivites)&&(identical(other.statsFinances, statsFinances) || other.statsFinances == statsFinances)&&(identical(other.resumeActivites, resumeActivites) || other.resumeActivites == resumeActivites)&&(identical(other.projetsRealisations, projetsRealisations) || other.projetsRealisations == projetsRealisations)&&(identical(other.projetsMoisSuivant, projetsMoisSuivant) || other.projetsMoisSuivant == projetsMoisSuivant)&&(identical(other.observations, observations) || other.observations == observations));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RapportMensuelEab&&(identical(other.id, id) || other.id == id)&&(identical(other.annee, annee) || other.annee == annee)&&(identical(other.mois, mois) || other.mois == mois)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.statsMembres, statsMembres) || other.statsMembres == statsMembres)&&(identical(other.statsActivites, statsActivites) || other.statsActivites == statsActivites)&&(identical(other.statsFinances, statsFinances) || other.statsFinances == statsFinances)&&(identical(other.resumeActivites, resumeActivites) || other.resumeActivites == resumeActivites)&&(identical(other.projetsRealisations, projetsRealisations) || other.projetsRealisations == projetsRealisations)&&(identical(other.projetsMoisSuivant, projetsMoisSuivant) || other.projetsMoisSuivant == projetsMoisSuivant)&&(identical(other.observations, observations) || other.observations == observations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,annee,mois,idAssembleeLocale,statsMembres,statsActivites,statsFinances,resumeActivites,projetsRealisations,projetsMoisSuivant,observations);
+int get hashCode => Object.hash(runtimeType,id,annee,mois,idAssembleeLocale,churchUnitId,statsMembres,statsActivites,statsFinances,resumeActivites,projetsRealisations,projetsMoisSuivant,observations);
 
 @override
 String toString() {
-  return 'RapportMensuelEab(id: $id, annee: $annee, mois: $mois, idAssembleeLocale: $idAssembleeLocale, statsMembres: $statsMembres, statsActivites: $statsActivites, statsFinances: $statsFinances, resumeActivites: $resumeActivites, projetsRealisations: $projetsRealisations, projetsMoisSuivant: $projetsMoisSuivant, observations: $observations)';
+  return 'RapportMensuelEab(id: $id, annee: $annee, mois: $mois, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, statsMembres: $statsMembres, statsActivites: $statsActivites, statsFinances: $statsFinances, resumeActivites: $resumeActivites, projetsRealisations: $projetsRealisations, projetsMoisSuivant: $projetsMoisSuivant, observations: $observations)';
 }
 
 
@@ -990,7 +990,7 @@ abstract mixin class $RapportMensuelEabCopyWith<$Res>  {
   factory $RapportMensuelEabCopyWith(RapportMensuelEab value, $Res Function(RapportMensuelEab) _then) = _$RapportMensuelEabCopyWithImpl;
 @useResult
 $Res call({
- String id, int annee, int mois, String idAssembleeLocale, StatsMembresMensuelles statsMembres, StatsActivitesMensuelles statsActivites, StatsFinancieresMensuelles statsFinances, String? resumeActivites, String? projetsRealisations, String? projetsMoisSuivant, String? observations
+ String id, int annee, int mois, String? idAssembleeLocale, String? churchUnitId, StatsMembresMensuelles statsMembres, StatsActivitesMensuelles statsActivites, StatsFinancieresMensuelles statsFinances, String? resumeActivites, String? projetsRealisations, String? projetsMoisSuivant, String? observations
 });
 
 
@@ -1007,13 +1007,14 @@ class _$RapportMensuelEabCopyWithImpl<$Res>
 
 /// Create a copy of RapportMensuelEab
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? annee = null,Object? mois = null,Object? idAssembleeLocale = null,Object? statsMembres = null,Object? statsActivites = null,Object? statsFinances = null,Object? resumeActivites = freezed,Object? projetsRealisations = freezed,Object? projetsMoisSuivant = freezed,Object? observations = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? annee = null,Object? mois = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? statsMembres = null,Object? statsActivites = null,Object? statsFinances = null,Object? resumeActivites = freezed,Object? projetsRealisations = freezed,Object? projetsMoisSuivant = freezed,Object? observations = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,annee: null == annee ? _self.annee : annee // ignore: cast_nullable_to_non_nullable
 as int,mois: null == mois ? _self.mois : mois // ignore: cast_nullable_to_non_nullable
-as int,idAssembleeLocale: null == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
-as String,statsMembres: null == statsMembres ? _self.statsMembres : statsMembres // ignore: cast_nullable_to_non_nullable
+as int,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
+as String?,statsMembres: null == statsMembres ? _self.statsMembres : statsMembres // ignore: cast_nullable_to_non_nullable
 as StatsMembresMensuelles,statsActivites: null == statsActivites ? _self.statsActivites : statsActivites // ignore: cast_nullable_to_non_nullable
 as StatsActivitesMensuelles,statsFinances: null == statsFinances ? _self.statsFinances : statsFinances // ignore: cast_nullable_to_non_nullable
 as StatsFinancieresMensuelles,resumeActivites: freezed == resumeActivites ? _self.resumeActivites : resumeActivites // ignore: cast_nullable_to_non_nullable
@@ -1132,10 +1133,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int annee,  int mois,  String idAssembleeLocale,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int annee,  int mois,  String? idAssembleeLocale,  String? churchUnitId,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RapportMensuelEab() when $default != null:
-return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
+return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.churchUnitId,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
   return orElse();
 
 }
@@ -1153,10 +1154,10 @@ return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int annee,  int mois,  String idAssembleeLocale,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int annee,  int mois,  String? idAssembleeLocale,  String? churchUnitId,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)  $default,) {final _that = this;
 switch (_that) {
 case _RapportMensuelEab():
-return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
+return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.churchUnitId,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1173,10 +1174,10 @@ return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int annee,  int mois,  String idAssembleeLocale,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int annee,  int mois,  String? idAssembleeLocale,  String? churchUnitId,  StatsMembresMensuelles statsMembres,  StatsActivitesMensuelles statsActivites,  StatsFinancieresMensuelles statsFinances,  String? resumeActivites,  String? projetsRealisations,  String? projetsMoisSuivant,  String? observations)?  $default,) {final _that = this;
 switch (_that) {
 case _RapportMensuelEab() when $default != null:
-return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
+return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.churchUnitId,_that.statsMembres,_that.statsActivites,_that.statsFinances,_that.resumeActivites,_that.projetsRealisations,_that.projetsMoisSuivant,_that.observations);case _:
   return null;
 
 }
@@ -1188,13 +1189,14 @@ return $default(_that.id,_that.annee,_that.mois,_that.idAssembleeLocale,_that.st
 @JsonSerializable()
 
 class _RapportMensuelEab implements RapportMensuelEab {
-  const _RapportMensuelEab({required this.id, required this.annee, required this.mois, required this.idAssembleeLocale, required this.statsMembres, required this.statsActivites, required this.statsFinances, this.resumeActivites, this.projetsRealisations, this.projetsMoisSuivant, this.observations});
+  const _RapportMensuelEab({required this.id, required this.annee, required this.mois, this.idAssembleeLocale, this.churchUnitId, required this.statsMembres, required this.statsActivites, required this.statsFinances, this.resumeActivites, this.projetsRealisations, this.projetsMoisSuivant, this.observations});
   factory _RapportMensuelEab.fromJson(Map<String, dynamic> json) => _$RapportMensuelEabFromJson(json);
 
 @override final  String id;
 @override final  int annee;
 @override final  int mois;
-@override final  String idAssembleeLocale;
+@override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 // Statistiques calculees
 @override final  StatsMembresMensuelles statsMembres;
 @override final  StatsActivitesMensuelles statsActivites;
@@ -1218,16 +1220,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RapportMensuelEab&&(identical(other.id, id) || other.id == id)&&(identical(other.annee, annee) || other.annee == annee)&&(identical(other.mois, mois) || other.mois == mois)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.statsMembres, statsMembres) || other.statsMembres == statsMembres)&&(identical(other.statsActivites, statsActivites) || other.statsActivites == statsActivites)&&(identical(other.statsFinances, statsFinances) || other.statsFinances == statsFinances)&&(identical(other.resumeActivites, resumeActivites) || other.resumeActivites == resumeActivites)&&(identical(other.projetsRealisations, projetsRealisations) || other.projetsRealisations == projetsRealisations)&&(identical(other.projetsMoisSuivant, projetsMoisSuivant) || other.projetsMoisSuivant == projetsMoisSuivant)&&(identical(other.observations, observations) || other.observations == observations));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RapportMensuelEab&&(identical(other.id, id) || other.id == id)&&(identical(other.annee, annee) || other.annee == annee)&&(identical(other.mois, mois) || other.mois == mois)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.statsMembres, statsMembres) || other.statsMembres == statsMembres)&&(identical(other.statsActivites, statsActivites) || other.statsActivites == statsActivites)&&(identical(other.statsFinances, statsFinances) || other.statsFinances == statsFinances)&&(identical(other.resumeActivites, resumeActivites) || other.resumeActivites == resumeActivites)&&(identical(other.projetsRealisations, projetsRealisations) || other.projetsRealisations == projetsRealisations)&&(identical(other.projetsMoisSuivant, projetsMoisSuivant) || other.projetsMoisSuivant == projetsMoisSuivant)&&(identical(other.observations, observations) || other.observations == observations));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,annee,mois,idAssembleeLocale,statsMembres,statsActivites,statsFinances,resumeActivites,projetsRealisations,projetsMoisSuivant,observations);
+int get hashCode => Object.hash(runtimeType,id,annee,mois,idAssembleeLocale,churchUnitId,statsMembres,statsActivites,statsFinances,resumeActivites,projetsRealisations,projetsMoisSuivant,observations);
 
 @override
 String toString() {
-  return 'RapportMensuelEab(id: $id, annee: $annee, mois: $mois, idAssembleeLocale: $idAssembleeLocale, statsMembres: $statsMembres, statsActivites: $statsActivites, statsFinances: $statsFinances, resumeActivites: $resumeActivites, projetsRealisations: $projetsRealisations, projetsMoisSuivant: $projetsMoisSuivant, observations: $observations)';
+  return 'RapportMensuelEab(id: $id, annee: $annee, mois: $mois, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, statsMembres: $statsMembres, statsActivites: $statsActivites, statsFinances: $statsFinances, resumeActivites: $resumeActivites, projetsRealisations: $projetsRealisations, projetsMoisSuivant: $projetsMoisSuivant, observations: $observations)';
 }
 
 
@@ -1238,7 +1240,7 @@ abstract mixin class _$RapportMensuelEabCopyWith<$Res> implements $RapportMensue
   factory _$RapportMensuelEabCopyWith(_RapportMensuelEab value, $Res Function(_RapportMensuelEab) _then) = __$RapportMensuelEabCopyWithImpl;
 @override @useResult
 $Res call({
- String id, int annee, int mois, String idAssembleeLocale, StatsMembresMensuelles statsMembres, StatsActivitesMensuelles statsActivites, StatsFinancieresMensuelles statsFinances, String? resumeActivites, String? projetsRealisations, String? projetsMoisSuivant, String? observations
+ String id, int annee, int mois, String? idAssembleeLocale, String? churchUnitId, StatsMembresMensuelles statsMembres, StatsActivitesMensuelles statsActivites, StatsFinancieresMensuelles statsFinances, String? resumeActivites, String? projetsRealisations, String? projetsMoisSuivant, String? observations
 });
 
 
@@ -1255,13 +1257,14 @@ class __$RapportMensuelEabCopyWithImpl<$Res>
 
 /// Create a copy of RapportMensuelEab
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? annee = null,Object? mois = null,Object? idAssembleeLocale = null,Object? statsMembres = null,Object? statsActivites = null,Object? statsFinances = null,Object? resumeActivites = freezed,Object? projetsRealisations = freezed,Object? projetsMoisSuivant = freezed,Object? observations = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? annee = null,Object? mois = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? statsMembres = null,Object? statsActivites = null,Object? statsFinances = null,Object? resumeActivites = freezed,Object? projetsRealisations = freezed,Object? projetsMoisSuivant = freezed,Object? observations = freezed,}) {
   return _then(_RapportMensuelEab(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,annee: null == annee ? _self.annee : annee // ignore: cast_nullable_to_non_nullable
 as int,mois: null == mois ? _self.mois : mois // ignore: cast_nullable_to_non_nullable
-as int,idAssembleeLocale: null == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
-as String,statsMembres: null == statsMembres ? _self.statsMembres : statsMembres // ignore: cast_nullable_to_non_nullable
+as int,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
+as String?,statsMembres: null == statsMembres ? _self.statsMembres : statsMembres // ignore: cast_nullable_to_non_nullable
 as StatsMembresMensuelles,statsActivites: null == statsActivites ? _self.statsActivites : statsActivites // ignore: cast_nullable_to_non_nullable
 as StatsActivitesMensuelles,statsFinances: null == statsFinances ? _self.statsFinances : statsFinances // ignore: cast_nullable_to_non_nullable
 as StatsFinancieresMensuelles,resumeActivites: freezed == resumeActivites ? _self.resumeActivites : resumeActivites // ignore: cast_nullable_to_non_nullable

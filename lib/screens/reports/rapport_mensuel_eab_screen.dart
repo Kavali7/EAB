@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
-import '../../models/assemblee_locale.dart';
-import '../../models/profil_utilisateur.dart';
+import '../../features/church_units/application/church_units_provider.dart';
+import '../../features/church_units/data/church_unit_model.dart';
 import '../../models/rapport_mensuel_eab.dart';
-import '../../providers/church_structure_providers.dart';
 import '../../providers/rapport_mensuel_eab_providers.dart';
 import '../../providers/user_profile_providers.dart';
 import '../../ui/ui.dart';
@@ -25,7 +24,7 @@ class _RapportMensuelEabScreenState
     extends ConsumerState<RapportMensuelEabScreen> {
   int _annee = DateTime.now().year;
   int _mois = DateTime.now().month;
-  String? _idAssembleeSelectionnee;
+  String? _selectedChurchUnitId;
 
   final TextEditingController _resumeActivitesCtrl = TextEditingController();
   final TextEditingController _projetsRealisationsCtrl =
@@ -44,11 +43,10 @@ class _RapportMensuelEabScreenState
 
   @override
   Widget build(BuildContext context) {
-    final profil = ref.watch(profilUtilisateurCourantProvider);
-    final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
 
-    return assembleesAsync.when(
+    return churchUnitsAsync.when(
       loading: () => const AppShell(
         title: 'Rapport mensuel',
         currentRoute: '/reports-rapport-mensuel',
@@ -57,34 +55,39 @@ class _RapportMensuelEabScreenState
       error: (err, st) => AppShell(
         title: 'Rapport mensuel',
         currentRoute: '/reports-rapport-mensuel',
-        body: Center(child: Text('Erreur chargement assemblees : $err')),
+        body: Center(child: Text('Erreur chargement des unites : $err')),
       ),
-      data: (assemblees) {
-        if (_idAssembleeSelectionnee == null && assemblees.isNotEmpty) {
-          _idAssembleeSelectionnee = assembleeActiveId ?? assemblees.first.id;
+      data: (units) {
+        final reportUnits = _reportUnits(units);
+        if (_selectedChurchUnitId == null && reportUnits.isNotEmpty) {
+          _selectedChurchUnitId = _initialChurchUnitId(
+            reportUnits,
+            assembleeActiveId,
+          );
         }
-        if (_idAssembleeSelectionnee == null) {
+        if (_selectedChurchUnitId != null &&
+            !reportUnits.any((unit) => unit.id == _selectedChurchUnitId)) {
+          _selectedChurchUnitId = _initialChurchUnitId(
+            reportUnits,
+            assembleeActiveId,
+          );
+        }
+        if (_selectedChurchUnitId == null) {
           return const AppShell(
             title: 'Rapport mensuel',
             currentRoute: '/reports-rapport-mensuel',
-            body: Center(child: Text('Aucune assemblee disponible.')),
+            body: Center(child: Text('Aucune unite disponible.')),
           );
         }
 
-        final assemblee = assemblees.firstWhere(
-          (a) => a.id == _idAssembleeSelectionnee,
-          orElse: () => assemblees.isNotEmpty
-              ? assemblees.first
-              : AssembleeLocale(
-                  id: 'inconnu',
-                  nom: 'Aucune assemblee',
-                  idDistrict: '',
-                ),
+        final selectedUnit = reportUnits.firstWhere(
+          (unit) => unit.id == _selectedChurchUnitId,
+          orElse: () => reportUnits.first,
         );
         final params = RapportMensuelParams(
           annee: _annee,
           mois: _mois,
-          idAssembleeLocale: assemblee.id,
+          churchUnitId: selectedUnit.id,
         );
         final rapportAsync = ref.watch(rapportMensuelEabProvider(params));
 
@@ -121,8 +124,8 @@ class _RapportMensuelEabScreenState
                             compact: compact,
                             annee: _annee,
                             mois: _mois,
-                            assemblees: assemblees,
-                            idAssembleeSelectionnee: _idAssembleeSelectionnee,
+                            units: reportUnits,
+                            selectedChurchUnitId: _selectedChurchUnitId,
                             onAnneeChanged: (value) {
                               if (value == null) return;
                               setState(() => _annee = value);
@@ -133,24 +136,16 @@ class _RapportMensuelEabScreenState
                               setState(() => _mois = value);
                               _viderChampsTexte();
                             },
-                            onAssembleeChanged: (value) {
+                            onChurchUnitChanged: (value) {
                               if (value == null) return;
-                              setState(() => _idAssembleeSelectionnee = value);
+                              setState(() => _selectedChurchUnitId = value);
                               _viderChampsTexte();
                             },
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          _ReportIdentity(
-                            assemblee: assemblee,
-                            rapport: rapport,
-                          ),
+                          _ReportIdentity(unit: selectedUnit, rapport: rapport),
                           const SizedBox(height: AppSpacing.md),
-                          _buildRapportContent(
-                            compact,
-                            profil,
-                            assemblee,
-                            rapport,
-                          ),
+                          _buildRapportContent(compact, rapport),
                         ],
                       ),
                     ),
@@ -165,9 +160,9 @@ class _RapportMensuelEabScreenState
   }
 
   void _openPrintPreview() {
-    if (_idAssembleeSelectionnee == null) {
+    if (_selectedChurchUnitId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez selectionner une assemblee.')),
+        const SnackBar(content: Text('Veuillez selectionner une unite.')),
       );
       return;
     }
@@ -176,7 +171,7 @@ class _RapportMensuelEabScreenState
         builder: (context) => RapportMensuelEabPrintScreen(
           annee: _annee,
           mois: _mois,
-          idAssembleeLocale: _idAssembleeSelectionnee!,
+          churchUnitId: _selectedChurchUnitId!,
         ),
       ),
     );
@@ -206,12 +201,7 @@ class _RapportMensuelEabScreenState
     _observationsCtrl.clear();
   }
 
-  Widget _buildRapportContent(
-    bool compact,
-    ProfilUtilisateur? profil,
-    AssembleeLocale assemblee,
-    RapportMensuelEab rapport,
-  ) {
+  Widget _buildRapportContent(bool compact, RapportMensuelEab rapport) {
     return Column(
       children: [
         _buildSectionMembres(rapport.statsMembres, compact),
@@ -413,6 +403,46 @@ class _RapportMensuelEabScreenState
       ],
     );
   }
+
+  List<ChurchUnit> _reportUnits(List<ChurchUnit> units) {
+    final scopedUnits =
+        units
+            .where(
+              (unit) =>
+                  unit.active &&
+                  (unit.canHaveMembers ||
+                      unit.isFinancialScope ||
+                      unit.isLocal),
+            )
+            .toList()
+          ..sort((a, b) {
+            final level = a.levelOrder.compareTo(b.levelOrder);
+            if (level != 0) return level;
+            return a.nom.compareTo(b.nom);
+          });
+    return scopedUnits.isEmpty
+        ? units.where((unit) => unit.active).toList()
+        : scopedUnits;
+  }
+
+  String? _initialChurchUnitId(
+    List<ChurchUnit> units,
+    String? activeAssembleeId,
+  ) {
+    if (units.isEmpty) return null;
+    if (activeAssembleeId != null) {
+      for (final unit in units) {
+        if (unit.legacyAssembleeId == activeAssembleeId) return unit.id;
+      }
+    }
+    for (final unit in units) {
+      if (unit.isLocal || unit.canHaveMembers) return unit.id;
+    }
+    for (final unit in units) {
+      if (unit.isFinancialScope) return unit.id;
+    }
+    return units.first.id;
+  }
 }
 
 class _FiltersPanel extends StatelessWidget {
@@ -420,21 +450,21 @@ class _FiltersPanel extends StatelessWidget {
     required this.compact,
     required this.annee,
     required this.mois,
-    required this.assemblees,
-    required this.idAssembleeSelectionnee,
+    required this.units,
+    required this.selectedChurchUnitId,
     required this.onAnneeChanged,
     required this.onMoisChanged,
-    required this.onAssembleeChanged,
+    required this.onChurchUnitChanged,
   });
 
   final bool compact;
   final int annee;
   final int mois;
-  final List<AssembleeLocale> assemblees;
-  final String? idAssembleeSelectionnee;
+  final List<ChurchUnit> units;
+  final String? selectedChurchUnitId;
   final ValueChanged<int?> onAnneeChanged;
   final ValueChanged<int?> onMoisChanged;
-  final ValueChanged<String?> onAssembleeChanged;
+  final ValueChanged<String?> onChurchUnitChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -462,13 +492,18 @@ class _FiltersPanel extends StatelessWidget {
         onChanged: onMoisChanged,
       ),
       DropdownButtonFormField<String>(
-        initialValue: idAssembleeSelectionnee,
+        initialValue: selectedChurchUnitId,
         isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Assemblee'),
-        items: assemblees
-            .map((a) => DropdownMenuItem(value: a.id, child: Text(a.nom)))
+        decoration: const InputDecoration(labelText: 'Unite / perimetre'),
+        items: units
+            .map(
+              (unit) => DropdownMenuItem(
+                value: unit.id,
+                child: Text(_unitLabel(unit), overflow: TextOverflow.ellipsis),
+              ),
+            )
             .toList(),
-        onChanged: onAssembleeChanged,
+        onChanged: onChurchUnitChanged,
       ),
     ];
 
@@ -503,20 +538,28 @@ class _FiltersPanel extends StatelessWidget {
             ),
     );
   }
+
+  String _unitLabel(ChurchUnit unit) {
+    final code = unit.code == null || unit.code!.trim().isEmpty
+        ? ''
+        : ' - ${unit.code}';
+    return '${unit.nom}$code';
+  }
 }
 
 class _ReportIdentity extends StatelessWidget {
-  const _ReportIdentity({required this.assemblee, required this.rapport});
+  const _ReportIdentity({required this.unit, required this.rapport});
 
-  final AssembleeLocale assemblee;
+  final ChurchUnit unit;
   final RapportMensuelEab rapport;
 
   @override
   Widget build(BuildContext context) {
     final details = [
       'Mois ${rapport.mois} / ${rapport.annee}',
-      if (assemblee.code != null) 'Code ${assemblee.code}',
-      if (assemblee.ville != null) assemblee.ville!,
+      unit.typeLabel,
+      if (unit.code != null) 'Code ${unit.code}',
+      if (unit.ville != null) unit.ville!,
     ];
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -533,7 +576,7 @@ class _ReportIdentity extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(assemblee.nom, style: AppTextStyles.heading3),
+                Text(unit.nom, style: AppTextStyles.heading3),
                 const SizedBox(height: AppSpacing.xs),
                 Text(details.join(' | '), style: AppTextStyles.bodySmall),
               ],

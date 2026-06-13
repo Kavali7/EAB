@@ -11,7 +11,6 @@ abstract class StatsMembresMensuelles with _$StatsMembresMensuelles {
     required int totalHommesActifs,
     required int totalFemmesActives,
     required int totalEnfants, // 0-14 ans
-
     // Officiers
     required int totalOfficiers,
 
@@ -97,7 +96,8 @@ abstract class RapportMensuelEab with _$RapportMensuelEab {
     required String id,
     required int annee,
     required int mois,
-    required String idAssembleeLocale,
+    String? idAssembleeLocale,
+    String? churchUnitId,
 
     // Statistiques calculees
     required StatsMembresMensuelles statsMembres,

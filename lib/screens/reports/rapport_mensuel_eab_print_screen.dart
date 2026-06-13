@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
-import '../../models/assemblee_locale.dart';
+import '../../features/church_units/application/church_units_provider.dart';
+import '../../features/church_units/data/church_unit_model.dart';
+import '../../features/organization/application/organization_providers.dart';
+import '../../features/organization/data/organization_model.dart';
 import '../../models/rapport_mensuel_eab.dart';
-import '../../providers/church_structure_providers.dart';
 import '../../providers/rapport_mensuel_eab_providers.dart';
 import '../../widgets/print_preview_shell.dart';
 
@@ -13,62 +15,69 @@ class RapportMensuelEabPrintScreen extends ConsumerWidget {
     super.key,
     required this.annee,
     required this.mois,
-    required this.idAssembleeLocale,
+    required this.churchUnitId,
   });
 
   final int annee;
   final int mois;
-  final String idAssembleeLocale;
+  final String churchUnitId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final unitsAsync = ref.watch(churchUnitsProvider);
+    final organization = ref.watch(currentOrganizationProvider).value;
 
-    return assembleesAsync.when(
+    return unitsAsync.when(
       loading: () => const _ReportStateScreen(
         title: 'Rapport mensuel',
-        subtitle: 'Chargement des assemblees',
+        subtitle: 'Chargement des unites',
         message: 'Preparation de l apercu...',
         loading: true,
       ),
       error: (err, st) => const _ReportStateScreen(
         title: 'Rapport mensuel',
         subtitle: 'Apercu indisponible',
-        message: 'Erreur chargement assemblees',
+        message: 'Erreur chargement des unites',
       ),
-      data: (assemblees) {
-        final assemblee = assemblees.firstWhere(
-          (a) => a.id == idAssembleeLocale,
-          orElse: () => assemblees.isNotEmpty
-              ? assemblees.first
-              : AssembleeLocale(
-                  id: idAssembleeLocale,
-                  nom: 'Assemblee inconnue',
-                  idDistrict: '',
+      data: (units) {
+        final unit = units.firstWhere(
+          (item) => item.id == churchUnitId,
+          orElse: () => units.isNotEmpty
+              ? units.first
+              : ChurchUnit.legacy(
+                  id: churchUnitId,
+                  organizationId: '',
+                  nom: 'Unite inconnue',
+                  typeCode: 'unit',
+                  typeLabel: 'Unite',
+                  levelOrder: 0,
                 ),
         );
 
         final params = RapportMensuelParams(
           annee: annee,
           mois: mois,
-          idAssembleeLocale: idAssembleeLocale,
+          churchUnitId: churchUnitId,
         );
         final rapportAsync = ref.watch(rapportMensuelEabProvider(params));
 
         return rapportAsync.when(
           loading: () => _ReportStateScreen(
             title: 'Rapport mensuel',
-            subtitle: assemblee.nom,
+            subtitle: unit.nom,
             message: 'Calcul du rapport en cours...',
             loading: true,
           ),
           error: (err, st) => _ReportStateScreen(
             title: 'Rapport mensuel',
-            subtitle: assemblee.nom,
+            subtitle: unit.nom,
             message: 'Erreur calcul rapport : $err',
           ),
-          data: (rapport) =>
-              _ReportPreview(assemblee: assemblee, rapport: rapport),
+          data: (rapport) => _ReportPreview(
+            unit: unit,
+            organization: organization,
+            rapport: rapport,
+          ),
         );
       },
     );
@@ -76,9 +85,14 @@ class RapportMensuelEabPrintScreen extends ConsumerWidget {
 }
 
 class _ReportPreview extends StatelessWidget {
-  const _ReportPreview({required this.assemblee, required this.rapport});
+  const _ReportPreview({
+    required this.unit,
+    required this.organization,
+    required this.rapport,
+  });
 
-  final AssembleeLocale assemblee;
+  final ChurchUnit unit;
+  final Organization? organization;
   final RapportMensuelEab rapport;
 
   @override
@@ -89,14 +103,14 @@ class _ReportPreview extends StatelessWidget {
 
     return PrintPreviewShell(
       title: 'Rapport mensuel',
-      subtitle: '${assemblee.nom} - ${rapport.mois}/${rapport.annee}',
+      subtitle: '${unit.nom} - ${rapport.mois}/${rapport.annee}',
       icon: Icons.description_outlined,
       children: [
         PrintMetricGrid(
           metrics: [
             PrintMetric(
-              label: 'Assemblee',
-              value: assemblee.nom,
+              label: 'Unite',
+              value: unit.nom,
               icon: Icons.church_outlined,
             ),
             PrintMetric(
@@ -125,9 +139,11 @@ class _ReportPreview extends StatelessWidget {
           icon: Icons.badge_outlined,
           child: _FactsGrid(
             items: [
-              _FactItem('Eglise', 'Eglise Apostolique du Benin'),
-              _FactItem('Assemblee', assemblee.nom),
-              _FactItem('Ville', _safeText(assemblee.ville)),
+              _FactItem('Eglise', _safeText(organization?.nom)),
+              _FactItem('Sigle', _safeText(organization?.sigle)),
+              _FactItem('Unite', unit.nom),
+              _FactItem('Type', unit.typeLabel),
+              _FactItem('Ville', _safeText(unit.ville)),
               _FactItem('Mois', '${rapport.mois}/${rapport.annee}'),
             ],
           ),

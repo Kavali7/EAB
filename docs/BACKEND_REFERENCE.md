@@ -538,13 +538,14 @@
 
 ### 3.10 `rapports_mensuels_eab`
 
-> Rapports mensuels consolidés par assemblée.
+> Rapports mensuels consolides par unite/perimetre d'eglise.
 
 | Colonne | Type | Nullable | Défaut | Description |
 | --------- | ------ | ---------- | -------- | ------------- |
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK CASCADE |
-| `id_assemblee_locale` | UUID | NON | — | FK CASCADE |
+| `id_assemblee_locale` | UUID | OUI | — | FK CASCADE legacy |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `annee` | INTEGER | NON | — | Année |
 | `mois` | INTEGER | NON | — | Mois (CHECK 1-12) |
 | `stats_membres` | JSONB | NON | `'{}'` | Stats membres |
@@ -556,7 +557,10 @@
 | `observations` | TEXT | OUI | — | Observations |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-**RLS** : ✅ — **UNIQUE** : `(organization_id, id_assemblee_locale, annee, mois)` — **CHECK** : `mois >= 1 AND mois <= 12`
+> Migration `00021` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> `id_assemblee_locale` devient nullable pour permettre des rapports sur une eglise unique, une region, un district ou tout autre niveau configure.
+
+**RLS** : ✅ — **UNIQUE** : `(organization_id, id_assemblee_locale, annee, mois)` + `(organization_id, church_unit_id, annee, mois)` si `church_unit_id IS NOT NULL` — **CHECK** : `mois >= 1 AND mois <= 12`
 
 ---
 
@@ -868,6 +872,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `lignes_budgets` | UNIQUE | `(id_budget, id_compte_comptable)` |
 | `rapports_mensuels_eab` | CHECK | `mois >= 1 AND mois <= 12` |
 | `rapports_mensuels_eab` | UNIQUE | `(organization_id, id_assemblee_locale, annee, mois)` |
+| `rapports_mensuels_eab` | UNIQUE INDEX | `(organization_id, church_unit_id, annee, mois)` si `church_unit_id IS NOT NULL` |
 | `exercices_comptables` | UNIQUE | `(organization_id, annee)` |
 | `sequences_pieces` | UNIQUE | `(organization_id, id_journal, exercice)` |
 
@@ -906,9 +911,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
 | `assemblees_locales` | Même org | Admin / Resp. / Surint. / Trés. | Hiérarchique |
-| `membres` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
-| `familles` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
-| `programmes` | Org + `user_has_assemblee_access` | Idem | Accès assemblée |
+| `membres` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `familles` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `programmes` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `comptes_comptables` | Même org | Admin seulement | Org simple |
 | `journaux_comptables` | Même org | Admin seulement | Org simple |
 | `centres_analytiques` | Même org | Admin seulement | Org simple |
@@ -918,7 +923,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `budgets_comptables` | Org + accès assemblée | Idem | Accès assemblée |
 | `lignes_budgets` | Via parent `budgets_comptables` | Idem | Hérité |
 | `immobilisations_comptables` | Org + accès assemblée | Idem | Accès assemblée |
-| `rapports_mensuels_eab` | Org + accès assemblée | Idem | Accès assemblée |
+| `rapports_mensuels_eab` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `releves_bancaires` | Org + accès assemblée | Idem | Accès assemblée |
 | `exercices_comptables` | Même org | Admin seulement | Org simple |
 | `sequences_pieces` | Même org | Même org (système) | Org simple |
@@ -976,6 +981,12 @@ Migration `00020` ajoute :
 - `sync_program_church_unit_scope_trigger` sur `programmes`
 
 Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les programmes.
+
+Migration `00021` ajoute :
+
+- `sync_monthly_report_church_unit_scope_trigger` sur `rapports_mensuels_eab`
+
+Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les rapports mensuels.
 
 ### Triggers `updated_at` (BEFORE UPDATE)
 
@@ -1053,7 +1064,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_budgets_*` | `budgets_comptables` | `organization_id`, `id_assemblee_locale`, `exercice`, `id_centre_analytique`, `deleted_at` |
 | `idx_lignes_budgets_*` | `lignes_budgets` | `id_budget`, `id_compte_comptable` |
 | `idx_immobilisations_*` | `immobilisations_comptables` | `organization_id`, `id_assemblee_locale`, `type`, `date_acquisition`, `est_sortie`, `deleted_at` |
-| `idx_rapports_*` | `rapports_mensuels_eab` | `organization_id`, `id_assemblee_locale`, `(annee, mois)`, composite |
+| `idx_rapports_*` | `rapports_mensuels_eab` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `(annee, mois)`, composite |
 | `idx_releves_*` | `releves_bancaires` | `organization_id`, `id_assemblee_locale`, `date_releve`, `id_journal_banque` |
 
 ### Améliorations (00007)
@@ -1164,6 +1175,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00021** : Rattachement progressif de `rapports_mensuels_eab` a `church_units` via `church_unit_id`. `id_assemblee_locale` devient nullable pour les rapports sur niveaux non locaux, backfill depuis les assemblees legacy, trigger de synchronisation, index unique par unite/periode et politiques RLS hybrides. |
 | 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |
 | 2026-06-13 | Agent IA | **Migration 00019** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |
 | 2026-06-13 | Agent IA | **Migration 00018** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
