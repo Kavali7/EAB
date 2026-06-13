@@ -8,6 +8,22 @@ import 'package:eab/providers/data_service_provider.dart';
 import '../data/church_unit_model.dart';
 import '../data/church_units_repository.dart';
 
+final churchUnitsRepositoryProvider = Provider<ChurchUnitsRepository?>((ref) {
+  final dataService = ref.read(dataServiceProvider);
+  if (dataService is! SupabaseDataService) return null;
+  return ChurchUnitsRepository(dataService);
+});
+
+final churchUnitTypesProvider = FutureProvider<List<ChurchUnitType>>((
+  ref,
+) async {
+  final repository = ref.read(churchUnitsRepositoryProvider);
+  if (repository == null) return _legacyTypes();
+  final remoteTypes = await repository.fetchTypes();
+  if (remoteTypes.isNotEmpty) return remoteTypes;
+  return _legacyTypes();
+});
+
 final churchUnitsProvider = FutureProvider<List<ChurchUnit>>((ref) async {
   final dataService = ref.read(dataServiceProvider);
 
@@ -18,6 +34,51 @@ final churchUnitsProvider = FutureProvider<List<ChurchUnit>>((ref) async {
 
   return _legacyUnits(ref);
 });
+
+List<ChurchUnitType> _legacyTypes() {
+  return const [
+    ChurchUnitType(
+      id: 'legacy_organization',
+      organizationId: 'demo',
+      code: 'organization',
+      label: 'Organisation',
+      levelOrder: 0,
+      isLocal: false,
+      isFinancialScope: true,
+      canHaveMembers: false,
+    ),
+    ChurchUnitType(
+      id: 'legacy_region',
+      organizationId: 'demo',
+      code: 'region',
+      label: 'Region',
+      levelOrder: 1,
+      isLocal: false,
+      isFinancialScope: false,
+      canHaveMembers: false,
+    ),
+    ChurchUnitType(
+      id: 'legacy_district',
+      organizationId: 'demo',
+      code: 'district',
+      label: 'District',
+      levelOrder: 2,
+      isLocal: false,
+      isFinancialScope: false,
+      canHaveMembers: false,
+    ),
+    ChurchUnitType(
+      id: 'legacy_local_church',
+      organizationId: 'demo',
+      code: 'local_church',
+      label: 'Assemblee locale',
+      levelOrder: 3,
+      isLocal: true,
+      isFinancialScope: true,
+      canHaveMembers: true,
+    ),
+  ];
+}
 
 Future<List<ChurchUnit>> _legacyUnits(Ref ref) async {
   final dataService = ref.read(dataServiceProvider);

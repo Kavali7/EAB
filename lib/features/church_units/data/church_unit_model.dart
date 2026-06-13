@@ -1,7 +1,43 @@
+class ChurchUnitType {
+  const ChurchUnitType({
+    required this.id,
+    required this.organizationId,
+    required this.code,
+    required this.label,
+    required this.levelOrder,
+    required this.isLocal,
+    required this.isFinancialScope,
+    required this.canHaveMembers,
+  });
+
+  final String id;
+  final String organizationId;
+  final String code;
+  final String label;
+  final int levelOrder;
+  final bool isLocal;
+  final bool isFinancialScope;
+  final bool canHaveMembers;
+
+  factory ChurchUnitType.fromJson(Map<String, dynamic> json) {
+    return ChurchUnitType(
+      id: json['id'] as String,
+      organizationId: json['organization_id'] as String? ?? '',
+      code: json['code'] as String? ?? 'unit',
+      label: json['label'] as String? ?? 'Unite',
+      levelOrder: json['level_order'] as int? ?? 0,
+      isLocal: json['is_local'] as bool? ?? false,
+      isFinancialScope: json['is_financial_scope'] as bool? ?? false,
+      canHaveMembers: json['can_have_members'] as bool? ?? false,
+    );
+  }
+}
+
 class ChurchUnit {
   const ChurchUnit({
     required this.id,
     required this.organizationId,
+    required this.typeId,
     required this.nom,
     required this.typeCode,
     required this.typeLabel,
@@ -25,6 +61,7 @@ class ChurchUnit {
 
   final String id;
   final String organizationId;
+  final String typeId;
   final String nom;
   final String typeCode;
   final String typeLabel;
@@ -50,6 +87,7 @@ class ChurchUnit {
     return ChurchUnit(
       id: json['id'] as String,
       organizationId: json['organization_id'] as String? ?? '',
+      typeId: json['type_id'] as String? ?? '',
       parentId: json['parent_id'] as String?,
       nom: json['nom'] as String? ?? 'Unite',
       code: json['code'] as String?,
@@ -94,6 +132,7 @@ class ChurchUnit {
     return ChurchUnit(
       id: id,
       organizationId: organizationId,
+      typeId: 'legacy_$typeCode',
       nom: nom,
       typeCode: typeCode,
       typeLabel: typeLabel,

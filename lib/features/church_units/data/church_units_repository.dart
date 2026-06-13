@@ -8,6 +8,23 @@ class ChurchUnitsRepository {
 
   final SupabaseDataService _dataService;
 
+  Future<List<ChurchUnitType>> fetchTypes() async {
+    try {
+      final response = await _dataService.client
+          .from('church_unit_types')
+          .select()
+          .order('level_order', ascending: true)
+          .order('label', ascending: true);
+
+      return (response as List)
+          .map((json) => ChurchUnitType.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      if (_isMissingFlexibleSchema(e)) return const [];
+      rethrow;
+    }
+  }
+
   Future<List<ChurchUnit>> fetchUnits() async {
     try {
       final response = await _dataService.client
@@ -15,6 +32,7 @@ class ChurchUnitsRepository {
           .select('''
             id,
             organization_id,
+            type_id,
             parent_id,
             nom,
             code,
@@ -55,10 +73,127 @@ class ChurchUnitsRepository {
     }
   }
 
+  Future<void> createType({
+    required String organizationId,
+    required String code,
+    required String label,
+    required int levelOrder,
+    required bool isLocal,
+    required bool isFinancialScope,
+    required bool canHaveMembers,
+  }) async {
+    await _dataService.client.from('church_unit_types').insert({
+      'organization_id': organizationId,
+      'code': code,
+      'label': label,
+      'level_order': levelOrder,
+      'is_local': isLocal,
+      'is_financial_scope': isFinancialScope,
+      'can_have_members': canHaveMembers,
+    });
+  }
+
+  Future<void> updateType({
+    required String id,
+    required String code,
+    required String label,
+    required int levelOrder,
+    required bool isLocal,
+    required bool isFinancialScope,
+    required bool canHaveMembers,
+  }) async {
+    await _dataService.client
+        .from('church_unit_types')
+        .update({
+          'code': code,
+          'label': label,
+          'level_order': levelOrder,
+          'is_local': isLocal,
+          'is_financial_scope': isFinancialScope,
+          'can_have_members': canHaveMembers,
+        })
+        .eq('id', id);
+  }
+
+  Future<void> deleteType(String id) async {
+    await _dataService.client.from('church_unit_types').delete().eq('id', id);
+  }
+
+  Future<void> createUnit({
+    required String organizationId,
+    required String typeId,
+    required String nom,
+    String? parentId,
+    String? code,
+    String? description,
+    String? ville,
+    String? quartier,
+    String? adresse,
+    String? telephone,
+    String? email,
+  }) async {
+    await _dataService.client.from('church_units').insert({
+      'organization_id': organizationId,
+      'type_id': typeId,
+      'parent_id': parentId,
+      'nom': nom,
+      'code': _blankToNull(code),
+      'description': _blankToNull(description),
+      'ville': _blankToNull(ville),
+      'quartier': _blankToNull(quartier),
+      'adresse': _blankToNull(adresse),
+      'telephone': _blankToNull(telephone),
+      'email': _blankToNull(email),
+    });
+  }
+
+  Future<void> updateUnit({
+    required String id,
+    required String typeId,
+    required String nom,
+    String? parentId,
+    String? code,
+    String? description,
+    String? ville,
+    String? quartier,
+    String? adresse,
+    String? telephone,
+    String? email,
+  }) async {
+    await _dataService.client
+        .from('church_units')
+        .update({
+          'type_id': typeId,
+          'parent_id': parentId,
+          'nom': nom,
+          'code': _blankToNull(code),
+          'description': _blankToNull(description),
+          'ville': _blankToNull(ville),
+          'quartier': _blankToNull(quartier),
+          'adresse': _blankToNull(adresse),
+          'telephone': _blankToNull(telephone),
+          'email': _blankToNull(email),
+        })
+        .eq('id', id);
+  }
+
+  Future<void> archiveUnit(String id) async {
+    await _dataService.client
+        .from('church_units')
+        .update({'active': false})
+        .eq('id', id);
+  }
+
   bool _isMissingFlexibleSchema(PostgrestException e) {
     final message = e.message.toLowerCase();
     return e.code == '42P01' ||
         message.contains('church_units') ||
         message.contains('church_unit_types');
+  }
+
+  String? _blankToNull(String? value) {
+    final clean = value?.trim();
+    if (clean == null || clean.isEmpty) return null;
+    return clean;
   }
 }
