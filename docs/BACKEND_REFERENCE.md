@@ -242,6 +242,9 @@
 
 ### 2.9 `familles`
 
+> Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Ce champ est synchronise avec `id_assemblee_locale` quand l'unite flexible pointe vers une assemblee legacy.
+
 > Familles de fidèles pour le suivi familial.
 
 | Colonne | Type | Nullable | Défaut | Description |
@@ -261,6 +264,9 @@
 ---
 
 ### 2.10 `membres`
+
+> Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Le trigger `sync_member_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
 
 > Membres/fidèles de l'église avec toutes leurs informations.
 
@@ -870,6 +876,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 
 ### Fonctions helper RLS
 
+> Migration `00019` ajoute `user_has_church_unit_access(UUID)` pour verifier les perimetres `church_units`,
+> en tenant compte de `profiles.primary_church_unit_id`, de `church_unit_user_scopes`
+> et des descendants via `get_church_unit_descendants(UUID)`.
+
 | Fonction | Retour | Description |
 | ---------- | -------- | ------------- |
 | `get_user_organization_id()` | UUID | `organization_id` du profil courant |
@@ -949,6 +959,14 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 ---
 
 ## 9. Triggers
+
+Migration `00019` ajoute :
+
+- `sync_member_church_unit_scope_trigger` sur `membres`
+- `sync_family_church_unit_scope_trigger` sur `familles`
+
+Ces triggers renseignent `organization_id` si besoin et synchronisent `church_unit_id`
+avec `id_assemblee_locale` lorsque l'unite flexible conserve un lien legacy.
 
 ### Triggers `updated_at` (BEFORE UPDATE)
 
@@ -1137,6 +1155,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00019** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |
 | 2026-06-13 | Agent IA | **Migration 00018** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
 | 2026-06-13 | Agent IA | **Migration 00017** : Branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et conservation de `logo_url`. L'application utilise une marque neutre par defaut et l'identite de l'organisation active. |
 | 2026-03-02 | Agent IA | **PR4** : `FiscalPdfService` — Génération PDF multi-pages dossier fiscal (COVER avec badge/watermark, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT). Rendu dynamique depuis template fields + valeurs. Header/footer cohérents avec pagination. Intégration dans wizard (bouton PDF). |

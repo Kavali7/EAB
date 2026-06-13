@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/member.dart';
 import 'package:eab/providers/church_structure_providers.dart';
 import 'package:eab/providers/families_provider.dart';
@@ -69,12 +71,15 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
     ref.watch(regionsProvider);
     ref.watch(districtsProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
 
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
+    final churchUnits = churchUnitsAsync.value ?? [];
     final assembleeById = {for (final a in assemblees) a.id: a};
+    final churchUnitById = {for (final unit in churchUnits) unit.id: unit};
     final familyById = {for (final f in families) f.id: f};
 
     final filtered = members.where((m) {
@@ -88,7 +93,8 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
       if (_onlyChildren && !_isChild(m)) return false;
       if (_onlyOfficers && !m.estOfficier) return false;
       if (assembleeActiveId != null &&
-          m.idAssembleeLocale != assembleeActiveId) {
+          m.idAssembleeLocale != assembleeActiveId &&
+          !_memberMatchesLegacyAssembly(m, churchUnitById, assembleeActiveId)) {
         return false;
       }
       return true;
@@ -192,6 +198,7 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                     families: families,
                     familyById: familyById,
                     assembleeById: assembleeById,
+                    churchUnitById: churchUnitById,
                     onEdit: (member) => showMemberFormV2(
                       context,
                       member: member,
@@ -206,6 +213,17 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
         ),
       ),
     );
+  }
+
+  bool _memberMatchesLegacyAssembly(
+    Member member,
+    Map<String, ChurchUnit> churchUnitById,
+    String assembleeId,
+  ) {
+    final unit = member.churchUnitId == null
+        ? null
+        : churchUnitById[member.churchUnitId!];
+    return unit?.legacyAssembleeId == assembleeId;
   }
 
   Future<void> _confirmDelete(Member member) async {
@@ -545,6 +563,7 @@ class _MembersTablePanel extends StatelessWidget {
     required this.families,
     required this.familyById,
     required this.assembleeById,
+    required this.churchUnitById,
     required this.onEdit,
     required this.onDelete,
   });
@@ -555,6 +574,7 @@ class _MembersTablePanel extends StatelessWidget {
   final List<dynamic> families;
   final Map<String, dynamic> familyById;
   final Map<String, dynamic> assembleeById;
+  final Map<String, ChurchUnit> churchUnitById;
   final ValueChanged<Member> onEdit;
   final ValueChanged<Member> onDelete;
 
@@ -640,14 +660,10 @@ class _MembersTablePanel extends StatelessWidget {
                 ),
               ),
               EabColumn<Member>(
-                label: 'Assemblee',
+                label: 'Unite',
                 flex: 2,
-                cellBuilder: (m) => Text(
-                  m.idAssembleeLocale != null
-                      ? assembleeById[m.idAssembleeLocale!]?.nom ?? '-'
-                      : '-',
-                  overflow: TextOverflow.ellipsis,
-                ),
+                cellBuilder: (m) =>
+                    Text(_memberUnitName(m), overflow: TextOverflow.ellipsis),
               ),
               EabColumn<Member>(
                 label: '',
@@ -688,6 +704,17 @@ class _MembersTablePanel extends StatelessWidget {
       case StatutFidele.decede:
         return AppColors.textSecondary;
     }
+  }
+
+  String _memberUnitName(Member member) {
+    final unit = member.churchUnitId == null
+        ? null
+        : churchUnitById[member.churchUnitId!];
+    if (unit != null) return unit.nom;
+    if (member.idAssembleeLocale != null) {
+      return assembleeById[member.idAssembleeLocale!]?.nom ?? '-';
+    }
+    return '-';
   }
 }
 

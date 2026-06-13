@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Member {
 
- String get id; String get fullName; Gender get gender; DateTime get birthDate; MaritalStatus get maritalStatus; DateTime? get baptismDate; String? get phone; String? get email; String? get address; DateTime? get dateNaissance; StatutMatrimonial? get statutMatrimonial; DateTime? get dateConversion; DateTime? get dateBapteme; DateTime? get dateMainAssociation; StatutFidele get statut; DateTime? get dateEntree; DateTime? get dateSortie; String? get motifSortie; DateTime? get dateDeces; RoleFidele get role; Set<VulnerabiliteFidele> get vulnerabilites; String? get idFamille; String? get idAssembleeLocale;
+ String get id; String get fullName; Gender get gender; DateTime get birthDate; MaritalStatus get maritalStatus; DateTime? get baptismDate; String? get phone; String? get email; String? get address; DateTime? get dateNaissance; StatutMatrimonial? get statutMatrimonial; DateTime? get dateConversion; DateTime? get dateBapteme; DateTime? get dateMainAssociation; StatutFidele get statut; DateTime? get dateEntree; DateTime? get dateSortie; String? get motifSortie; DateTime? get dateDeces; RoleFidele get role; Set<VulnerabiliteFidele> get vulnerabilites; String? get idFamille; String? get idAssembleeLocale; String? get churchUnitId;
 /// Create a copy of Member
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MemberCopyWith<Member> get copyWith => _$MemberCopyWithImpl<Member>(this as Mem
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Member&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.maritalStatus, maritalStatus) || other.maritalStatus == maritalStatus)&&(identical(other.baptismDate, baptismDate) || other.baptismDate == baptismDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.address, address) || other.address == address)&&(identical(other.dateNaissance, dateNaissance) || other.dateNaissance == dateNaissance)&&(identical(other.statutMatrimonial, statutMatrimonial) || other.statutMatrimonial == statutMatrimonial)&&(identical(other.dateConversion, dateConversion) || other.dateConversion == dateConversion)&&(identical(other.dateBapteme, dateBapteme) || other.dateBapteme == dateBapteme)&&(identical(other.dateMainAssociation, dateMainAssociation) || other.dateMainAssociation == dateMainAssociation)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.dateEntree, dateEntree) || other.dateEntree == dateEntree)&&(identical(other.dateSortie, dateSortie) || other.dateSortie == dateSortie)&&(identical(other.motifSortie, motifSortie) || other.motifSortie == motifSortie)&&(identical(other.dateDeces, dateDeces) || other.dateDeces == dateDeces)&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other.vulnerabilites, vulnerabilites)&&(identical(other.idFamille, idFamille) || other.idFamille == idFamille)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Member&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.maritalStatus, maritalStatus) || other.maritalStatus == maritalStatus)&&(identical(other.baptismDate, baptismDate) || other.baptismDate == baptismDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.address, address) || other.address == address)&&(identical(other.dateNaissance, dateNaissance) || other.dateNaissance == dateNaissance)&&(identical(other.statutMatrimonial, statutMatrimonial) || other.statutMatrimonial == statutMatrimonial)&&(identical(other.dateConversion, dateConversion) || other.dateConversion == dateConversion)&&(identical(other.dateBapteme, dateBapteme) || other.dateBapteme == dateBapteme)&&(identical(other.dateMainAssociation, dateMainAssociation) || other.dateMainAssociation == dateMainAssociation)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.dateEntree, dateEntree) || other.dateEntree == dateEntree)&&(identical(other.dateSortie, dateSortie) || other.dateSortie == dateSortie)&&(identical(other.motifSortie, motifSortie) || other.motifSortie == motifSortie)&&(identical(other.dateDeces, dateDeces) || other.dateDeces == dateDeces)&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other.vulnerabilites, vulnerabilites)&&(identical(other.idFamille, idFamille) || other.idFamille == idFamille)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,fullName,gender,birthDate,maritalStatus,baptismDate,phone,email,address,dateNaissance,statutMatrimonial,dateConversion,dateBapteme,dateMainAssociation,statut,dateEntree,dateSortie,motifSortie,dateDeces,role,const DeepCollectionEquality().hash(vulnerabilites),idFamille,idAssembleeLocale]);
+int get hashCode => Object.hashAll([runtimeType,id,fullName,gender,birthDate,maritalStatus,baptismDate,phone,email,address,dateNaissance,statutMatrimonial,dateConversion,dateBapteme,dateMainAssociation,statut,dateEntree,dateSortie,motifSortie,dateDeces,role,const DeepCollectionEquality().hash(vulnerabilites),idFamille,idAssembleeLocale,churchUnitId]);
 
 @override
 String toString() {
-  return 'Member(id: $id, fullName: $fullName, gender: $gender, birthDate: $birthDate, maritalStatus: $maritalStatus, baptismDate: $baptismDate, phone: $phone, email: $email, address: $address, dateNaissance: $dateNaissance, statutMatrimonial: $statutMatrimonial, dateConversion: $dateConversion, dateBapteme: $dateBapteme, dateMainAssociation: $dateMainAssociation, statut: $statut, dateEntree: $dateEntree, dateSortie: $dateSortie, motifSortie: $motifSortie, dateDeces: $dateDeces, role: $role, vulnerabilites: $vulnerabilites, idFamille: $idFamille, idAssembleeLocale: $idAssembleeLocale)';
+  return 'Member(id: $id, fullName: $fullName, gender: $gender, birthDate: $birthDate, maritalStatus: $maritalStatus, baptismDate: $baptismDate, phone: $phone, email: $email, address: $address, dateNaissance: $dateNaissance, statutMatrimonial: $statutMatrimonial, dateConversion: $dateConversion, dateBapteme: $dateBapteme, dateMainAssociation: $dateMainAssociation, statut: $statut, dateEntree: $dateEntree, dateSortie: $dateSortie, motifSortie: $motifSortie, dateDeces: $dateDeces, role: $role, vulnerabilites: $vulnerabilites, idFamille: $idFamille, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MemberCopyWith<$Res>  {
   factory $MemberCopyWith(Member value, $Res Function(Member) _then) = _$MemberCopyWithImpl;
 @useResult
 $Res call({
- String id, String fullName, Gender gender, DateTime birthDate, MaritalStatus maritalStatus, DateTime? baptismDate, String? phone, String? email, String? address, DateTime? dateNaissance, StatutMatrimonial? statutMatrimonial, DateTime? dateConversion, DateTime? dateBapteme, DateTime? dateMainAssociation, StatutFidele statut, DateTime? dateEntree, DateTime? dateSortie, String? motifSortie, DateTime? dateDeces, RoleFidele role, Set<VulnerabiliteFidele> vulnerabilites, String? idFamille, String? idAssembleeLocale
+ String id, String fullName, Gender gender, DateTime birthDate, MaritalStatus maritalStatus, DateTime? baptismDate, String? phone, String? email, String? address, DateTime? dateNaissance, StatutMatrimonial? statutMatrimonial, DateTime? dateConversion, DateTime? dateBapteme, DateTime? dateMainAssociation, StatutFidele statut, DateTime? dateEntree, DateTime? dateSortie, String? motifSortie, DateTime? dateDeces, RoleFidele role, Set<VulnerabiliteFidele> vulnerabilites, String? idFamille, String? idAssembleeLocale, String? churchUnitId
 });
 
 
@@ -65,7 +65,7 @@ class _$MemberCopyWithImpl<$Res>
 
 /// Create a copy of Member
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? gender = null,Object? birthDate = null,Object? maritalStatus = null,Object? baptismDate = freezed,Object? phone = freezed,Object? email = freezed,Object? address = freezed,Object? dateNaissance = freezed,Object? statutMatrimonial = freezed,Object? dateConversion = freezed,Object? dateBapteme = freezed,Object? dateMainAssociation = freezed,Object? statut = null,Object? dateEntree = freezed,Object? dateSortie = freezed,Object? motifSortie = freezed,Object? dateDeces = freezed,Object? role = null,Object? vulnerabilites = null,Object? idFamille = freezed,Object? idAssembleeLocale = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = null,Object? gender = null,Object? birthDate = null,Object? maritalStatus = null,Object? baptismDate = freezed,Object? phone = freezed,Object? email = freezed,Object? address = freezed,Object? dateNaissance = freezed,Object? statutMatrimonial = freezed,Object? dateConversion = freezed,Object? dateBapteme = freezed,Object? dateMainAssociation = freezed,Object? statut = null,Object? dateEntree = freezed,Object? dateSortie = freezed,Object? motifSortie = freezed,Object? dateDeces = freezed,Object? role = null,Object? vulnerabilites = null,Object? idFamille = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -90,6 +90,7 @@ as DateTime?,role: null == role ? _self.role : role // ignore: cast_nullable_to_
 as RoleFidele,vulnerabilites: null == vulnerabilites ? _self.vulnerabilites : vulnerabilites // ignore: cast_nullable_to_non_nullable
 as Set<VulnerabiliteFidele>,idFamille: freezed == idFamille ? _self.idFamille : idFamille // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -175,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale,  String? churchUnitId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Member() when $default != null:
-return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale,_that.churchUnitId);case _:
   return orElse();
 
 }
@@ -196,10 +197,10 @@ return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.marit
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale,  String? churchUnitId)  $default,) {final _that = this;
 switch (_that) {
 case _Member():
-return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale,_that.churchUnitId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -216,10 +217,10 @@ return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.marit
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String fullName,  Gender gender,  DateTime birthDate,  MaritalStatus maritalStatus,  DateTime? baptismDate,  String? phone,  String? email,  String? address,  DateTime? dateNaissance,  StatutMatrimonial? statutMatrimonial,  DateTime? dateConversion,  DateTime? dateBapteme,  DateTime? dateMainAssociation,  StatutFidele statut,  DateTime? dateEntree,  DateTime? dateSortie,  String? motifSortie,  DateTime? dateDeces,  RoleFidele role,  Set<VulnerabiliteFidele> vulnerabilites,  String? idFamille,  String? idAssembleeLocale,  String? churchUnitId)?  $default,) {final _that = this;
 switch (_that) {
 case _Member() when $default != null:
-return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.maritalStatus,_that.baptismDate,_that.phone,_that.email,_that.address,_that.dateNaissance,_that.statutMatrimonial,_that.dateConversion,_that.dateBapteme,_that.dateMainAssociation,_that.statut,_that.dateEntree,_that.dateSortie,_that.motifSortie,_that.dateDeces,_that.role,_that.vulnerabilites,_that.idFamille,_that.idAssembleeLocale,_that.churchUnitId);case _:
   return null;
 
 }
@@ -231,7 +232,7 @@ return $default(_that.id,_that.fullName,_that.gender,_that.birthDate,_that.marit
 @JsonSerializable()
 
 class _Member extends Member {
-  const _Member({required this.id, required this.fullName, required this.gender, required this.birthDate, required this.maritalStatus, this.baptismDate, this.phone, this.email, this.address, this.dateNaissance, this.statutMatrimonial, this.dateConversion, this.dateBapteme, this.dateMainAssociation, this.statut = StatutFidele.actif, this.dateEntree, this.dateSortie, this.motifSortie, this.dateDeces, this.role = RoleFidele.membre, final  Set<VulnerabiliteFidele> vulnerabilites = const <VulnerabiliteFidele>{}, this.idFamille, this.idAssembleeLocale}): _vulnerabilites = vulnerabilites,super._();
+  const _Member({required this.id, required this.fullName, required this.gender, required this.birthDate, required this.maritalStatus, this.baptismDate, this.phone, this.email, this.address, this.dateNaissance, this.statutMatrimonial, this.dateConversion, this.dateBapteme, this.dateMainAssociation, this.statut = StatutFidele.actif, this.dateEntree, this.dateSortie, this.motifSortie, this.dateDeces, this.role = RoleFidele.membre, final  Set<VulnerabiliteFidele> vulnerabilites = const <VulnerabiliteFidele>{}, this.idFamille, this.idAssembleeLocale, this.churchUnitId}): _vulnerabilites = vulnerabilites,super._();
   factory _Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
 
 @override final  String id;
@@ -263,6 +264,7 @@ class _Member extends Member {
 
 @override final  String? idFamille;
 @override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 
 /// Create a copy of Member
 /// with the given fields replaced by the non-null parameter values.
@@ -277,16 +279,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Member&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.maritalStatus, maritalStatus) || other.maritalStatus == maritalStatus)&&(identical(other.baptismDate, baptismDate) || other.baptismDate == baptismDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.address, address) || other.address == address)&&(identical(other.dateNaissance, dateNaissance) || other.dateNaissance == dateNaissance)&&(identical(other.statutMatrimonial, statutMatrimonial) || other.statutMatrimonial == statutMatrimonial)&&(identical(other.dateConversion, dateConversion) || other.dateConversion == dateConversion)&&(identical(other.dateBapteme, dateBapteme) || other.dateBapteme == dateBapteme)&&(identical(other.dateMainAssociation, dateMainAssociation) || other.dateMainAssociation == dateMainAssociation)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.dateEntree, dateEntree) || other.dateEntree == dateEntree)&&(identical(other.dateSortie, dateSortie) || other.dateSortie == dateSortie)&&(identical(other.motifSortie, motifSortie) || other.motifSortie == motifSortie)&&(identical(other.dateDeces, dateDeces) || other.dateDeces == dateDeces)&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other._vulnerabilites, _vulnerabilites)&&(identical(other.idFamille, idFamille) || other.idFamille == idFamille)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Member&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.birthDate, birthDate) || other.birthDate == birthDate)&&(identical(other.maritalStatus, maritalStatus) || other.maritalStatus == maritalStatus)&&(identical(other.baptismDate, baptismDate) || other.baptismDate == baptismDate)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.address, address) || other.address == address)&&(identical(other.dateNaissance, dateNaissance) || other.dateNaissance == dateNaissance)&&(identical(other.statutMatrimonial, statutMatrimonial) || other.statutMatrimonial == statutMatrimonial)&&(identical(other.dateConversion, dateConversion) || other.dateConversion == dateConversion)&&(identical(other.dateBapteme, dateBapteme) || other.dateBapteme == dateBapteme)&&(identical(other.dateMainAssociation, dateMainAssociation) || other.dateMainAssociation == dateMainAssociation)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.dateEntree, dateEntree) || other.dateEntree == dateEntree)&&(identical(other.dateSortie, dateSortie) || other.dateSortie == dateSortie)&&(identical(other.motifSortie, motifSortie) || other.motifSortie == motifSortie)&&(identical(other.dateDeces, dateDeces) || other.dateDeces == dateDeces)&&(identical(other.role, role) || other.role == role)&&const DeepCollectionEquality().equals(other._vulnerabilites, _vulnerabilites)&&(identical(other.idFamille, idFamille) || other.idFamille == idFamille)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,fullName,gender,birthDate,maritalStatus,baptismDate,phone,email,address,dateNaissance,statutMatrimonial,dateConversion,dateBapteme,dateMainAssociation,statut,dateEntree,dateSortie,motifSortie,dateDeces,role,const DeepCollectionEquality().hash(_vulnerabilites),idFamille,idAssembleeLocale]);
+int get hashCode => Object.hashAll([runtimeType,id,fullName,gender,birthDate,maritalStatus,baptismDate,phone,email,address,dateNaissance,statutMatrimonial,dateConversion,dateBapteme,dateMainAssociation,statut,dateEntree,dateSortie,motifSortie,dateDeces,role,const DeepCollectionEquality().hash(_vulnerabilites),idFamille,idAssembleeLocale,churchUnitId]);
 
 @override
 String toString() {
-  return 'Member(id: $id, fullName: $fullName, gender: $gender, birthDate: $birthDate, maritalStatus: $maritalStatus, baptismDate: $baptismDate, phone: $phone, email: $email, address: $address, dateNaissance: $dateNaissance, statutMatrimonial: $statutMatrimonial, dateConversion: $dateConversion, dateBapteme: $dateBapteme, dateMainAssociation: $dateMainAssociation, statut: $statut, dateEntree: $dateEntree, dateSortie: $dateSortie, motifSortie: $motifSortie, dateDeces: $dateDeces, role: $role, vulnerabilites: $vulnerabilites, idFamille: $idFamille, idAssembleeLocale: $idAssembleeLocale)';
+  return 'Member(id: $id, fullName: $fullName, gender: $gender, birthDate: $birthDate, maritalStatus: $maritalStatus, baptismDate: $baptismDate, phone: $phone, email: $email, address: $address, dateNaissance: $dateNaissance, statutMatrimonial: $statutMatrimonial, dateConversion: $dateConversion, dateBapteme: $dateBapteme, dateMainAssociation: $dateMainAssociation, statut: $statut, dateEntree: $dateEntree, dateSortie: $dateSortie, motifSortie: $motifSortie, dateDeces: $dateDeces, role: $role, vulnerabilites: $vulnerabilites, idFamille: $idFamille, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId)';
 }
 
 
@@ -297,7 +299,7 @@ abstract mixin class _$MemberCopyWith<$Res> implements $MemberCopyWith<$Res> {
   factory _$MemberCopyWith(_Member value, $Res Function(_Member) _then) = __$MemberCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String fullName, Gender gender, DateTime birthDate, MaritalStatus maritalStatus, DateTime? baptismDate, String? phone, String? email, String? address, DateTime? dateNaissance, StatutMatrimonial? statutMatrimonial, DateTime? dateConversion, DateTime? dateBapteme, DateTime? dateMainAssociation, StatutFidele statut, DateTime? dateEntree, DateTime? dateSortie, String? motifSortie, DateTime? dateDeces, RoleFidele role, Set<VulnerabiliteFidele> vulnerabilites, String? idFamille, String? idAssembleeLocale
+ String id, String fullName, Gender gender, DateTime birthDate, MaritalStatus maritalStatus, DateTime? baptismDate, String? phone, String? email, String? address, DateTime? dateNaissance, StatutMatrimonial? statutMatrimonial, DateTime? dateConversion, DateTime? dateBapteme, DateTime? dateMainAssociation, StatutFidele statut, DateTime? dateEntree, DateTime? dateSortie, String? motifSortie, DateTime? dateDeces, RoleFidele role, Set<VulnerabiliteFidele> vulnerabilites, String? idFamille, String? idAssembleeLocale, String? churchUnitId
 });
 
 
@@ -314,7 +316,7 @@ class __$MemberCopyWithImpl<$Res>
 
 /// Create a copy of Member
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? gender = null,Object? birthDate = null,Object? maritalStatus = null,Object? baptismDate = freezed,Object? phone = freezed,Object? email = freezed,Object? address = freezed,Object? dateNaissance = freezed,Object? statutMatrimonial = freezed,Object? dateConversion = freezed,Object? dateBapteme = freezed,Object? dateMainAssociation = freezed,Object? statut = null,Object? dateEntree = freezed,Object? dateSortie = freezed,Object? motifSortie = freezed,Object? dateDeces = freezed,Object? role = null,Object? vulnerabilites = null,Object? idFamille = freezed,Object? idAssembleeLocale = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = null,Object? gender = null,Object? birthDate = null,Object? maritalStatus = null,Object? baptismDate = freezed,Object? phone = freezed,Object? email = freezed,Object? address = freezed,Object? dateNaissance = freezed,Object? statutMatrimonial = freezed,Object? dateConversion = freezed,Object? dateBapteme = freezed,Object? dateMainAssociation = freezed,Object? statut = null,Object? dateEntree = freezed,Object? dateSortie = freezed,Object? motifSortie = freezed,Object? dateDeces = freezed,Object? role = null,Object? vulnerabilites = null,Object? idFamille = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,}) {
   return _then(_Member(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fullName: null == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
@@ -339,6 +341,7 @@ as DateTime?,role: null == role ? _self.role : role // ignore: cast_nullable_to_
 as RoleFidele,vulnerabilites: null == vulnerabilites ? _self._vulnerabilites : vulnerabilites // ignore: cast_nullable_to_non_nullable
 as Set<VulnerabiliteFidele>,idFamille: freezed == idFamille ? _self.idFamille : idFamille // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

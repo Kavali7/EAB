@@ -52,7 +52,10 @@ Le projet EAB dispose d'une **base fonctionnelle solide** avec les phases critiq
 - [x] Backfill EAB demo vers la nouvelle hierarchie configurable
 - [x] Lecture UI du panneau `Architecture configurable` sur l'ecran Structure
 - [x] CRUD des niveaux/unites flexibles dans l'interface Structure : creation, modification, deplacement, suppression des niveaux inutilises et archivage securise des unites
-- [ ] Bascule progressive des membres, programmes et comptabilite vers `church_units`
+- [ ] Bascule progressive des modules vers `church_units`
+  - [x] Membres/familles : migration `00019`, champ `church_unit_id`, formulaire et liste Membres
+  - [ ] Programmes : `church_unit_id`, formulaire, calendrier et filtres
+  - [ ] Comptabilite : perimetres comptables bases sur `church_units`
 - [ ] Gestion avancee des sous-comptes utilisateurs par perimetre flexible
 - [ ] Onboarding : écran de création d'organisation (nom, logo, couleurs)
 - [ ] Thème dynamique complet par organisation sur toute l'app

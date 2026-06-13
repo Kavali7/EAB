@@ -6,10 +6,15 @@ import 'package:uuid/uuid.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/famille.dart';
 import 'package:eab/models/member.dart';
 import 'package:eab/providers/members_provider.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
+
+const _noChurchUnitValue = '__none__';
 
 const _roleLabels = {
   RoleFidele.membre: 'Membre',
@@ -81,6 +86,9 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
   DateTime? _dateDeces;
   Set<VulnerabiliteFidele> _vulnerabilites = {};
   String? _idFamille;
+  String? _churchUnitId;
+  bool _churchUnitTouched = false;
+  bool _churchUnitInitialized = false;
   bool _isSaving = false;
 
   bool get _isEditing => widget.member != null;
@@ -109,6 +117,7 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
       _vulnerabilites = {...member.vulnerabilites};
       _motifSortieCtrl.text = member.motifSortie ?? '';
       _idFamille = member.idFamille;
+      _churchUnitId = member.churchUnitId;
     }
   }
 
@@ -124,6 +133,11 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
 
   @override
   Widget build(BuildContext context) {
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final activeAssembleeId = ref.watch(assembleeActiveIdProvider);
+    final memberUnits = _memberAssignableUnits(churchUnitsAsync.value ?? []);
+    _initializeChurchUnit(memberUnits, activeAssembleeId);
+
     return EabDialog(
       title: _isEditing ? 'Modifier un fidele' : 'Nouveau fidele',
       width: 780,
@@ -266,6 +280,31 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
                         ],
                         onChanged: (value) =>
                             setState(() => _idFamille = value),
+                      ),
+                      const SizedBox(height: AppSpacing.fieldGap),
+                      EabSelectField<String>(
+                        label: 'Unite / eglise locale',
+                        value: _churchUnitId ?? _noChurchUnitValue,
+                        items: [
+                          const DropdownMenuItem(
+                            value: _noChurchUnitValue,
+                            child: Text('Aucune unite rattachee'),
+                          ),
+                          ...memberUnits.map(
+                            (unit) => DropdownMenuItem(
+                              value: unit.id,
+                              child: Text(_unitLabel(unit)),
+                            ),
+                          ),
+                        ],
+                        onChanged: churchUnitsAsync.isLoading
+                            ? null
+                            : (value) => setState(() {
+                                _churchUnitTouched = true;
+                                _churchUnitId = value == _noChurchUnitValue
+                                    ? null
+                                    : value;
+                              }),
                       ),
                     ],
                   ),
@@ -493,6 +532,12 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
     if (!_validateDates()) return;
 
     final id = widget.member?.id ?? const Uuid().v4();
+    final selectedUnit = _unitById(
+      ref.read(churchUnitsProvider).value ?? [],
+    )[_churchUnitId];
+    final legacyAssembleeId =
+        selectedUnit?.legacyAssembleeId ??
+        (_churchUnitTouched ? null : widget.member?.idAssembleeLocale);
     final member = Member(
       id: id,
       fullName: _nameCtrl.text.trim(),
@@ -520,6 +565,8 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
       role: _role,
       vulnerabilites: _vulnerabilites,
       idFamille: _idFamille,
+      churchUnitId: _churchUnitId,
+      idAssembleeLocale: legacyAssembleeId,
     );
 
     final notifier = ref.read(membersProvider.notifier);
@@ -545,6 +592,51 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  List<ChurchUnit> _memberAssignableUnits(List<ChurchUnit> units) {
+    final result =
+        units
+            .where(
+              (unit) => unit.active && (unit.canHaveMembers || unit.isLocal),
+            )
+            .toList()
+          ..sort((a, b) {
+            final order = a.levelOrder.compareTo(b.levelOrder);
+            if (order != 0) return order;
+            return a.nom.compareTo(b.nom);
+          });
+    return result;
+  }
+
+  void _initializeChurchUnit(
+    List<ChurchUnit> units,
+    String? activeAssembleeId,
+  ) {
+    if (_churchUnitInitialized || units.isEmpty) return;
+
+    final member = widget.member;
+    final legacyAssembleeId = member?.idAssembleeLocale ?? activeAssembleeId;
+    if (_churchUnitId == null && legacyAssembleeId != null) {
+      for (final unit in units) {
+        if (unit.legacyAssembleeId == legacyAssembleeId) {
+          _churchUnitId = unit.id;
+          break;
+        }
+      }
+    }
+    _churchUnitInitialized = true;
+  }
+
+  Map<String, ChurchUnit> _unitById(List<ChurchUnit> units) {
+    return {for (final unit in units) unit.id: unit};
+  }
+
+  String _unitLabel(ChurchUnit unit) {
+    final code = unit.code == null || unit.code!.trim().isEmpty
+        ? ''
+        : ' - ${unit.code}';
+    return '${unit.nom}$code';
   }
 }
 

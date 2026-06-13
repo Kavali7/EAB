@@ -137,7 +137,9 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<void> addMember(Member member) async {
-    await _client.from('membres').insert(_memberToDbJson(member));
+    final data = _memberToDbJson(member);
+    data['organization_id'] = await _currentOrganizationId();
+    await _client.from('membres').insert(data);
   }
 
   @override
@@ -154,7 +156,8 @@ class SupabaseDataService implements DataService {
       'id': member.id,
       'full_name': member.fullName,
       'gender': member.gender.name,
-      'date_naissance': (member.dateNaissance ?? member.birthDate).toIso8601String(),
+      'date_naissance': (member.dateNaissance ?? member.birthDate)
+          .toIso8601String(),
       'statut_matrimonial': member.statutMatrimonial?.name ?? 'celibataire',
       'phone': member.phone,
       'email': member.email,
@@ -169,9 +172,28 @@ class SupabaseDataService implements DataService {
           .toList(),
       'id_famille': member.idFamille,
       'id_assemblee_locale': member.idAssembleeLocale,
+      'church_unit_id': member.churchUnitId,
     };
-    data.removeWhere((_, v) => v == null);
+    data.removeWhere(
+      (key, value) =>
+          value == null &&
+          key != 'id_famille' &&
+          key != 'id_assemblee_locale' &&
+          key != 'church_unit_id',
+    );
     return data;
+  }
+
+  Future<String?> _currentOrganizationId() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
+
+    final profile = await _client
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle();
+    return profile?['organization_id'] as String?;
   }
 
   @override
@@ -365,10 +387,12 @@ class SupabaseDataService implements DataService {
           .map((l) => LigneEcritureComptable.fromJson(snakeToCamel(l)))
           .toList();
 
-      ecritures.add(EcritureComptable.fromJson({
-        ...snakeToCamel(json),
-        'lignes': lignes.map((l) => l.toJson()).toList(),
-      }));
+      ecritures.add(
+        EcritureComptable.fromJson({
+          ...snakeToCamel(json),
+          'lignes': lignes.map((l) => l.toJson()).toList(),
+        }),
+      );
     }
 
     return ecritures;
@@ -415,5 +439,4 @@ class SupabaseDataService implements DataService {
     // On retourne une liste vide pour l'instant
     return [];
   }
-
 }

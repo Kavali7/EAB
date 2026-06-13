@@ -14,22 +14,9 @@ enum RoleFidele {
   autreOfficier,
 }
 
-enum StatutMatrimonial {
-  celibataire,
-  marie,
-  veuf,
-  veuve,
-  divorce,
-  separe,
-}
+enum StatutMatrimonial { celibataire, marie, veuf, veuve, divorce, separe }
 
-enum StatutFidele {
-  actif,
-  inactif,
-  parti,
-  decede,
-  transfere,
-}
+enum StatutFidele { actif, inactif, parti, decede, transfere }
 
 enum VulnerabiliteFidele {
   orphelin,
@@ -68,6 +55,7 @@ abstract class Member with _$Member {
     @Default(<VulnerabiliteFidele>{}) Set<VulnerabiliteFidele> vulnerabilites,
     String? idFamille,
     String? idAssembleeLocale,
+    String? churchUnitId,
   }) = _Member;
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -76,6 +64,9 @@ abstract class Member with _$Member {
   @JsonKey(includeFromJson: false, includeToJson: false)
   bool get aUneAssembleeLocale =>
       idAssembleeLocale != null && idAssembleeLocale!.isNotEmpty;
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool get aUneUniteEglise => churchUnitId != null && churchUnitId!.isNotEmpty;
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
 }

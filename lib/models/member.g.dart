@@ -57,6 +57,7 @@ _Member _$MemberFromJson(Map<String, dynamic> json) => _Member(
       const <VulnerabiliteFidele>{},
   idFamille: json['idFamille'] as String?,
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
+  churchUnitId: json['churchUnitId'] as String?,
 );
 
 Map<String, dynamic> _$MemberToJson(_Member instance) => <String, dynamic>{
@@ -85,6 +86,7 @@ Map<String, dynamic> _$MemberToJson(_Member instance) => <String, dynamic>{
       .toList(),
   'idFamille': instance.idFamille,
   'idAssembleeLocale': instance.idAssembleeLocale,
+  'churchUnitId': instance.churchUnitId,
 };
 
 const _$GenderEnumMap = {Gender.male: 'male', Gender.female: 'female'};
