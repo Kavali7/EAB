@@ -31,8 +31,9 @@ abstract class EcritureComptable with _$EcritureComptable {
     String? referencePiece, // reference interne / piece justificative
     required String libelle, // libelle general de l'ecriture
     required List<LigneEcritureComptable> lignes,
-    // Rattachement a une assemblee / centre principal
+    // Rattachement a une unite d'eglise / centre principal
     String? idAssembleeLocale,
+    String? churchUnitId,
     String? idCentreAnalytiquePrincipal,
     // Statut de l'ecriture (brouillon / validee / cloturee)
     @Default(StatutEcriture.brouillon) StatutEcriture statut,

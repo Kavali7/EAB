@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../features/church_units/application/church_unit_scope_utils.dart';
+import '../../features/church_units/application/church_units_provider.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/budget_comptable.dart';
 import '../../models/centre_analytique.dart';
@@ -527,7 +529,9 @@ class _AccountingBudgetsScreenState
   }
 
   Future<void> _ouvrirDialogBudget(BudgetComptable? budget) async {
-    final assemblees = ref.read(assembleesLocalesProvider).value ?? [];
+    final churchUnits = accountingScopeUnits(
+      ref.read(churchUnitsProvider).value ?? [],
+    );
     final centres = ref.read(centresAnalytiquesProvider).value ?? [];
     final bailleurs = (ref.read(tiersProvider).value ?? [])
         .where((t) => t.type == TypeTiers.bailleur)
@@ -536,6 +540,13 @@ class _AccountingBudgetsScreenState
     final formKey = GlobalKey<FormState>();
     int exercice = budget?.exercice ?? _exerciceSelectionne;
     String? idAssemblee = budget?.idAssembleeLocale;
+    String? churchUnitId =
+        budget?.churchUnitId ??
+        churchUnitIdForLegacyAssemblee(churchUnits, idAssemblee);
+    if (churchUnitId != null &&
+        !churchUnits.any((unit) => unit.id == churchUnitId)) {
+      churchUnitId = null;
+    }
     String? idCentre = budget?.idCentreAnalytique;
     String? idBailleur = budget?.idTiersBailleur;
     String libelle = budget?.libelle ?? '';
@@ -568,21 +579,26 @@ class _AccountingBudgetsScreenState
               const SizedBox(height: AppSpacing.fieldGap),
               DropdownButtonFormField<String?>(
                 isExpanded: true,
-                initialValue: idAssemblee,
-                decoration: const InputDecoration(labelText: 'Assemblee'),
+                initialValue: churchUnitId,
+                decoration: const InputDecoration(
+                  labelText: 'Unite / perimetre',
+                ),
                 items: [
                   const DropdownMenuItem<String?>(
                     value: null,
                     child: Text('Aucune'),
                   ),
-                  ...assemblees.map(
-                    (a) => DropdownMenuItem<String?>(
-                      value: a.id,
-                      child: Text(a.nom),
+                  ...churchUnits.map(
+                    (unit) => DropdownMenuItem<String?>(
+                      value: unit.id,
+                      child: Text(churchUnitLabel(unit)),
                     ),
                   ),
                 ],
-                onChanged: (v) => idAssemblee = v,
+                onChanged: (v) {
+                  churchUnitId = v;
+                  idAssemblee = legacyAssembleeIdForChurchUnit(churchUnits, v);
+                },
               ),
               const SizedBox(height: AppSpacing.fieldGap),
               DropdownButtonFormField<String?>(
@@ -647,6 +663,7 @@ class _AccountingBudgetsScreenState
                     'budget_${DateTime.now().millisecondsSinceEpoch}',
                 exercice: exercice,
                 idAssembleeLocale: idAssemblee,
+                churchUnitId: churchUnitId,
                 idCentreAnalytique: idCentre,
                 idTiersBailleur: idBailleur,
                 libelle: libelle.isEmpty ? 'Budget $exercice' : libelle,

@@ -9,6 +9,7 @@ abstract class BudgetComptable with _$BudgetComptable {
     required String id,
     required int exercice,
     String? idAssembleeLocale,
+    String? churchUnitId,
     String? idCentreAnalytique,
     String? idTiersBailleur,
     String? libelle,

@@ -14,8 +14,9 @@ abstract class Tiers with _$Tiers {
     String? telephone,
     String? email,
     String? adresse,
-    // Rattachement eventuel a une assemblee
+    // Rattachement eventuel a une unite d'eglise.
     String? idAssembleeLocale,
+    String? churchUnitId,
     // Pour lier un tiers a un fidele existant (ex: membre)
     String? idFideleLie,
   }) = _Tiers;

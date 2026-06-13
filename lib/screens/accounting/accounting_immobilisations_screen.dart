@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../core/theme.dart';
+import '../../features/church_units/application/church_unit_scope_utils.dart';
+import '../../features/church_units/application/church_units_provider.dart';
 import '../../models/assemblee_locale.dart';
 import '../../models/centre_analytique.dart';
 import '../../models/compte_comptable.dart';
@@ -337,12 +339,13 @@ class _AccountingImmobilisationsScreenState
   ) async {
     final formKey = GlobalKey<FormState>();
     final comptesAsync = ref.read(comptesComptablesProvider);
-    final assembleesAsync = ref.read(assembleesLocalesProvider);
     final centresAsync = ref.read(centresAnalytiquesProvider);
+    final churchUnits = accountingScopeUnits(
+      ref.read(churchUnitsProvider).value ?? [],
+    );
     final assembleeActiveId = ref.read(assembleeActiveIdProvider);
 
     final comptes = comptesAsync.asData?.value ?? <CompteComptable>[];
-    final assemblees = assembleesAsync.asData?.value ?? <AssembleeLocale>[];
     final centres = centresAsync.asData?.value ?? <CentreAnalytique>[];
 
     String libelle = immo?.libelle ?? '';
@@ -358,6 +361,13 @@ class _AccountingImmobilisationsScreenState
     String? idCompteAmortissement = immo?.idCompteAmortissement;
     String? idCompteDotation = immo?.idCompteDotation;
     String? idAssembleeLocale = immo?.idAssembleeLocale ?? assembleeActiveId;
+    String? churchUnitId =
+        immo?.churchUnitId ??
+        churchUnitIdForLegacyAssemblee(churchUnits, idAssembleeLocale);
+    if (churchUnitId != null &&
+        !churchUnits.any((unit) => unit.id == churchUnitId)) {
+      churchUnitId = null;
+    }
     String? idCentreAnalytique = immo?.idCentreAnalytique;
 
     var estSortie = immo?.estSortie ?? false;
@@ -507,24 +517,29 @@ class _AccountingImmobilisationsScreenState
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String?>(
                       isExpanded: true,
-                      initialValue: idAssembleeLocale,
+                      initialValue: churchUnitId,
                       decoration: const InputDecoration(
-                        labelText: 'Assemblee (facultatif)',
+                        labelText: 'Unite / perimetre (facultatif)',
                       ),
                       items: [
                         const DropdownMenuItem<String?>(
                           value: null,
                           child: Text('Aucune'),
                         ),
-                        ...assemblees.map(
-                          (a) => DropdownMenuItem<String?>(
-                            value: a.id,
-                            child: Text(a.nom),
+                        ...churchUnits.map(
+                          (unit) => DropdownMenuItem<String?>(
+                            value: unit.id,
+                            child: Text(churchUnitLabel(unit)),
                           ),
                         ),
                       ],
-                      onChanged: (v) =>
-                          setStateDialog(() => idAssembleeLocale = v),
+                      onChanged: (v) => setStateDialog(() {
+                        churchUnitId = v;
+                        idAssembleeLocale = legacyAssembleeIdForChurchUnit(
+                          churchUnits,
+                          v,
+                        );
+                      }),
                     ),
                     DropdownButtonFormField<String?>(
                       isExpanded: true,
@@ -631,6 +646,7 @@ class _AccountingImmobilisationsScreenState
                         idCompteAmortissement: idCompteAmortissement,
                         idCompteDotation: idCompteDotation,
                         idAssembleeLocale: idAssembleeLocale,
+                        churchUnitId: churchUnitId,
                         idCentreAnalytique: idCentreAnalytique,
                         estSortie: estSortie,
                         dateSortie: dateSortie,
@@ -651,6 +667,7 @@ class _AccountingImmobilisationsScreenState
                         idCompteAmortissement: idCompteAmortissement,
                         idCompteDotation: idCompteDotation,
                         idAssembleeLocale: idAssembleeLocale,
+                        churchUnitId: churchUnitId,
                         idCentreAnalytique: idCentreAnalytique,
                         estSortie: estSortie,
                         dateSortie: dateSortie,

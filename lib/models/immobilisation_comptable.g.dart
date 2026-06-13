@@ -20,6 +20,7 @@ _ImmobilisationComptable _$ImmobilisationComptableFromJson(
   idCompteAmortissement: json['idCompteAmortissement'] as String?,
   idCompteDotation: json['idCompteDotation'] as String?,
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
+  churchUnitId: json['churchUnitId'] as String?,
   idCentreAnalytique: json['idCentreAnalytique'] as String?,
   estSortie: json['estSortie'] as bool? ?? false,
   dateSortie: json['dateSortie'] == null
@@ -42,6 +43,7 @@ Map<String, dynamic> _$ImmobilisationComptableToJson(
   'idCompteAmortissement': instance.idCompteAmortissement,
   'idCompteDotation': instance.idCompteDotation,
   'idAssembleeLocale': instance.idAssembleeLocale,
+  'churchUnitId': instance.churchUnitId,
   'idCentreAnalytique': instance.idCentreAnalytique,
   'estSortie': instance.estSortie,
   'dateSortie': instance.dateSortie?.toIso8601String(),

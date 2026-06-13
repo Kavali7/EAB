@@ -391,6 +391,7 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `code` | TEXT | NON | — | Code centre |
 | `nom` | TEXT | NON | — | Nom |
 | `type` | `type_centre_analytique` | NON | — | Type |
@@ -411,6 +412,7 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `id_fidele_lie` | UUID | OUI | — | FK → `membres(id)` SET NULL |
 | `nom` | TEXT | NON | — | Nom du tiers |
 | `type` | `type_tiers` | NON | — | Type de tiers |
@@ -431,6 +433,7 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `id_journal` | UUID | NON | — | FK → `journaux_comptables(id)` **RESTRICT** |
 | `id_centre_analytique_principal` | UUID | OUI | — | FK → `centres_analytiques(id)` SET NULL |
 | `date` | DATE | NON | — | Date de l'écriture |
@@ -478,6 +481,7 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK → `assemblees_locales(id)` SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `id_centre_analytique` | UUID | OUI | — | FK → `centres_analytiques(id)` SET NULL |
 | `id_tiers_bailleur` | UUID | OUI | — | FK → `tiers(id)` SET NULL |
 | `exercice` | INTEGER | NON | — | Année budgétaire |
@@ -486,7 +490,7 @@
 | `deleted_at` | TIMESTAMPTZ | OUI | — | Soft delete (00007) |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-**RLS** : ✅ — **UNIQUE** : `(organization_id, exercice, id_assemblee_locale, id_centre_analytique)`
+**RLS** : ✅ — **UNIQUE** : `(organization_id, exercice, id_assemblee_locale, id_centre_analytique)` + `(organization_id, exercice, church_unit_id, id_centre_analytique)` si `church_unit_id IS NOT NULL`
 
 ---
 
@@ -516,6 +520,7 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `id_centre_analytique` | UUID | OUI | — | FK SET NULL |
 | `libelle` | TEXT | NON | — | Libellé |
 | `type` | `type_immobilisation` | NON | — | Type |
@@ -573,12 +578,18 @@
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK CASCADE |
 | `id_assemblee_locale` | UUID | OUI | — | FK SET NULL |
+| `church_unit_id` | UUID | OUI | — | FK -> `church_units(id)` SET NULL |
 | `id_journal_banque` | UUID | OUI | — | FK → `journaux_comptables(id)` **RESTRICT** |
 | `date_releve` | DATE | NON | — | Date du relevé |
 | `solde_initial` | DECIMAL(15,2) | NON | `0` | Solde initial |
 | `solde_final` | DECIMAL(15,2) | NON | `0` | Solde final |
 | `fichier_url` | TEXT | OUI | — | URL du fichier |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+> Migration `00022` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`
+> sur `centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`,
+> `immobilisations_comptables` et `releves_bancaires`.
+> Les anciennes colonnes `id_assemblee_locale` restent en place pendant la transition.
 
 **RLS** : ✅
 
@@ -869,6 +880,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `centres_analytiques` | UNIQUE | `(organization_id, code)` |
 | `lignes_ecritures` | CHECK | `(debit>0 AND credit=0) OR (debit=0 AND credit>0) OR (debit=0 AND credit=0)` |
 | `budgets_comptables` | UNIQUE | `(organization_id, exercice, id_assemblee_locale, id_centre_analytique)` |
+| `budgets_comptables` | UNIQUE INDEX | `(organization_id, exercice, church_unit_id, id_centre_analytique)` si `church_unit_id IS NOT NULL` |
 | `lignes_budgets` | UNIQUE | `(id_budget, id_compte_comptable)` |
 | `rapports_mensuels_eab` | CHECK | `mois >= 1 AND mois <= 12` |
 | `rapports_mensuels_eab` | UNIQUE | `(organization_id, id_assemblee_locale, annee, mois)` |
@@ -916,15 +928,15 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `programmes` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `comptes_comptables` | Même org | Admin seulement | Org simple |
 | `journaux_comptables` | Même org | Admin seulement | Org simple |
-| `centres_analytiques` | Même org | Admin seulement | Org simple |
-| `tiers` | Org + assemblee (+NULL) | Org + accès assemblée | Mixte |
-| `ecritures_comptables` | Org + accès assemblée | Idem | Accès assemblée |
-| `lignes_ecritures` | Via parent `ecritures_comptables` | Idem | Hérité |
-| `budgets_comptables` | Org + accès assemblée | Idem | Accès assemblée |
-| `lignes_budgets` | Via parent `budgets_comptables` | Idem | Hérité |
-| `immobilisations_comptables` | Org + accès assemblée | Idem | Accès assemblée |
+| `centres_analytiques` | Même org | Admin seulement | Org simple + `church_unit_id` |
+| `tiers` | Org + `user_has_church_unit_access` / assemblee legacy (+NULL) | Idem | Acces hybride unite/assemblee |
+| `ecritures_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `lignes_ecritures` | Via parent `ecritures_comptables` | Idem | Herite hybride |
+| `budgets_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `lignes_budgets` | Via parent `budgets_comptables` | Idem | Herite hybride |
+| `immobilisations_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `rapports_mensuels_eab` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `releves_bancaires` | Org + accès assemblée | Idem | Accès assemblée |
+| `releves_bancaires` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `exercices_comptables` | Même org | Admin seulement | Org simple |
 | `sequences_pieces` | Même org | Même org (système) | Org simple |
 | `audit_logs` | Admin national seulement | — | Lecture seule |
@@ -959,6 +971,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumulé |
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
 | `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
+| `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
 | `prefill_fiscal_dossier(UUID)` | plpgsql | DEFINER | Pré-remplit les champs du dossier fiscal depuis les écritures comptables via `fiscal_account_mapping` (sum_prefixes, balance_class, sum_accounts) |
 | `prefill_fiscal_dossier_from_import(UUID, UUID)` | plpgsql | DEFINER | Pré-remplit depuis une balance CSV importée (`imported_trial_balance_lines`) |
 | `validate_fiscal_dossier(UUID)` | plpgsql | DEFINER | Valide le dossier : champs requis, actif=passif, résultat=produits-charges, cohérence bilan/résultat. Passe statut `ready` si OK. |
@@ -988,6 +1001,17 @@ Migration `00021` ajoute :
 
 Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les rapports mensuels.
 
+Migration `00022` ajoute :
+
+- `sync_centre_church_unit_scope_trigger` sur `centres_analytiques`
+- `sync_tiers_church_unit_scope_trigger` sur `tiers`
+- `sync_ecriture_church_unit_scope_trigger` sur `ecritures_comptables`
+- `sync_budget_church_unit_scope_trigger` sur `budgets_comptables`
+- `sync_immobilisation_church_unit_scope_trigger` sur `immobilisations_comptables`
+- `sync_releve_church_unit_scope_trigger` sur `releves_bancaires`
+
+Ces triggers synchronisent `church_unit_id` avec `id_assemblee_locale` pour les objets comptables operationnels.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables` (20 tables).
@@ -1006,7 +1030,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~90 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00018`.
+> **Total : ~100 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00018`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -1057,15 +1081,15 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | ------- | ------- | ---------- |
 | `idx_comptes_*` | `comptes_comptables` | `organization_id`, composite, `nature`, `id_compte_parent`, `actif` |
 | `idx_journaux_*` | `journaux_comptables` | `organization_id`, composite, `type` |
-| `idx_centres_*` | `centres_analytiques` | `organization_id`, `id_assemblee_locale`, composite, `type` |
-| `idx_tiers_*` | `tiers` | `organization_id`, `id_assemblee_locale`, `type`, `id_fidele_lie`, `deleted_at` |
-| `idx_ecritures_*` | `ecritures_comptables` | `organization_id`, `id_assemblee_locale`, `id_journal`, `date`, `statut`, composite, `created_by`, `deleted_at` |
+| `idx_centres_*` | `centres_analytiques` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, composite, `type` |
+| `idx_tiers_*` | `tiers` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `type`, `id_fidele_lie`, `deleted_at` |
+| `idx_ecritures_*` | `ecritures_comptables` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `id_journal`, `date`, `statut`, composite, `created_by`, `deleted_at` |
 | `idx_lignes_*` | `lignes_ecritures` | `id_ecriture`, `id_compte_comptable`, `id_centre_analytique`, `id_tiers` |
-| `idx_budgets_*` | `budgets_comptables` | `organization_id`, `id_assemblee_locale`, `exercice`, `id_centre_analytique`, `deleted_at` |
+| `idx_budgets_*` | `budgets_comptables` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `exercice`, `id_centre_analytique`, `deleted_at` |
 | `idx_lignes_budgets_*` | `lignes_budgets` | `id_budget`, `id_compte_comptable` |
-| `idx_immobilisations_*` | `immobilisations_comptables` | `organization_id`, `id_assemblee_locale`, `type`, `date_acquisition`, `est_sortie`, `deleted_at` |
+| `idx_immobilisations_*` | `immobilisations_comptables` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `type`, `date_acquisition`, `est_sortie`, `deleted_at` |
 | `idx_rapports_*` | `rapports_mensuels_eab` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `(annee, mois)`, composite |
-| `idx_releves_*` | `releves_bancaires` | `organization_id`, `id_assemblee_locale`, `date_releve`, `id_journal_banque` |
+| `idx_releves_*` | `releves_bancaires` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `date_releve`, `id_journal_banque` |
 
 ### Améliorations (00007)
 
@@ -1138,6 +1162,10 @@ erDiagram
     church_unit_types ||--o{ church_units : "type"
     church_units ||--o{ church_units : "sous-unites"
     church_units ||--o{ church_unit_user_scopes : "perimetres"
+    church_units ||--o{ ecritures_comptables : "ecritures"
+    church_units ||--o{ budgets_comptables : "budgets"
+    church_units ||--o{ immobilisations_comptables : "immobilisations"
+    church_units ||--o{ releves_bancaires : "releves"
     profiles ||--o{ church_unit_user_scopes : "roles"
     organizations ||--o{ regions_eglise : "régions"
     organizations ||--o{ comptes_comptables : "plan comptable"
@@ -1175,6 +1203,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-13 | Agent IA | **Migration 00022** : Rattachement progressif de la comptabilite operationnelle a `church_units` via `church_unit_id` (`centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`, `immobilisations_comptables`, `releves_bancaires`). Backfill depuis les assemblees legacy, triggers de synchronisation, index et politiques RLS hybrides pour les objets comptables rattaches a un perimetre. |
 | 2026-06-13 | Agent IA | **Migration 00021** : Rattachement progressif de `rapports_mensuels_eab` a `church_units` via `church_unit_id`. `id_assemblee_locale` devient nullable pour les rapports sur niveaux non locaux, backfill depuis les assemblees legacy, trigger de synchronisation, index unique par unite/periode et politiques RLS hybrides. |
 | 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |
 | 2026-06-13 | Agent IA | **Migration 00019** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |

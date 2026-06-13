@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$BudgetComptable {
 
- String get id; int get exercice; String? get idAssembleeLocale; String? get idCentreAnalytique; String? get idTiersBailleur; String? get libelle; bool get estVerrouille;
+ String get id; int get exercice; String? get idAssembleeLocale; String? get churchUnitId; String? get idCentreAnalytique; String? get idTiersBailleur; String? get libelle; bool get estVerrouille;
 /// Create a copy of BudgetComptable
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $BudgetComptableCopyWith<BudgetComptable> get copyWith => _$BudgetComptableCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BudgetComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.exercice, exercice) || other.exercice == exercice)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idCentreAnalytique, idCentreAnalytique) || other.idCentreAnalytique == idCentreAnalytique)&&(identical(other.idTiersBailleur, idTiersBailleur) || other.idTiersBailleur == idTiersBailleur)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&(identical(other.estVerrouille, estVerrouille) || other.estVerrouille == estVerrouille));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BudgetComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.exercice, exercice) || other.exercice == exercice)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idCentreAnalytique, idCentreAnalytique) || other.idCentreAnalytique == idCentreAnalytique)&&(identical(other.idTiersBailleur, idTiersBailleur) || other.idTiersBailleur == idTiersBailleur)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&(identical(other.estVerrouille, estVerrouille) || other.estVerrouille == estVerrouille));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,exercice,idAssembleeLocale,idCentreAnalytique,idTiersBailleur,libelle,estVerrouille);
+int get hashCode => Object.hash(runtimeType,id,exercice,idAssembleeLocale,churchUnitId,idCentreAnalytique,idTiersBailleur,libelle,estVerrouille);
 
 @override
 String toString() {
-  return 'BudgetComptable(id: $id, exercice: $exercice, idAssembleeLocale: $idAssembleeLocale, idCentreAnalytique: $idCentreAnalytique, idTiersBailleur: $idTiersBailleur, libelle: $libelle, estVerrouille: $estVerrouille)';
+  return 'BudgetComptable(id: $id, exercice: $exercice, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idCentreAnalytique: $idCentreAnalytique, idTiersBailleur: $idTiersBailleur, libelle: $libelle, estVerrouille: $estVerrouille)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $BudgetComptableCopyWith<$Res>  {
   factory $BudgetComptableCopyWith(BudgetComptable value, $Res Function(BudgetComptable) _then) = _$BudgetComptableCopyWithImpl;
 @useResult
 $Res call({
- String id, int exercice, String? idAssembleeLocale, String? idCentreAnalytique, String? idTiersBailleur, String? libelle, bool estVerrouille
+ String id, int exercice, String? idAssembleeLocale, String? churchUnitId, String? idCentreAnalytique, String? idTiersBailleur, String? libelle, bool estVerrouille
 });
 
 
@@ -65,11 +65,12 @@ class _$BudgetComptableCopyWithImpl<$Res>
 
 /// Create a copy of BudgetComptable
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? exercice = null,Object? idAssembleeLocale = freezed,Object? idCentreAnalytique = freezed,Object? idTiersBailleur = freezed,Object? libelle = freezed,Object? estVerrouille = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? exercice = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idCentreAnalytique = freezed,Object? idTiersBailleur = freezed,Object? libelle = freezed,Object? estVerrouille = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,exercice: null == exercice ? _self.exercice : exercice // ignore: cast_nullable_to_non_nullable
 as int,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idCentreAnalytique: freezed == idCentreAnalytique ? _self.idCentreAnalytique : idCentreAnalytique // ignore: cast_nullable_to_non_nullable
 as String?,idTiersBailleur: freezed == idTiersBailleur ? _self.idTiersBailleur : idTiersBailleur // ignore: cast_nullable_to_non_nullable
 as String?,libelle: freezed == libelle ? _self.libelle : libelle // ignore: cast_nullable_to_non_nullable
@@ -159,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int exercice,  String? idAssembleeLocale,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int exercice,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BudgetComptable() when $default != null:
-return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
+return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
   return orElse();
 
 }
@@ -180,10 +181,10 @@ return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAn
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int exercice,  String? idAssembleeLocale,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int exercice,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)  $default,) {final _that = this;
 switch (_that) {
 case _BudgetComptable():
-return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
+return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +201,10 @@ return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAn
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int exercice,  String? idAssembleeLocale,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int exercice,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytique,  String? idTiersBailleur,  String? libelle,  bool estVerrouille)?  $default,) {final _that = this;
 switch (_that) {
 case _BudgetComptable() when $default != null:
-return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
+return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytique,_that.idTiersBailleur,_that.libelle,_that.estVerrouille);case _:
   return null;
 
 }
@@ -215,12 +216,13 @@ return $default(_that.id,_that.exercice,_that.idAssembleeLocale,_that.idCentreAn
 @JsonSerializable()
 
 class _BudgetComptable implements BudgetComptable {
-  const _BudgetComptable({required this.id, required this.exercice, this.idAssembleeLocale, this.idCentreAnalytique, this.idTiersBailleur, this.libelle, this.estVerrouille = false});
+  const _BudgetComptable({required this.id, required this.exercice, this.idAssembleeLocale, this.churchUnitId, this.idCentreAnalytique, this.idTiersBailleur, this.libelle, this.estVerrouille = false});
   factory _BudgetComptable.fromJson(Map<String, dynamic> json) => _$BudgetComptableFromJson(json);
 
 @override final  String id;
 @override final  int exercice;
 @override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 @override final  String? idCentreAnalytique;
 @override final  String? idTiersBailleur;
 @override final  String? libelle;
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BudgetComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.exercice, exercice) || other.exercice == exercice)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idCentreAnalytique, idCentreAnalytique) || other.idCentreAnalytique == idCentreAnalytique)&&(identical(other.idTiersBailleur, idTiersBailleur) || other.idTiersBailleur == idTiersBailleur)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&(identical(other.estVerrouille, estVerrouille) || other.estVerrouille == estVerrouille));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BudgetComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.exercice, exercice) || other.exercice == exercice)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idCentreAnalytique, idCentreAnalytique) || other.idCentreAnalytique == idCentreAnalytique)&&(identical(other.idTiersBailleur, idTiersBailleur) || other.idTiersBailleur == idTiersBailleur)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&(identical(other.estVerrouille, estVerrouille) || other.estVerrouille == estVerrouille));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,exercice,idAssembleeLocale,idCentreAnalytique,idTiersBailleur,libelle,estVerrouille);
+int get hashCode => Object.hash(runtimeType,id,exercice,idAssembleeLocale,churchUnitId,idCentreAnalytique,idTiersBailleur,libelle,estVerrouille);
 
 @override
 String toString() {
-  return 'BudgetComptable(id: $id, exercice: $exercice, idAssembleeLocale: $idAssembleeLocale, idCentreAnalytique: $idCentreAnalytique, idTiersBailleur: $idTiersBailleur, libelle: $libelle, estVerrouille: $estVerrouille)';
+  return 'BudgetComptable(id: $id, exercice: $exercice, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idCentreAnalytique: $idCentreAnalytique, idTiersBailleur: $idTiersBailleur, libelle: $libelle, estVerrouille: $estVerrouille)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$BudgetComptableCopyWith<$Res> implements $BudgetComptable
   factory _$BudgetComptableCopyWith(_BudgetComptable value, $Res Function(_BudgetComptable) _then) = __$BudgetComptableCopyWithImpl;
 @override @useResult
 $Res call({
- String id, int exercice, String? idAssembleeLocale, String? idCentreAnalytique, String? idTiersBailleur, String? libelle, bool estVerrouille
+ String id, int exercice, String? idAssembleeLocale, String? churchUnitId, String? idCentreAnalytique, String? idTiersBailleur, String? libelle, bool estVerrouille
 });
 
 
@@ -276,11 +278,12 @@ class __$BudgetComptableCopyWithImpl<$Res>
 
 /// Create a copy of BudgetComptable
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? exercice = null,Object? idAssembleeLocale = freezed,Object? idCentreAnalytique = freezed,Object? idTiersBailleur = freezed,Object? libelle = freezed,Object? estVerrouille = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? exercice = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idCentreAnalytique = freezed,Object? idTiersBailleur = freezed,Object? libelle = freezed,Object? estVerrouille = null,}) {
   return _then(_BudgetComptable(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,exercice: null == exercice ? _self.exercice : exercice // ignore: cast_nullable_to_non_nullable
 as int,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idCentreAnalytique: freezed == idCentreAnalytique ? _self.idCentreAnalytique : idCentreAnalytique // ignore: cast_nullable_to_non_nullable
 as String?,idTiersBailleur: freezed == idTiersBailleur ? _self.idTiersBailleur : idTiersBailleur // ignore: cast_nullable_to_non_nullable
 as String?,libelle: freezed == libelle ? _self.libelle : libelle // ignore: cast_nullable_to_non_nullable

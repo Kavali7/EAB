@@ -17,8 +17,8 @@ mixin _$CentreAnalytique {
 
  String get id; String get code;// ex: "ASS-COT-CENTRE", "PROJ-EV-2025"
  String get nom;// ex: "Assemblee de Cotonou Centre", "Projet evangelisation 2025"
- TypeCentreAnalytique get type; String? get description;// Pour plus tard : rattacher a une assemblee, un district, etc. si besoin
- String? get idAssembleeLocale;
+ TypeCentreAnalytique get type; String? get description;// Compatibilite legacy + rattachement flexible.
+ String? get idAssembleeLocale; String? get churchUnitId;
 /// Create a copy of CentreAnalytique
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,16 +31,16 @@ $CentreAnalytiqueCopyWith<CentreAnalytique> get copyWith => _$CentreAnalytiqueCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CentreAnalytique&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.description, description) || other.description == description)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CentreAnalytique&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.description, description) || other.description == description)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,nom,type,description,idAssembleeLocale);
+int get hashCode => Object.hash(runtimeType,id,code,nom,type,description,idAssembleeLocale,churchUnitId);
 
 @override
 String toString() {
-  return 'CentreAnalytique(id: $id, code: $code, nom: $nom, type: $type, description: $description, idAssembleeLocale: $idAssembleeLocale)';
+  return 'CentreAnalytique(id: $id, code: $code, nom: $nom, type: $type, description: $description, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId)';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $CentreAnalytiqueCopyWith<$Res>  {
   factory $CentreAnalytiqueCopyWith(CentreAnalytique value, $Res Function(CentreAnalytique) _then) = _$CentreAnalytiqueCopyWithImpl;
 @useResult
 $Res call({
- String id, String code, String nom, TypeCentreAnalytique type, String? description, String? idAssembleeLocale
+ String id, String code, String nom, TypeCentreAnalytique type, String? description, String? idAssembleeLocale, String? churchUnitId
 });
 
 
@@ -68,7 +68,7 @@ class _$CentreAnalytiqueCopyWithImpl<$Res>
 
 /// Create a copy of CentreAnalytique
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? nom = null,Object? type = null,Object? description = freezed,Object? idAssembleeLocale = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? nom = null,Object? type = null,Object? description = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -76,6 +76,7 @@ as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nul
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TypeCentreAnalytique,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -161,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale,  String? churchUnitId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CentreAnalytique() when $default != null:
-return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale,_that.churchUnitId);case _:
   return orElse();
 
 }
@@ -182,10 +183,10 @@ return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale,  String? churchUnitId)  $default,) {final _that = this;
 switch (_that) {
 case _CentreAnalytique():
-return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale,_that.churchUnitId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +203,10 @@ return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  String nom,  TypeCentreAnalytique type,  String? description,  String? idAssembleeLocale,  String? churchUnitId)?  $default,) {final _that = this;
 switch (_that) {
 case _CentreAnalytique() when $default != null:
-return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that.idAssembleeLocale,_that.churchUnitId);case _:
   return null;
 
 }
@@ -217,7 +218,7 @@ return $default(_that.id,_that.code,_that.nom,_that.type,_that.description,_that
 @JsonSerializable()
 
 class _CentreAnalytique implements CentreAnalytique {
-  const _CentreAnalytique({required this.id, required this.code, required this.nom, required this.type, this.description, this.idAssembleeLocale});
+  const _CentreAnalytique({required this.id, required this.code, required this.nom, required this.type, this.description, this.idAssembleeLocale, this.churchUnitId});
   factory _CentreAnalytique.fromJson(Map<String, dynamic> json) => _$CentreAnalytiqueFromJson(json);
 
 @override final  String id;
@@ -227,8 +228,9 @@ class _CentreAnalytique implements CentreAnalytique {
 // ex: "Assemblee de Cotonou Centre", "Projet evangelisation 2025"
 @override final  TypeCentreAnalytique type;
 @override final  String? description;
-// Pour plus tard : rattacher a une assemblee, un district, etc. si besoin
+// Compatibilite legacy + rattachement flexible.
 @override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 
 /// Create a copy of CentreAnalytique
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CentreAnalytique&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.description, description) || other.description == description)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CentreAnalytique&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.description, description) || other.description == description)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,code,nom,type,description,idAssembleeLocale);
+int get hashCode => Object.hash(runtimeType,id,code,nom,type,description,idAssembleeLocale,churchUnitId);
 
 @override
 String toString() {
-  return 'CentreAnalytique(id: $id, code: $code, nom: $nom, type: $type, description: $description, idAssembleeLocale: $idAssembleeLocale)';
+  return 'CentreAnalytique(id: $id, code: $code, nom: $nom, type: $type, description: $description, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId)';
 }
 
 
@@ -263,7 +265,7 @@ abstract mixin class _$CentreAnalytiqueCopyWith<$Res> implements $CentreAnalytiq
   factory _$CentreAnalytiqueCopyWith(_CentreAnalytique value, $Res Function(_CentreAnalytique) _then) = __$CentreAnalytiqueCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String code, String nom, TypeCentreAnalytique type, String? description, String? idAssembleeLocale
+ String id, String code, String nom, TypeCentreAnalytique type, String? description, String? idAssembleeLocale, String? churchUnitId
 });
 
 
@@ -280,7 +282,7 @@ class __$CentreAnalytiqueCopyWithImpl<$Res>
 
 /// Create a copy of CentreAnalytique
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? nom = null,Object? type = null,Object? description = freezed,Object? idAssembleeLocale = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? nom = null,Object? type = null,Object? description = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,}) {
   return _then(_CentreAnalytique(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -288,6 +290,7 @@ as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nul
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TypeCentreAnalytique,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

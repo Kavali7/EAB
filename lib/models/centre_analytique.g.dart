@@ -14,6 +14,7 @@ _CentreAnalytique _$CentreAnalytiqueFromJson(Map<String, dynamic> json) =>
       type: $enumDecode(_$TypeCentreAnalytiqueEnumMap, json['type']),
       description: json['description'] as String?,
       idAssembleeLocale: json['idAssembleeLocale'] as String?,
+      churchUnitId: json['churchUnitId'] as String?,
     );
 
 Map<String, dynamic> _$CentreAnalytiqueToJson(_CentreAnalytique instance) =>
@@ -24,6 +25,7 @@ Map<String, dynamic> _$CentreAnalytiqueToJson(_CentreAnalytique instance) =>
       'type': _$TypeCentreAnalytiqueEnumMap[instance.type]!,
       'description': instance.description,
       'idAssembleeLocale': instance.idAssembleeLocale,
+      'churchUnitId': instance.churchUnitId,
     };
 
 const _$TypeCentreAnalytiqueEnumMap = {

@@ -15,8 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Tiers {
 
- String get id; String get nom; TypeTiers get type; String? get telephone; String? get email; String? get adresse;// Rattachement eventuel a une assemblee
- String? get idAssembleeLocale;// Pour lier un tiers a un fidele existant (ex: membre)
+ String get id; String get nom; TypeTiers get type; String? get telephone; String? get email; String? get adresse;// Rattachement eventuel a une unite d'eglise.
+ String? get idAssembleeLocale; String? get churchUnitId;// Pour lier un tiers a un fidele existant (ex: membre)
  String? get idFideleLie;
 /// Create a copy of Tiers
 /// with the given fields replaced by the non-null parameter values.
@@ -30,16 +30,16 @@ $TiersCopyWith<Tiers> get copyWith => _$TiersCopyWithImpl<Tiers>(this as Tiers, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Tiers&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.telephone, telephone) || other.telephone == telephone)&&(identical(other.email, email) || other.email == email)&&(identical(other.adresse, adresse) || other.adresse == adresse)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idFideleLie, idFideleLie) || other.idFideleLie == idFideleLie));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Tiers&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.telephone, telephone) || other.telephone == telephone)&&(identical(other.email, email) || other.email == email)&&(identical(other.adresse, adresse) || other.adresse == adresse)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idFideleLie, idFideleLie) || other.idFideleLie == idFideleLie));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,nom,type,telephone,email,adresse,idAssembleeLocale,idFideleLie);
+int get hashCode => Object.hash(runtimeType,id,nom,type,telephone,email,adresse,idAssembleeLocale,churchUnitId,idFideleLie);
 
 @override
 String toString() {
-  return 'Tiers(id: $id, nom: $nom, type: $type, telephone: $telephone, email: $email, adresse: $adresse, idAssembleeLocale: $idAssembleeLocale, idFideleLie: $idFideleLie)';
+  return 'Tiers(id: $id, nom: $nom, type: $type, telephone: $telephone, email: $email, adresse: $adresse, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idFideleLie: $idFideleLie)';
 }
 
 
@@ -50,7 +50,7 @@ abstract mixin class $TiersCopyWith<$Res>  {
   factory $TiersCopyWith(Tiers value, $Res Function(Tiers) _then) = _$TiersCopyWithImpl;
 @useResult
 $Res call({
- String id, String nom, TypeTiers type, String? telephone, String? email, String? adresse, String? idAssembleeLocale, String? idFideleLie
+ String id, String nom, TypeTiers type, String? telephone, String? email, String? adresse, String? idAssembleeLocale, String? churchUnitId, String? idFideleLie
 });
 
 
@@ -67,7 +67,7 @@ class _$TiersCopyWithImpl<$Res>
 
 /// Create a copy of Tiers
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nom = null,Object? type = null,Object? telephone = freezed,Object? email = freezed,Object? adresse = freezed,Object? idAssembleeLocale = freezed,Object? idFideleLie = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nom = null,Object? type = null,Object? telephone = freezed,Object? email = freezed,Object? adresse = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idFideleLie = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nullable
@@ -76,6 +76,7 @@ as TypeTiers,telephone: freezed == telephone ? _self.telephone : telephone // ig
 as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,adresse: freezed == adresse ? _self.adresse : adresse // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idFideleLie: freezed == idFideleLie ? _self.idFideleLie : idFideleLie // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -162,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? idFideleLie)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? churchUnitId,  String? idFideleLie)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Tiers() when $default != null:
-return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.idFideleLie);case _:
+return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.churchUnitId,_that.idFideleLie);case _:
   return orElse();
 
 }
@@ -183,10 +184,10 @@ return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? idFideleLie)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? churchUnitId,  String? idFideleLie)  $default,) {final _that = this;
 switch (_that) {
 case _Tiers():
-return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.idFideleLie);case _:
+return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.churchUnitId,_that.idFideleLie);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +204,10 @@ return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? idFideleLie)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nom,  TypeTiers type,  String? telephone,  String? email,  String? adresse,  String? idAssembleeLocale,  String? churchUnitId,  String? idFideleLie)?  $default,) {final _that = this;
 switch (_that) {
 case _Tiers() when $default != null:
-return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.idFideleLie);case _:
+return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.adresse,_that.idAssembleeLocale,_that.churchUnitId,_that.idFideleLie);case _:
   return null;
 
 }
@@ -218,7 +219,7 @@ return $default(_that.id,_that.nom,_that.type,_that.telephone,_that.email,_that.
 @JsonSerializable()
 
 class _Tiers implements Tiers {
-  const _Tiers({required this.id, required this.nom, required this.type, this.telephone, this.email, this.adresse, this.idAssembleeLocale, this.idFideleLie});
+  const _Tiers({required this.id, required this.nom, required this.type, this.telephone, this.email, this.adresse, this.idAssembleeLocale, this.churchUnitId, this.idFideleLie});
   factory _Tiers.fromJson(Map<String, dynamic> json) => _$TiersFromJson(json);
 
 @override final  String id;
@@ -227,8 +228,9 @@ class _Tiers implements Tiers {
 @override final  String? telephone;
 @override final  String? email;
 @override final  String? adresse;
-// Rattachement eventuel a une assemblee
+// Rattachement eventuel a une unite d'eglise.
 @override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 // Pour lier un tiers a un fidele existant (ex: membre)
 @override final  String? idFideleLie;
 
@@ -245,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Tiers&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.telephone, telephone) || other.telephone == telephone)&&(identical(other.email, email) || other.email == email)&&(identical(other.adresse, adresse) || other.adresse == adresse)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idFideleLie, idFideleLie) || other.idFideleLie == idFideleLie));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Tiers&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.type, type) || other.type == type)&&(identical(other.telephone, telephone) || other.telephone == telephone)&&(identical(other.email, email) || other.email == email)&&(identical(other.adresse, adresse) || other.adresse == adresse)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idFideleLie, idFideleLie) || other.idFideleLie == idFideleLie));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,nom,type,telephone,email,adresse,idAssembleeLocale,idFideleLie);
+int get hashCode => Object.hash(runtimeType,id,nom,type,telephone,email,adresse,idAssembleeLocale,churchUnitId,idFideleLie);
 
 @override
 String toString() {
-  return 'Tiers(id: $id, nom: $nom, type: $type, telephone: $telephone, email: $email, adresse: $adresse, idAssembleeLocale: $idAssembleeLocale, idFideleLie: $idFideleLie)';
+  return 'Tiers(id: $id, nom: $nom, type: $type, telephone: $telephone, email: $email, adresse: $adresse, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idFideleLie: $idFideleLie)';
 }
 
 
@@ -265,7 +267,7 @@ abstract mixin class _$TiersCopyWith<$Res> implements $TiersCopyWith<$Res> {
   factory _$TiersCopyWith(_Tiers value, $Res Function(_Tiers) _then) = __$TiersCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String nom, TypeTiers type, String? telephone, String? email, String? adresse, String? idAssembleeLocale, String? idFideleLie
+ String id, String nom, TypeTiers type, String? telephone, String? email, String? adresse, String? idAssembleeLocale, String? churchUnitId, String? idFideleLie
 });
 
 
@@ -282,7 +284,7 @@ class __$TiersCopyWithImpl<$Res>
 
 /// Create a copy of Tiers
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nom = null,Object? type = null,Object? telephone = freezed,Object? email = freezed,Object? adresse = freezed,Object? idAssembleeLocale = freezed,Object? idFideleLie = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nom = null,Object? type = null,Object? telephone = freezed,Object? email = freezed,Object? adresse = freezed,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idFideleLie = freezed,}) {
   return _then(_Tiers(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nullable
@@ -291,6 +293,7 @@ as TypeTiers,telephone: freezed == telephone ? _self.telephone : telephone // ig
 as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,adresse: freezed == adresse ? _self.adresse : adresse // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idFideleLie: freezed == idFideleLie ? _self.idFideleLie : idFideleLie // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

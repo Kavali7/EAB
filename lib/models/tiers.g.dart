@@ -14,6 +14,7 @@ _Tiers _$TiersFromJson(Map<String, dynamic> json) => _Tiers(
   email: json['email'] as String?,
   adresse: json['adresse'] as String?,
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
+  churchUnitId: json['churchUnitId'] as String?,
   idFideleLie: json['idFideleLie'] as String?,
 );
 
@@ -25,6 +26,7 @@ Map<String, dynamic> _$TiersToJson(_Tiers instance) => <String, dynamic>{
   'email': instance.email,
   'adresse': instance.adresse,
   'idAssembleeLocale': instance.idAssembleeLocale,
+  'churchUnitId': instance.churchUnitId,
   'idFideleLie': instance.idFideleLie,
 };
 

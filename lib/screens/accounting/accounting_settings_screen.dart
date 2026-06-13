@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/assemblee_locale.dart';
 import 'package:eab/models/centre_analytique.dart';
 import 'package:eab/models/compte_comptable.dart';
@@ -272,6 +275,7 @@ class _AccountingSettingsScreenState
   Widget _buildCentresTab(ProfilUtilisateur? profil, bool compact) {
     final centresAsync = ref.watch(centresAnalytiquesProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnits = ref.watch(churchUnitsProvider).value ?? [];
     final assemblees = assembleesAsync.value ?? [];
     return centresAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -283,8 +287,11 @@ class _AccountingSettingsScreenState
           title: 'Centres analytiques',
           subtitle: '${sorted.length} centres de suivi',
           action: ElevatedButton.icon(
-            onPressed: () =>
-                _ouvrirDialogCentre(profil, assemblees: assemblees),
+            onPressed: () => _ouvrirDialogCentre(
+              profil,
+              assemblees: assemblees,
+              churchUnits: churchUnits,
+            ),
             icon: const Icon(Icons.add),
             label: const Text('Centre'),
           ),
@@ -307,6 +314,7 @@ class _AccountingSettingsScreenState
                         profil,
                         centre: c,
                         assemblees: assemblees,
+                        churchUnits: churchUnits,
                       ),
                     );
                   },
@@ -343,6 +351,7 @@ class _AccountingSettingsScreenState
                                     profil,
                                     centre: c,
                                     assemblees: assemblees,
+                                    churchUnits: churchUnits,
                                   ),
                                 ),
                               ),
@@ -361,6 +370,7 @@ class _AccountingSettingsScreenState
     ProfilUtilisateur? profil, {
     CentreAnalytique? centre,
     required List<AssembleeLocale> assemblees,
+    required List<ChurchUnit> churchUnits,
   }) async {
     final formKey = GlobalKey<FormState>();
     final codeCtrl = TextEditingController(text: centre?.code ?? '');
@@ -369,6 +379,9 @@ class _AccountingSettingsScreenState
     TypeCentreAnalytique type =
         centre?.type ?? TypeCentreAnalytique.assembleeLocale;
     String? idAssemblee = centre?.idAssembleeLocale;
+    String? churchUnitId =
+        centre?.churchUnitId ??
+        churchUnitIdForLegacyAssemblee(churchUnits, idAssemblee);
 
     await showDialog<void>(
       context: context,
@@ -427,7 +440,10 @@ class _AccountingSettingsScreenState
                     ),
                   ),
                 ],
-                onChanged: (v) => idAssemblee = v,
+                onChanged: (v) {
+                  idAssemblee = v;
+                  churchUnitId = churchUnitIdForLegacyAssemblee(churchUnits, v);
+                },
               ),
               const SizedBox(height: AppSpacing.fieldGap),
               TextFormField(
@@ -459,6 +475,7 @@ class _AccountingSettingsScreenState
                     ? null
                     : descCtrl.text.trim(),
                 idAssembleeLocale: idAssemblee,
+                churchUnitId: churchUnitId,
               );
               if (centre == null) {
                 await notifier.ajouterCentre(nouveau);
@@ -479,6 +496,7 @@ class _AccountingSettingsScreenState
   Widget _buildTiersTab(ProfilUtilisateur? profil, bool compact) {
     final tiersAsync = ref.watch(tiersProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnits = ref.watch(churchUnitsProvider).value ?? [];
     final membresAsync = ref.watch(membersProvider);
     final assemblees = assembleesAsync.value ?? [];
     final membres = membresAsync.value ?? [];
@@ -495,6 +513,7 @@ class _AccountingSettingsScreenState
             onPressed: () => _ouvrirDialogTiers(
               profil,
               assemblees: assemblees,
+              churchUnits: churchUnits,
               membres: membres,
             ),
             icon: const Icon(Icons.add),
@@ -520,6 +539,7 @@ class _AccountingSettingsScreenState
                         profil,
                         tiers: t,
                         assemblees: assemblees,
+                        churchUnits: churchUnits,
                         membres: membres,
                       ),
                     );
@@ -559,6 +579,7 @@ class _AccountingSettingsScreenState
                                     profil,
                                     tiers: t,
                                     assemblees: assemblees,
+                                    churchUnits: churchUnits,
                                     membres: membres,
                                   ),
                                 ),
@@ -578,6 +599,7 @@ class _AccountingSettingsScreenState
     ProfilUtilisateur? profil, {
     Tiers? tiers,
     required List<AssembleeLocale> assemblees,
+    required List<ChurchUnit> churchUnits,
     required List membres,
   }) async {
     final formKey = GlobalKey<FormState>();
@@ -586,6 +608,9 @@ class _AccountingSettingsScreenState
     final emailCtrl = TextEditingController(text: tiers?.email ?? '');
     final adresseCtrl = TextEditingController(text: tiers?.adresse ?? '');
     String? idAssemblee = tiers?.idAssembleeLocale;
+    String? churchUnitId =
+        tiers?.churchUnitId ??
+        churchUnitIdForLegacyAssemblee(churchUnits, idAssemblee);
     String? idFidele = tiers?.idFideleLie;
     TypeTiers type = tiers?.type ?? TypeTiers.autre;
 
@@ -643,6 +668,10 @@ class _AccountingSettingsScreenState
                   onChanged: (v) {
                     setDialogState(() {
                       idAssemblee = v;
+                      churchUnitId = churchUnitIdForLegacyAssemblee(
+                        churchUnits,
+                        v,
+                      );
                       if (idAssemblee == null) idFidele = null;
                     });
                   },
@@ -719,6 +748,7 @@ class _AccountingSettingsScreenState
                       ? null
                       : adresseCtrl.text.trim(),
                   idAssembleeLocale: idAssemblee,
+                  churchUnitId: churchUnitId,
                   idFideleLie: idFidele,
                 );
                 if (tiers == null) {

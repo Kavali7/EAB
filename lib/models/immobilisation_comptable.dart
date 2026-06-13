@@ -27,6 +27,7 @@ abstract class ImmobilisationComptable with _$ImmobilisationComptable {
     String? idCompteAmortissement,
     String? idCompteDotation,
     String? idAssembleeLocale,
+    String? churchUnitId,
     String? idCentreAnalytique,
     @Default(false) bool estSortie,
     DateTime? dateSortie,

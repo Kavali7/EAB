@@ -310,8 +310,8 @@ mixin _$EcritureComptable {
  String get id; DateTime get date; String get idJournal;// reference a JournalComptable.id
  String? get referencePiece;// reference interne / piece justificative
  String get libelle;// libelle general de l'ecriture
- List<LigneEcritureComptable> get lignes;// Rattachement a une assemblee / centre principal
- String? get idAssembleeLocale; String? get idCentreAnalytiquePrincipal;// Statut de l'ecriture (brouillon / validee / cloturee)
+ List<LigneEcritureComptable> get lignes;// Rattachement a une unite d'eglise / centre principal
+ String? get idAssembleeLocale; String? get churchUnitId; String? get idCentreAnalytiquePrincipal;// Statut de l'ecriture (brouillon / validee / cloturee)
  StatutEcriture get statut;// Validation
  String? get createdBy; String? get validatedBy; DateTime? get validatedAt;
 /// Create a copy of EcritureComptable
@@ -326,16 +326,16 @@ $EcritureComptableCopyWith<EcritureComptable> get copyWith => _$EcritureComptabl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcritureComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.idJournal, idJournal) || other.idJournal == idJournal)&&(identical(other.referencePiece, referencePiece) || other.referencePiece == referencePiece)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&const DeepCollectionEquality().equals(other.lignes, lignes)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idCentreAnalytiquePrincipal, idCentreAnalytiquePrincipal) || other.idCentreAnalytiquePrincipal == idCentreAnalytiquePrincipal)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.validatedBy, validatedBy) || other.validatedBy == validatedBy)&&(identical(other.validatedAt, validatedAt) || other.validatedAt == validatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EcritureComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.idJournal, idJournal) || other.idJournal == idJournal)&&(identical(other.referencePiece, referencePiece) || other.referencePiece == referencePiece)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&const DeepCollectionEquality().equals(other.lignes, lignes)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idCentreAnalytiquePrincipal, idCentreAnalytiquePrincipal) || other.idCentreAnalytiquePrincipal == idCentreAnalytiquePrincipal)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.validatedBy, validatedBy) || other.validatedBy == validatedBy)&&(identical(other.validatedAt, validatedAt) || other.validatedAt == validatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,idJournal,referencePiece,libelle,const DeepCollectionEquality().hash(lignes),idAssembleeLocale,idCentreAnalytiquePrincipal,statut,createdBy,validatedBy,validatedAt);
+int get hashCode => Object.hash(runtimeType,id,date,idJournal,referencePiece,libelle,const DeepCollectionEquality().hash(lignes),idAssembleeLocale,churchUnitId,idCentreAnalytiquePrincipal,statut,createdBy,validatedBy,validatedAt);
 
 @override
 String toString() {
-  return 'EcritureComptable(id: $id, date: $date, idJournal: $idJournal, referencePiece: $referencePiece, libelle: $libelle, lignes: $lignes, idAssembleeLocale: $idAssembleeLocale, idCentreAnalytiquePrincipal: $idCentreAnalytiquePrincipal, statut: $statut, createdBy: $createdBy, validatedBy: $validatedBy, validatedAt: $validatedAt)';
+  return 'EcritureComptable(id: $id, date: $date, idJournal: $idJournal, referencePiece: $referencePiece, libelle: $libelle, lignes: $lignes, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idCentreAnalytiquePrincipal: $idCentreAnalytiquePrincipal, statut: $statut, createdBy: $createdBy, validatedBy: $validatedBy, validatedAt: $validatedAt)';
 }
 
 
@@ -346,7 +346,7 @@ abstract mixin class $EcritureComptableCopyWith<$Res>  {
   factory $EcritureComptableCopyWith(EcritureComptable value, $Res Function(EcritureComptable) _then) = _$EcritureComptableCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime date, String idJournal, String? referencePiece, String libelle, List<LigneEcritureComptable> lignes, String? idAssembleeLocale, String? idCentreAnalytiquePrincipal, StatutEcriture statut, String? createdBy, String? validatedBy, DateTime? validatedAt
+ String id, DateTime date, String idJournal, String? referencePiece, String libelle, List<LigneEcritureComptable> lignes, String? idAssembleeLocale, String? churchUnitId, String? idCentreAnalytiquePrincipal, StatutEcriture statut, String? createdBy, String? validatedBy, DateTime? validatedAt
 });
 
 
@@ -363,7 +363,7 @@ class _$EcritureComptableCopyWithImpl<$Res>
 
 /// Create a copy of EcritureComptable
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? idJournal = null,Object? referencePiece = freezed,Object? libelle = null,Object? lignes = null,Object? idAssembleeLocale = freezed,Object? idCentreAnalytiquePrincipal = freezed,Object? statut = null,Object? createdBy = freezed,Object? validatedBy = freezed,Object? validatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? idJournal = null,Object? referencePiece = freezed,Object? libelle = null,Object? lignes = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idCentreAnalytiquePrincipal = freezed,Object? statut = null,Object? createdBy = freezed,Object? validatedBy = freezed,Object? validatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -372,6 +372,7 @@ as String,referencePiece: freezed == referencePiece ? _self.referencePiece : ref
 as String?,libelle: null == libelle ? _self.libelle : libelle // ignore: cast_nullable_to_non_nullable
 as String,lignes: null == lignes ? _self.lignes : lignes // ignore: cast_nullable_to_non_nullable
 as List<LigneEcritureComptable>,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idCentreAnalytiquePrincipal: freezed == idCentreAnalytiquePrincipal ? _self.idCentreAnalytiquePrincipal : idCentreAnalytiquePrincipal // ignore: cast_nullable_to_non_nullable
 as String?,statut: null == statut ? _self.statut : statut // ignore: cast_nullable_to_non_nullable
 as StatutEcriture,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable
@@ -462,10 +463,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EcritureComptable() when $default != null:
-return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
+return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
   return orElse();
 
 }
@@ -483,10 +484,10 @@ return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _EcritureComptable():
-return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
+return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -503,10 +504,10 @@ return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  String idJournal,  String? referencePiece,  String libelle,  List<LigneEcritureComptable> lignes,  String? idAssembleeLocale,  String? churchUnitId,  String? idCentreAnalytiquePrincipal,  StatutEcriture statut,  String? createdBy,  String? validatedBy,  DateTime? validatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _EcritureComptable() when $default != null:
-return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
+return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.libelle,_that.lignes,_that.idAssembleeLocale,_that.churchUnitId,_that.idCentreAnalytiquePrincipal,_that.statut,_that.createdBy,_that.validatedBy,_that.validatedAt);case _:
   return null;
 
 }
@@ -518,7 +519,7 @@ return $default(_that.id,_that.date,_that.idJournal,_that.referencePiece,_that.l
 @JsonSerializable()
 
 class _EcritureComptable implements EcritureComptable {
-  const _EcritureComptable({required this.id, required this.date, required this.idJournal, this.referencePiece, required this.libelle, required final  List<LigneEcritureComptable> lignes, this.idAssembleeLocale, this.idCentreAnalytiquePrincipal, this.statut = StatutEcriture.brouillon, this.createdBy, this.validatedBy, this.validatedAt}): _lignes = lignes;
+  const _EcritureComptable({required this.id, required this.date, required this.idJournal, this.referencePiece, required this.libelle, required final  List<LigneEcritureComptable> lignes, this.idAssembleeLocale, this.churchUnitId, this.idCentreAnalytiquePrincipal, this.statut = StatutEcriture.brouillon, this.createdBy, this.validatedBy, this.validatedAt}): _lignes = lignes;
   factory _EcritureComptable.fromJson(Map<String, dynamic> json) => _$EcritureComptableFromJson(json);
 
 @override final  String id;
@@ -537,8 +538,9 @@ class _EcritureComptable implements EcritureComptable {
   return EqualUnmodifiableListView(_lignes);
 }
 
-// Rattachement a une assemblee / centre principal
+// Rattachement a une unite d'eglise / centre principal
 @override final  String? idAssembleeLocale;
+@override final  String? churchUnitId;
 @override final  String? idCentreAnalytiquePrincipal;
 // Statut de l'ecriture (brouillon / validee / cloturee)
 @override@JsonKey() final  StatutEcriture statut;
@@ -560,16 +562,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EcritureComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.idJournal, idJournal) || other.idJournal == idJournal)&&(identical(other.referencePiece, referencePiece) || other.referencePiece == referencePiece)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&const DeepCollectionEquality().equals(other._lignes, _lignes)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.idCentreAnalytiquePrincipal, idCentreAnalytiquePrincipal) || other.idCentreAnalytiquePrincipal == idCentreAnalytiquePrincipal)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.validatedBy, validatedBy) || other.validatedBy == validatedBy)&&(identical(other.validatedAt, validatedAt) || other.validatedAt == validatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EcritureComptable&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.idJournal, idJournal) || other.idJournal == idJournal)&&(identical(other.referencePiece, referencePiece) || other.referencePiece == referencePiece)&&(identical(other.libelle, libelle) || other.libelle == libelle)&&const DeepCollectionEquality().equals(other._lignes, _lignes)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.churchUnitId, churchUnitId) || other.churchUnitId == churchUnitId)&&(identical(other.idCentreAnalytiquePrincipal, idCentreAnalytiquePrincipal) || other.idCentreAnalytiquePrincipal == idCentreAnalytiquePrincipal)&&(identical(other.statut, statut) || other.statut == statut)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.validatedBy, validatedBy) || other.validatedBy == validatedBy)&&(identical(other.validatedAt, validatedAt) || other.validatedAt == validatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,idJournal,referencePiece,libelle,const DeepCollectionEquality().hash(_lignes),idAssembleeLocale,idCentreAnalytiquePrincipal,statut,createdBy,validatedBy,validatedAt);
+int get hashCode => Object.hash(runtimeType,id,date,idJournal,referencePiece,libelle,const DeepCollectionEquality().hash(_lignes),idAssembleeLocale,churchUnitId,idCentreAnalytiquePrincipal,statut,createdBy,validatedBy,validatedAt);
 
 @override
 String toString() {
-  return 'EcritureComptable(id: $id, date: $date, idJournal: $idJournal, referencePiece: $referencePiece, libelle: $libelle, lignes: $lignes, idAssembleeLocale: $idAssembleeLocale, idCentreAnalytiquePrincipal: $idCentreAnalytiquePrincipal, statut: $statut, createdBy: $createdBy, validatedBy: $validatedBy, validatedAt: $validatedAt)';
+  return 'EcritureComptable(id: $id, date: $date, idJournal: $idJournal, referencePiece: $referencePiece, libelle: $libelle, lignes: $lignes, idAssembleeLocale: $idAssembleeLocale, churchUnitId: $churchUnitId, idCentreAnalytiquePrincipal: $idCentreAnalytiquePrincipal, statut: $statut, createdBy: $createdBy, validatedBy: $validatedBy, validatedAt: $validatedAt)';
 }
 
 
@@ -580,7 +582,7 @@ abstract mixin class _$EcritureComptableCopyWith<$Res> implements $EcritureCompt
   factory _$EcritureComptableCopyWith(_EcritureComptable value, $Res Function(_EcritureComptable) _then) = __$EcritureComptableCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime date, String idJournal, String? referencePiece, String libelle, List<LigneEcritureComptable> lignes, String? idAssembleeLocale, String? idCentreAnalytiquePrincipal, StatutEcriture statut, String? createdBy, String? validatedBy, DateTime? validatedAt
+ String id, DateTime date, String idJournal, String? referencePiece, String libelle, List<LigneEcritureComptable> lignes, String? idAssembleeLocale, String? churchUnitId, String? idCentreAnalytiquePrincipal, StatutEcriture statut, String? createdBy, String? validatedBy, DateTime? validatedAt
 });
 
 
@@ -597,7 +599,7 @@ class __$EcritureComptableCopyWithImpl<$Res>
 
 /// Create a copy of EcritureComptable
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? idJournal = null,Object? referencePiece = freezed,Object? libelle = null,Object? lignes = null,Object? idAssembleeLocale = freezed,Object? idCentreAnalytiquePrincipal = freezed,Object? statut = null,Object? createdBy = freezed,Object? validatedBy = freezed,Object? validatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? idJournal = null,Object? referencePiece = freezed,Object? libelle = null,Object? lignes = null,Object? idAssembleeLocale = freezed,Object? churchUnitId = freezed,Object? idCentreAnalytiquePrincipal = freezed,Object? statut = null,Object? createdBy = freezed,Object? validatedBy = freezed,Object? validatedAt = freezed,}) {
   return _then(_EcritureComptable(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -606,6 +608,7 @@ as String,referencePiece: freezed == referencePiece ? _self.referencePiece : ref
 as String?,libelle: null == libelle ? _self.libelle : libelle // ignore: cast_nullable_to_non_nullable
 as String,lignes: null == lignes ? _self._lignes : lignes // ignore: cast_nullable_to_non_nullable
 as List<LigneEcritureComptable>,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,churchUnitId: freezed == churchUnitId ? _self.churchUnitId : churchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,idCentreAnalytiquePrincipal: freezed == idCentreAnalytiquePrincipal ? _self.idCentreAnalytiquePrincipal : idCentreAnalytiquePrincipal // ignore: cast_nullable_to_non_nullable
 as String?,statut: null == statut ? _self.statut : statut // ignore: cast_nullable_to_non_nullable
 as StatutEcriture,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable

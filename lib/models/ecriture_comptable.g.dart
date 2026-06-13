@@ -56,6 +56,7 @@ _EcritureComptable _$EcritureComptableFromJson(
       .map((e) => LigneEcritureComptable.fromJson(e as Map<String, dynamic>))
       .toList(),
   idAssembleeLocale: json['idAssembleeLocale'] as String?,
+  churchUnitId: json['churchUnitId'] as String?,
   idCentreAnalytiquePrincipal: json['idCentreAnalytiquePrincipal'] as String?,
   statut:
       $enumDecodeNullable(_$StatutEcritureEnumMap, json['statut']) ??
@@ -76,6 +77,7 @@ Map<String, dynamic> _$EcritureComptableToJson(_EcritureComptable instance) =>
       'libelle': instance.libelle,
       'lignes': instance.lignes,
       'idAssembleeLocale': instance.idAssembleeLocale,
+      'churchUnitId': instance.churchUnitId,
       'idCentreAnalytiquePrincipal': instance.idCentreAnalytiquePrincipal,
       'statut': _$StatutEcritureEnumMap[instance.statut]!,
       'createdBy': instance.createdBy,

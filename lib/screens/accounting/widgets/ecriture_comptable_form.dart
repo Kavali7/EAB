@@ -9,6 +9,8 @@ import '../../../models/ecriture_comptable.dart';
 import '../../../models/journal_comptable.dart';
 import '../../../models/tiers.dart';
 import '../../../core/constants.dart';
+import '../../../features/church_units/application/church_unit_scope_utils.dart';
+import '../../../features/church_units/application/church_units_provider.dart';
 import '../../../providers/accounting_providers.dart';
 import '../../../providers/user_profile_providers.dart';
 import '../../../ui/ui.dart';
@@ -95,12 +97,14 @@ class _EcritureComptableFormDialogState
     final comptesAsync = ref.watch(comptesComptablesProvider);
     final centresAsync = ref.watch(centresAnalytiquesProvider);
     final tiersAsync = ref.watch(tiersProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
 
     if (journauxAsync.isLoading ||
         comptesAsync.isLoading ||
         centresAsync.isLoading ||
-        tiersAsync.isLoading) {
+        tiersAsync.isLoading ||
+        churchUnitsAsync.isLoading) {
       return const EabDialog(
         title: 'Chargement',
         width: 420,
@@ -113,12 +117,14 @@ class _EcritureComptableFormDialogState
     if (journauxAsync.hasError ||
         comptesAsync.hasError ||
         centresAsync.hasError ||
-        tiersAsync.hasError) {
+        tiersAsync.hasError ||
+        churchUnitsAsync.hasError) {
       final errMsg =
           journauxAsync.error ??
           comptesAsync.error ??
           centresAsync.error ??
-          tiersAsync.error;
+          tiersAsync.error ??
+          churchUnitsAsync.error;
       return EabDialog(
         title: 'Erreur',
         width: 520,
@@ -139,6 +145,11 @@ class _EcritureComptableFormDialogState
     final comptes = comptesAsync.value ?? [];
     final centres = centresAsync.value ?? [];
     final tiers = tiersAsync.value ?? [];
+    final churchUnits = churchUnitsAsync.value ?? [];
+    final activeChurchUnitId = churchUnitIdForLegacyAssemblee(
+      churchUnits,
+      assembleeActiveId,
+    );
     final centreById = {for (final c in centres) c.id: c};
 
     _initialiserSiBesoin(journaux, centreById);
@@ -146,6 +157,10 @@ class _EcritureComptableFormDialogState
     final centresFiltres = assembleeActiveId == null
         ? centres
         : centres.where((c) {
+            if (activeChurchUnitId != null &&
+                c.churchUnitId == activeChurchUnitId) {
+              return true;
+            }
             if (c.idAssembleeLocale == null) return true;
             return c.idAssembleeLocale == assembleeActiveId;
           }).toList();
@@ -180,6 +195,7 @@ class _EcritureComptableFormDialogState
             journaux,
             centresFiltres,
             assembleeActiveId,
+            activeChurchUnitId,
           ),
         ),
       ],
@@ -576,6 +592,7 @@ class _EcritureComptableFormDialogState
     List<JournalComptable> journaux,
     List<CentreAnalytique> centres,
     String? assembleeActiveId,
+    String? activeChurchUnitId,
   ) async {
     if (!_formKey.currentState!.validate()) return;
     if (_journalSelectionne == null) {
@@ -648,6 +665,7 @@ class _EcritureComptableFormDialogState
       libelle: _libelleGeneral.trim(),
       lignes: lignesConstruites,
       idAssembleeLocale: assembleeActiveId,
+      churchUnitId: activeChurchUnitId,
       idCentreAnalytiquePrincipal: centrePrincipalChoisi,
     );
 

@@ -16,6 +16,7 @@ import '../models/profil_utilisateur.dart';
 import '../models/budget_comptable.dart';
 import '../models/immobilisation_comptable.dart';
 import '../models/releve_bancaire.dart';
+import '../features/church_units/application/church_units_provider.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
 import 'church_structure_providers.dart';
@@ -45,8 +46,8 @@ Future<String?> _getOrgId() async {
 
 final porteeComptableProvider =
     NotifierProvider<PorteeComptableNotifier, PorteeComptable>(
-  PorteeComptableNotifier.new,
-);
+      PorteeComptableNotifier.new,
+    );
 
 class PorteeComptableNotifier extends Notifier<PorteeComptable> {
   @override
@@ -63,8 +64,8 @@ class PorteeComptableNotifier extends Notifier<PorteeComptable> {
 
 final comptesComptablesProvider =
     AsyncNotifierProvider<ComptesComptablesNotifier, List<CompteComptable>>(
-  ComptesComptablesNotifier.new,
-);
+      ComptesComptablesNotifier.new,
+    );
 
 class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
   @override
@@ -73,7 +74,11 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getComptesComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'comptesComptablesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'comptesComptablesProvider'},
+      );
       rethrow;
     }
   }
@@ -107,8 +112,8 @@ class ComptesComptablesNotifier extends AsyncNotifier<List<CompteComptable>> {
 
 final journauxComptablesProvider =
     AsyncNotifierProvider<JournauxComptablesNotifier, List<JournalComptable>>(
-  JournauxComptablesNotifier.new,
-);
+      JournauxComptablesNotifier.new,
+    );
 
 class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
   @override
@@ -117,7 +122,11 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getJournauxComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'journauxComptablesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'journauxComptablesProvider'},
+      );
       rethrow;
     }
   }
@@ -148,20 +157,23 @@ class JournauxComptablesNotifier extends AsyncNotifier<List<JournalComptable>> {
 // CENTRES ANALYTIQUES
 // ============================================================================
 
-final centresAnalytiquesProvider = AsyncNotifierProvider<
-    CentresAnalytiquesNotifier, List<CentreAnalytique>>(
-  CentresAnalytiquesNotifier.new,
-);
+final centresAnalytiquesProvider =
+    AsyncNotifierProvider<CentresAnalytiquesNotifier, List<CentreAnalytique>>(
+      CentresAnalytiquesNotifier.new,
+    );
 
-class CentresAnalytiquesNotifier
-    extends AsyncNotifier<List<CentreAnalytique>> {
+class CentresAnalytiquesNotifier extends AsyncNotifier<List<CentreAnalytique>> {
   @override
   Future<List<CentreAnalytique>> build() async {
     try {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getCentresAnalytiques();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'centresAnalytiquesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'centresAnalytiquesProvider'},
+      );
       rethrow;
     }
   }
@@ -192,8 +204,9 @@ class CentresAnalytiquesNotifier
 // TIERS
 // ============================================================================
 
-final tiersProvider =
-    AsyncNotifierProvider<TiersNotifier, List<Tiers>>(TiersNotifier.new);
+final tiersProvider = AsyncNotifierProvider<TiersNotifier, List<Tiers>>(
+  TiersNotifier.new,
+);
 
 class TiersNotifier extends AsyncNotifier<List<Tiers>> {
   @override
@@ -202,7 +215,11 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getTiers();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'tiersProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'tiersProvider'},
+      );
       rethrow;
     }
   }
@@ -235,18 +252,21 @@ class TiersNotifier extends AsyncNotifier<List<Tiers>> {
 
 final budgetsComptablesProvider =
     AsyncNotifierProvider<BudgetsComptablesNotifier, List<BudgetComptable>>(
-  BudgetsComptablesNotifier.new,
-);
+      BudgetsComptablesNotifier.new,
+    );
 
-class BudgetsComptablesNotifier
-    extends AsyncNotifier<List<BudgetComptable>> {
+class BudgetsComptablesNotifier extends AsyncNotifier<List<BudgetComptable>> {
   @override
   Future<List<BudgetComptable>> build() async {
     try {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getBudgetsComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'budgetsComptablesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'budgetsComptablesProvider'},
+      );
       rethrow;
     }
   }
@@ -273,20 +293,23 @@ class BudgetsComptablesNotifier
   }
 }
 
-final lignesBudgetsProvider = AsyncNotifierProvider<
-    LignesBudgetsNotifier, List<LigneBudgetComptable>>(
-  LignesBudgetsNotifier.new,
-);
+final lignesBudgetsProvider =
+    AsyncNotifierProvider<LignesBudgetsNotifier, List<LigneBudgetComptable>>(
+      LignesBudgetsNotifier.new,
+    );
 
-class LignesBudgetsNotifier
-    extends AsyncNotifier<List<LigneBudgetComptable>> {
+class LignesBudgetsNotifier extends AsyncNotifier<List<LigneBudgetComptable>> {
   @override
   Future<List<LigneBudgetComptable>> build() async {
     try {
       final dataService = ref.read(dataServiceProvider);
       return dataService.getLignesBudgetsComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'lignesBudgetsProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'lignesBudgetsProvider'},
+      );
       rethrow;
     }
   }
@@ -315,10 +338,11 @@ class LignesBudgetsNotifier
 // IMMOBILISATIONS
 // ============================================================================
 
-final immobilisationsComptablesProvider = AsyncNotifierProvider<
-    ImmobilisationsComptablesNotifier, List<ImmobilisationComptable>>(
-  ImmobilisationsComptablesNotifier.new,
-);
+final immobilisationsComptablesProvider =
+    AsyncNotifierProvider<
+      ImmobilisationsComptablesNotifier,
+      List<ImmobilisationComptable>
+    >(ImmobilisationsComptablesNotifier.new);
 
 class ImmobilisationsComptablesNotifier
     extends AsyncNotifier<List<ImmobilisationComptable>> {
@@ -328,7 +352,11 @@ class ImmobilisationsComptablesNotifier
       final dataService = ref.read(dataServiceProvider);
       return dataService.getImmobilisationsComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'immobilisationsComptablesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'immobilisationsComptablesProvider'},
+      );
       rethrow;
     }
   }
@@ -345,10 +373,7 @@ class ImmobilisationsComptablesNotifier
 
   Future<void> mettreAJourImmobilisation(ImmobilisationComptable immo) async {
     final json = camelToSnake(immo.toJson());
-    await _db
-        .from('immobilisations_comptables')
-        .update(json)
-        .eq('id', immo.id);
+    await _db.from('immobilisations_comptables').update(json).eq('id', immo.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((i) => i.id == immo.id);
     if (index == -1) return;
@@ -362,10 +387,11 @@ class ImmobilisationsComptablesNotifier
 // RELEVÉS BANCAIRES
 // ============================================================================
 
-final lignesRelevesBancairesProvider = AsyncNotifierProvider<
-    LignesRelevesBancairesNotifier, List<LigneReleveBancaire>>(
-  LignesRelevesBancairesNotifier.new,
-);
+final lignesRelevesBancairesProvider =
+    AsyncNotifierProvider<
+      LignesRelevesBancairesNotifier,
+      List<LigneReleveBancaire>
+    >(LignesRelevesBancairesNotifier.new);
 
 class LignesRelevesBancairesNotifier
     extends AsyncNotifier<List<LigneReleveBancaire>> {
@@ -375,7 +401,11 @@ class LignesRelevesBancairesNotifier
       final dataService = ref.read(dataServiceProvider);
       return dataService.getLignesRelevesBancaires();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'lignesRelevesBancairesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'lignesRelevesBancairesProvider'},
+      );
       rethrow;
     }
   }
@@ -396,10 +426,10 @@ class LignesRelevesBancairesNotifier
 // ÉCRITURES COMPTABLES
 // ============================================================================
 
-final ecrituresComptablesProvider = AsyncNotifierProvider<
-    EcrituresComptablesNotifier, List<EcritureComptable>>(
-  EcrituresComptablesNotifier.new,
-);
+final ecrituresComptablesProvider =
+    AsyncNotifierProvider<EcrituresComptablesNotifier, List<EcritureComptable>>(
+      EcrituresComptablesNotifier.new,
+    );
 
 class EcrituresComptablesNotifier
     extends AsyncNotifier<List<EcritureComptable>> {
@@ -409,7 +439,11 @@ class EcrituresComptablesNotifier
       final dataService = ref.read(dataServiceProvider);
       return dataService.getEcrituresComptables();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'ecrituresComptablesProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'ecrituresComptablesProvider'},
+      );
       rethrow;
     }
   }
@@ -482,11 +516,13 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
   final profil = ref.watch(profilUtilisateurCourantProvider);
 
   final assembleesAsync = ref.watch(assembleesLocalesProvider);
+  final churchUnitsAsync = ref.watch(churchUnitsProvider);
   final districtsAsync = ref.watch(districtsProvider);
   final regionsAsync = ref.watch(regionsProvider);
 
   if (ecrituresAsync.asData == null ||
       assembleesAsync.asData == null ||
+      churchUnitsAsync.asData == null ||
       districtsAsync.asData == null ||
       regionsAsync.asData == null) {
     return <EcritureComptable>[];
@@ -494,6 +530,7 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
 
   final ecritures = ecrituresAsync.asData!.value;
   final assemblees = assembleesAsync.asData!.value;
+  final churchUnits = churchUnitsAsync.asData!.value;
   final districts = districtsAsync.asData!.value;
   final regions = regionsAsync.asData!.value;
 
@@ -521,7 +558,19 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
 
   if (idsAssembleesCiblees.isEmpty) return <EcritureComptable>[];
 
+  final legacyAssembleeByChurchUnitId = {
+    for (final unit in churchUnits)
+      if (unit.legacyAssembleeId != null) unit.id: unit.legacyAssembleeId!,
+  };
+
   return ecritures.where((e) {
+    final churchUnitId = e.churchUnitId;
+    if (churchUnitId != null) {
+      final legacyAssembleeId = legacyAssembleeByChurchUnitId[churchUnitId];
+      if (legacyAssembleeId != null) {
+        return idsAssembleesCiblees.contains(legacyAssembleeId);
+      }
+    }
     final idAss = e.idAssembleeLocale;
     if (idAss == null) return false;
     return idsAssembleesCiblees.contains(idAss);
@@ -576,8 +625,9 @@ Set<String> _calculerAssembleesCibleesParPortee({
   final result = <String>{};
   if (idsAssembleesAutorisees.isEmpty) return result;
 
-  final assembleeActive =
-      assembleeActiveId != null ? assembleesParId[assembleeActiveId] : null;
+  final assembleeActive = assembleeActiveId != null
+      ? assembleesParId[assembleeActiveId]
+      : null;
 
   switch (portee) {
     case PorteeComptable.assemblee:
