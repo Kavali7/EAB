@@ -124,4 +124,46 @@ class OrganizationRepository {
       },
     );
   }
+
+  /// Cree une organisation autonome pour un utilisateur sans tenant.
+  Future<Map<String, dynamic>> createOrganizationOnboarding({
+    required String name,
+    String? sigle,
+    String? description,
+    String structureModel = 'single',
+    String? rootUnitName,
+    String? primaryColor,
+    String? secondaryColor,
+    String? logoUrl,
+    Map<String, dynamic> contact = const {},
+    List<String> skipSteps = const [],
+    List<Map<String, dynamic>> customLevels = const [],
+  }) async {
+    final result = await _dataService.client.rpc(
+      'create_organization_onboarding',
+      params: {
+        'p_name': name,
+        'p_sigle': _nullIfBlank(sigle),
+        'p_description': _nullIfBlank(description),
+        'p_structure_model': structureModel,
+        'p_root_unit_name': _nullIfBlank(rootUnitName),
+        'p_primary_color': _nullIfBlank(primaryColor),
+        'p_secondary_color': _nullIfBlank(secondaryColor),
+        'p_logo_url': _nullIfBlank(logoUrl),
+        'p_contact': contact,
+        'p_skip_steps': skipSteps,
+        'p_custom_levels': customLevels,
+      },
+    );
+
+    if (result is Map<String, dynamic>) return result;
+    if (result is Map) return Map<String, dynamic>.from(result);
+    return <String, dynamic>{};
+  }
+
+  String? _nullIfBlank(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
 }

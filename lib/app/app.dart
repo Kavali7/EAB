@@ -30,6 +30,8 @@ import '../screens/accounting/accounting_reports_screen.dart';
 import '../screens/reports/rapport_mensuel_eab_screen.dart';
 import '../features/exercices/presentation/exercices_screen.dart';
 import '../features/etats_financiers/presentation/etats_financiers_screen.dart';
+import '../features/organization/presentation/organization_gate.dart';
+import '../features/organization/presentation/organization_onboarding_screen.dart';
 import '../features/organization/presentation/organization_settings_screen.dart';
 import '../features/dashboard_finance/dashboard_finance_screen.dart';
 import '../features/audit/presentation/audit_log_screen.dart';
@@ -137,28 +139,41 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
         '/signup': (_) => const SignupScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         // App
-        '/': (_) => const DashboardScreenV2(),
-        '/members': (_) => const MembersScreenV2(),
-        '/programs': (_) => const ProgramsScreenV2(),
-        '/accounting': (_) => const AccountingScreen(),
-        '/structure': (_) => const ChurchStructureScreen(),
-        '/accounting-settings': (_) => const AccountingSettingsScreen(),
-        '/accounting-budgets': (_) => const AccountingBudgetsScreen(),
+        '/': (_) => const OrganizationGate(child: DashboardScreenV2()),
+        '/organization-onboarding': (_) => const OrganizationOnboardingScreen(),
+        '/members': (_) => const OrganizationGate(child: MembersScreenV2()),
+        '/programs': (_) => const OrganizationGate(child: ProgramsScreenV2()),
+        '/accounting': (_) => const OrganizationGate(child: AccountingScreen()),
+        '/structure': (_) =>
+            const OrganizationGate(child: ChurchStructureScreen()),
+        '/accounting-settings': (_) =>
+            const OrganizationGate(child: AccountingSettingsScreen()),
+        '/accounting-budgets': (_) =>
+            const OrganizationGate(child: AccountingBudgetsScreen()),
         '/accounting-immobilisations': (_) =>
-            const AccountingImmobilisationsScreen(),
-        '/accounting-treasury': (_) => const AccountingTreasuryScreen(),
+            const OrganizationGate(child: AccountingImmobilisationsScreen()),
+        '/accounting-treasury': (_) =>
+            const OrganizationGate(child: AccountingTreasuryScreen()),
         '/accounting-reconciliation': (_) =>
-            const AccountingReconciliationScreen(),
-        '/accounting-reports': (_) => const AccountingReportsScreen(),
-        '/accounting-exercices': (_) => const ExercicesScreen(),
-        '/etats-financiers': (_) => const EtatsFinanciersScreen(),
-        '/organization-settings': (_) => const OrganizationSettingsScreen(),
-        '/dashboard-finance': (_) => const DashboardFinanceScreen(),
-        '/reports-rapport-mensuel': (_) => const RapportMensuelEabScreen(),
-        '/audit-log': (_) => const AuditLogScreen(),
-        '/calendar': (_) => const CalendarScreen(),
-        '/fiscal-dossiers': (_) => const FiscalDossiersScreen(),
-        '/fiscal-import-balance': (_) => const FiscalImportScreen(),
+            const OrganizationGate(child: AccountingReconciliationScreen()),
+        '/accounting-reports': (_) =>
+            const OrganizationGate(child: AccountingReportsScreen()),
+        '/accounting-exercices': (_) =>
+            const OrganizationGate(child: ExercicesScreen()),
+        '/etats-financiers': (_) =>
+            const OrganizationGate(child: EtatsFinanciersScreen()),
+        '/organization-settings': (_) =>
+            const OrganizationGate(child: OrganizationSettingsScreen()),
+        '/dashboard-finance': (_) =>
+            const OrganizationGate(child: DashboardFinanceScreen()),
+        '/reports-rapport-mensuel': (_) =>
+            const OrganizationGate(child: RapportMensuelEabScreen()),
+        '/audit-log': (_) => const OrganizationGate(child: AuditLogScreen()),
+        '/calendar': (_) => const OrganizationGate(child: CalendarScreen()),
+        '/fiscal-dossiers': (_) =>
+            const OrganizationGate(child: FiscalDossiersScreen()),
+        '/fiscal-import-balance': (_) =>
+            const OrganizationGate(child: FiscalImportScreen()),
       },
       onGenerateRoute: (settings) {
         // Route paramétrée : /fiscal-dossier/:id
@@ -167,7 +182,9 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
             uri.pathSegments[0] == 'fiscal-dossier') {
           final dossierId = uri.pathSegments[1];
           return MaterialPageRoute(
-            builder: (_) => FiscalWizardScreen(dossierId: dossierId),
+            builder: (_) => OrganizationGate(
+              child: FiscalWizardScreen(dossierId: dossierId),
+            ),
             settings: settings,
           );
         }
