@@ -12,6 +12,8 @@ import 'package:eab/core/errors/app_exceptions.dart';
 import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
+import 'package:eab/features/organization/data/logo_file_picker.dart';
+import 'package:eab/features/organization/data/picked_logo_file.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/section_card.dart';
@@ -46,8 +48,12 @@ class _OrganizationSettingsScreenState
   bool _inviteCanManageChildren = false;
   bool _saving = false;
   bool _inviting = false;
+  bool _uploadingLogo = false;
 
   bool get _inviteIsGlobalAdmin => _inviteRole == 'adminNational';
+
+  static const _maxLogoBytes = 2 * 1024 * 1024;
+  static const _allowedLogoExtensions = {'png', 'jpg', 'jpeg', 'webp', 'svg'};
 
   @override
   void dispose() {
@@ -112,6 +118,71 @@ class _OrganizationSettingsScreenState
       if (mounted) context.showError(e);
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _importLogo(Organization org) async {
+    try {
+      final picked = await pickLogoFile();
+      if (picked == null) return;
+
+      final extension = picked.extension;
+      if (!_allowedLogoExtensions.contains(extension)) {
+        if (mounted) {
+          context.showError(
+            const BusinessRuleException(
+              'Formats acceptes : PNG, JPG, WEBP ou SVG.',
+            ),
+          );
+        }
+        return;
+      }
+
+      if (picked.bytes.lengthInBytes > _maxLogoBytes) {
+        if (mounted) {
+          context.showError(
+            BusinessRuleException(
+              'Le logo ne doit pas depasser ${_formatLogoSize(_maxLogoBytes)}.',
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) setState(() => _uploadingLogo = true);
+      final repo = ref.read(organizationRepositoryProvider);
+      final logoUrl = await repo.uploadOrganizationLogo(
+        orgId: org.id,
+        bytes: picked.bytes,
+        extension: extension,
+        contentType: _logoContentType(picked),
+      );
+
+      await repo.updateOrganizationLogo(orgId: org.id, logoUrl: logoUrl);
+      _logoUrlCtrl.text = logoUrl;
+      await ref.read(currentOrganizationProvider.notifier).refresh();
+
+      if (mounted) context.showSuccess('Logo importe.');
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _uploadingLogo = false);
+    }
+  }
+
+  Future<void> _removeLogo(Organization org) async {
+    setState(() => _uploadingLogo = true);
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      await repo.deleteOrganizationLogoFiles(orgId: org.id);
+      await repo.updateOrganizationLogo(orgId: org.id, logoUrl: null);
+      _logoUrlCtrl.clear();
+      await ref.read(currentOrganizationProvider.notifier).refresh();
+      if (mounted) context.showSuccess('Logo retire.');
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _uploadingLogo = false);
     }
   }
 
@@ -281,12 +352,7 @@ class _OrganizationSettingsScreenState
           maxLines: compact ? 3 : 2,
         ),
         const SizedBox(height: AppSpacing.md),
-        EabTextField(
-          label: 'URL du logo',
-          controller: _logoUrlCtrl,
-          keyboardType: TextInputType.url,
-          onChanged: (_) => setState(() {}),
-        ),
+        _logoImportPanel(org, compact: compact),
       ],
     );
 
@@ -307,6 +373,84 @@ class _OrganizationSettingsScreenState
                 logo,
                 const SizedBox(width: AppSpacing.lg),
                 Expanded(child: fields),
+              ],
+            ),
+    );
+  }
+
+  Widget _logoImportPanel(Organization org, {required bool compact}) {
+    final logoUrl = _logoUrlCtrl.text.trim();
+    final hasLogo = logoUrl.isNotEmpty;
+    final preview = Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: org.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: hasLogo
+          ? Image.network(
+              logoUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.broken_image_outlined, color: org.primaryColor),
+            )
+          : Icon(Icons.image_outlined, color: org.primaryColor),
+    );
+
+    final actions = Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        EabButton(
+          label: hasLogo ? 'Remplacer' : 'Importer',
+          icon: Icons.upload_file_outlined,
+          variant: EabButtonVariant.outline,
+          size: EabButtonSize.small,
+          isLoading: _uploadingLogo,
+          onPressed: _uploadingLogo ? null : () => _importLogo(org),
+        ),
+        if (hasLogo)
+          EabButton(
+            label: 'Retirer',
+            icon: Icons.delete_outline,
+            variant: EabButtonVariant.ghost,
+            size: EabButtonSize.small,
+            onPressed: _uploadingLogo ? null : () => _removeLogo(org),
+          ),
+      ],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    preview,
+                    const SizedBox(width: AppSpacing.md),
+                    const Expanded(child: _LogoImportCopy()),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                actions,
+              ],
+            )
+          : Row(
+              children: [
+                preview,
+                const SizedBox(width: AppSpacing.md),
+                const Expanded(child: _LogoImportCopy()),
+                const SizedBox(width: AppSpacing.md),
+                actions,
               ],
             ),
     );
@@ -391,7 +535,7 @@ class _OrganizationSettingsScreenState
       label: 'Enregistrer',
       variant: EabButtonVariant.primary,
       isLoading: _saving,
-      onPressed: () => _save(org),
+      onPressed: _uploadingLogo ? null : () => _save(org),
     );
     if (compact) return button;
     return Align(alignment: Alignment.centerRight, child: button);
@@ -567,6 +711,24 @@ class _OrganizationSettingsScreenState
     );
   }
 
+  String _logoContentType(PickedLogoFile file) {
+    final mimeType = file.mimeType.trim();
+    if (mimeType.isNotEmpty) return mimeType;
+
+    return switch (file.extension) {
+      'png' => 'image/png',
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'webp' => 'image/webp',
+      'svg' => 'image/svg+xml',
+      _ => 'application/octet-stream',
+    };
+  }
+
+  String _formatLogoSize(int bytes) {
+    final megaBytes = bytes / (1024 * 1024);
+    return '${megaBytes.toStringAsFixed(0)} Mo';
+  }
+
   Color _parseColor(String hex, Color fallback) {
     try {
       final clean = hex.replaceAll('#', '');
@@ -575,5 +737,32 @@ class _OrganizationSettingsScreenState
     } catch (_) {
       return fallback;
     }
+  }
+}
+
+class _LogoImportCopy extends StatelessWidget {
+  const _LogoImportCopy();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Logo de l organisation',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'PNG, JPG, WEBP ou SVG. Taille maximale : 2 Mo.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
   }
 }

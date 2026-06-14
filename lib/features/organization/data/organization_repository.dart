@@ -1,13 +1,18 @@
 /// Repository pour la gestion des organisations.
 library;
 
+import 'dart:typed_data';
+
 import 'package:eab/core/services/supabase_data_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'organization_model.dart';
 
 class OrganizationRepository {
   OrganizationRepository(this._dataService);
 
   final SupabaseDataService _dataService;
+  static const _logoExtensions = {'png', 'jpg', 'jpeg', 'webp', 'svg'};
 
   /// Récupère l'organisation courante.
   Future<Organization?> fetchCurrentOrganization() async {
@@ -26,6 +31,63 @@ class OrganizationRepository {
         .from('organizations')
         .update(org.toUpdateJson())
         .eq('id', org.id);
+  }
+
+  /// Met a jour uniquement l'URL du logo de l'organisation.
+  Future<void> updateOrganizationLogo({
+    required String orgId,
+    required String? logoUrl,
+  }) async {
+    await _dataService.client
+        .from('organizations')
+        .update({'logo_url': logoUrl})
+        .eq('id', orgId);
+  }
+
+  /// Upload le logo dans le bucket public organization-assets.
+  Future<String> uploadOrganizationLogo({
+    required String orgId,
+    required Uint8List bytes,
+    required String extension,
+    required String contentType,
+  }) async {
+    final safeExtension = extension.toLowerCase() == 'jpeg'
+        ? 'jpg'
+        : extension.toLowerCase();
+    final objectPath = '$orgId/branding/logo.$safeExtension';
+    final bucket = _dataService.client.storage.from('organization-assets');
+
+    await bucket.uploadBinary(
+      objectPath,
+      bytes,
+      fileOptions: FileOptions(
+        upsert: true,
+        contentType: contentType,
+        cacheControl: '3600',
+      ),
+    );
+
+    await deleteOrganizationLogoFiles(
+      orgId: orgId,
+      exceptExtension: safeExtension,
+    );
+
+    final publicUrl = bucket.getPublicUrl(objectPath);
+    return '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> deleteOrganizationLogoFiles({
+    required String orgId,
+    String? exceptExtension,
+  }) async {
+    final skip = exceptExtension?.toLowerCase();
+    final paths = _logoExtensions
+        .where((extension) => extension != skip)
+        .map((extension) => '$orgId/branding/logo.$extension')
+        .toList();
+    if (paths.isEmpty) return;
+
+    await _dataService.client.storage.from('organization-assets').remove(paths);
   }
 
   /// Met à jour les couleurs du thème.

@@ -1,0 +1,58 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+
+import 'dart:async';
+import 'dart:html' as html;
+import 'dart:typed_data';
+
+import 'picked_logo_file.dart';
+
+Future<PickedLogoFile?> pickLogoFile() {
+  final completer = Completer<PickedLogoFile?>();
+  final input = html.FileUploadInputElement()
+    ..accept = 'image/png,image/jpeg,image/webp,image/svg+xml'
+    ..multiple = false;
+
+  input.onChange.first.then((_) {
+    final files = input.files;
+    if (files == null || files.isEmpty) {
+      if (!completer.isCompleted) completer.complete(null);
+      return;
+    }
+
+    final file = files.first;
+    final reader = html.FileReader();
+
+    reader.onError.first.then((_) {
+      if (!completer.isCompleted) {
+        completer.completeError(
+          StateError('Impossible de lire le fichier selectionne.'),
+        );
+      }
+    });
+
+    reader.onLoadEnd.first.then((_) {
+      final result = reader.result;
+      if (result is! ByteBuffer) {
+        if (!completer.isCompleted) {
+          completer.completeError(StateError('Format de fichier illisible.'));
+        }
+        return;
+      }
+
+      if (!completer.isCompleted) {
+        completer.complete(
+          PickedLogoFile(
+            name: file.name,
+            bytes: Uint8List.view(result),
+            mimeType: file.type,
+          ),
+        );
+      }
+    });
+
+    reader.readAsArrayBuffer(file);
+  });
+
+  input.click();
+  return completer.future;
+}
