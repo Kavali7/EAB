@@ -22,9 +22,9 @@ BEGIN;
 
 DO $$
 DECLARE
-  v_user_id UUID := uuid_generate_v4();
+  v_user_id UUID := gen_random_uuid();
   v_email TEXT := 'codex-onboarding-test-' ||
-    replace(uuid_generate_v4()::text, '-', '') || '@example.test';
+    replace(gen_random_uuid()::text, '-', '') || '@example.test';
   v_result JSONB;
   v_org_id UUID;
   v_primary_unit_id UUID;

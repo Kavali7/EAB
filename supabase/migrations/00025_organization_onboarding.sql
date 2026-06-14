@@ -119,7 +119,7 @@ BEGIN
     v_code_base := 'ORG';
   END IF;
   v_code := left(v_code_base, 24) || '-' ||
-    upper(substr(replace(uuid_generate_v4()::text, '-', ''), 1, 6));
+    upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
 
   v_onboarding_params := jsonb_build_object(
     'onboarding',

@@ -1239,6 +1239,7 @@ erDiagram
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-14 | Agent IA | **Correction 00025** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
 | 2026-06-14 | Agent IA | **Migration 00025** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
 | 2026-06-14 | Agent IA | **Migration 00024** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |
 | 2026-06-13 | Agent IA | **Migration 00023** : Ajout des invitations de sous-comptes (`organization_user_invitations`), RPC `invite_user_to_org`, normalisation des roles et adaptation de `handle_new_user()` pour rattacher automatiquement un nouvel inscrit a son organisation, son role et son perimetre `church_units`. |
