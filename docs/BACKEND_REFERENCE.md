@@ -1316,10 +1316,18 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 
 1. Creer ou choisir le projet Supabase cible.
 2. Appliquer toutes les migrations et creer les buckets Storage.
-3. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
-4. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
-5. Construire le frontend avec `flutter build web --no-wasm-dry-run --pwa-strategy=none -O1`.
-6. Creer le premier utilisateur depuis l'app, puis creer l'eglise via l'ecran d'onboarding.
+3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
+4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
+5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
+6. Construire le frontend avec `flutter build web --no-wasm-dry-run --pwa-strategy=none -O1`.
+7. Creer le premier utilisateur depuis l'app, puis creer l'eglise via l'ecran d'onboarding.
+
+### Auth et limite email
+
+Le service email integre de Supabase est limite et peut retourner
+`email rate limit exceeded`. Pour une installation d'eglise en production,
+configurer un SMTP dedie dans Supabase Auth, puis ajuster
+`Authentication > Rate Limits` selon le volume d'inscriptions et de confirmations.
 
 ### Invariants a conserver
 

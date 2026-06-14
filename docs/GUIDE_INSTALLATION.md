@@ -125,6 +125,8 @@ Dans **Authentication** > **Providers** :
 
 1. **Email** : Activé par défaut
    - Activer "Confirm email"
+   - En production, configurer un SMTP personnalise dans Supabase. Le service email integre est tres limite et peut retourner `email rate limit exceeded` pendant les inscriptions ou confirmations.
+   - Ajuster ensuite **Authentication > Rate Limits** selon le volume attendu, notamment l'envoi d'emails.
 
 2. **Google** (optionnel) :
    - Créer des credentials dans Google Cloud Console
