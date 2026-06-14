@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-13
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00018`
+- **Derniere mise a jour** : 2026-06-14
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00025`
 
 ---
 
@@ -30,7 +30,8 @@
 12. [Storage Buckets](#12-storage-buckets)
 13. [Extensions](#13-extensions)
 14. [Diagramme de dépendances](#14-diagramme-de-dépendances)
-15. [Journal des modifications](#15-journal-des-modifications)
+15. [Procedure de reconstruction et de deploiement](#15-procedure-de-reconstruction-et-de-deploiement)
+16. [Journal des modifications](#16-journal-des-modifications)
 
 ---
 
@@ -1182,6 +1183,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | Extension | Description |
 | ----------- | ------------- |
 | `uuid-ossp` | Génération de UUID v4 |
+| `pgcrypto` | Generation UUID via `gen_random_uuid()` pour l'onboarding et les tests Supabase |
 | `pg_trgm` | Recherche floue par trigrammes (sur `membres.full_name`) |
 
 ---
@@ -1235,10 +1237,105 @@ erDiagram
 
 ---
 
-## 15. Journal des modifications
+## 15. Procedure de reconstruction et de deploiement
+
+Cette section sert de procedure courte pour recreer le backend d'une eglise
+sur un nouveau projet Supabase, puis brancher le meme frontend dessus.
+
+### Modes supportes
+
+| Mode | Usage | Donnees EAB |
+| ---- | ----- | ----------- |
+| Multi-tenant partage | Plusieurs eglises dans une meme base Supabase | Optionnelles comme compte demo |
+| Base dediee par eglise | Une base Supabase autonome par eglise cliente | Ne pas importer le seed demo |
+
+### Ordre SQL obligatoire
+
+Executer les migrations dans cet ordre exact depuis Supabase SQL Editor ou via
+la CLI Supabase :
+
+```text
+supabase/migrations/00001_initial_schema.sql
+supabase/migrations/00002_accounting_schema.sql
+supabase/migrations/00003_rls_policies.sql
+supabase/migrations/00004_functions_triggers.sql
+supabase/migrations/00005_indexes.sql
+supabase/migrations/00006_storage_buckets.sql
+supabase/migrations/00007_improvements.sql
+supabase/migrations/00008_exercices_v2.sql
+supabase/migrations/00008_fix_handle_new_user.sql
+supabase/migrations/00009_patch_post_revue.sql
+supabase/migrations/00010_dashboard_finance.sql
+supabase/migrations/00011_fiscal_tables.sql
+supabase/migrations/00012_fiscal_rls.sql
+supabase/migrations/00013_fiscal_rpcs.sql
+supabase/migrations/00014_fiscal_import_balance.sql
+supabase/migrations/00015_seed_syscebnl_template_v1.sql
+supabase/migrations/00016_fix_user_id_rpcs.sql
+supabase/migrations/00017_organization_branding.sql
+supabase/migrations/00018_flexible_church_units.sql
+supabase/migrations/00019_members_church_units.sql
+supabase/migrations/00020_programs_church_units.sql
+supabase/migrations/00021_monthly_reports_church_units.sql
+supabase/migrations/00022_accounting_church_units.sql
+supabase/migrations/00023_user_invitations.sql
+supabase/migrations/00024_fix_user_invitation_legacy_scope.sql
+supabase/migrations/00025_organization_onboarding.sql
+```
+
+### Storage a creer dans Supabase
+
+La migration `00006_storage_buckets.sql` cree les politiques RLS, mais les
+buckets doivent exister dans Supabase Storage :
+
+| Bucket | Visibilite | Obligatoire | Usage |
+| ------ | ---------- | ----------- | ----- |
+| `member-photos` | Prive | Oui | Photos des fideles |
+| `documents` | Prive | Oui | Pieces justificatives et rapports |
+| `organization-assets` | Public | Oui | Logos et ressources publiques des eglises |
+
+### Seed demo ou vraie installation
+
+| Cas | Action |
+| --- | ------ |
+| Demonstration EAB | Executer `supabase/seed.sql` apres les migrations |
+| Nouvelle eglise cliente | Ne pas executer `supabase/seed.sql`; creer le premier compte puis utiliser l'onboarding de l'app |
+| Base partagee avec EAB demo | Garder le seed EAB comme organisation demo; les nouvelles eglises sont creees via `create_organization_onboarding()` |
+
+### Verification apres installation
+
+Executer ces scripts dans Supabase SQL Editor. Si Supabase affiche un
+avertissement RLS ou operations destructives, utiliser `Run without RLS` :
+
+| Script | Resultat attendu |
+| ------ | ---------------- |
+| `supabase/tests/test_user_invitations.sql` | Toutes les lignes avec `ok = true` |
+| `supabase/tests/test_organization_onboarding.sql` | 6 lignes avec `ok = true` |
+
+### Branchement du frontend
+
+1. Creer ou choisir le projet Supabase cible.
+2. Appliquer toutes les migrations et creer les buckets Storage.
+3. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
+4. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
+5. Construire le frontend avec `flutter build web --no-wasm-dry-run --pwa-strategy=none -O1`.
+6. Creer le premier utilisateur depuis l'app, puis creer l'eglise via l'ecran d'onboarding.
+
+### Invariants a conserver
+
+- Toute table metier doit rester rattachee a `organizations.id`.
+- Les nouveaux perimetres doivent passer par `church_units` et `church_unit_id`.
+- Les sous-comptes doivent passer par `organization_user_invitations` et `invite_user_to_org()`.
+- La creation d'une nouvelle eglise autonome doit passer par `create_organization_onboarding()`.
+- Les logos importes doivent etre stockes dans `organization-assets/{organization_id}/branding/`.
+
+---
+
+## 16. Journal des modifications
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00025`, buckets Storage, tests de verification et branchement frontend. |
 | 2026-06-14 | Agent IA | **Correction 00025** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
 | 2026-06-14 | Agent IA | **Migration 00025** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
 | 2026-06-14 | Agent IA | **Migration 00024** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |

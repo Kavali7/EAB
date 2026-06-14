@@ -85,8 +85,10 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00021_monthly_reports_church_units.sql`
    - `supabase/migrations/00022_accounting_church_units.sql`
    - `supabase/migrations/00023_user_invitations.sql`
+   - `supabase/migrations/00024_fix_user_invitation_legacy_scope.sql`
+   - `supabase/migrations/00025_organization_onboarding.sql`
 
-   Les migrations `00017` a `00023` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, puis activent les invitations de sous-comptes par organisation. Les donnees EAB existantes sont conservees comme compte de demonstration.
+   Les migrations `00017` a `00025` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, puis ajoutent l'onboarding de creation d'une eglise autonome. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`

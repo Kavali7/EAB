@@ -5,6 +5,8 @@
 -- Optional steps such as logo, colors, contact details and detailed hierarchy
 -- can be skipped and completed later from the application settings.
 
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE OR REPLACE FUNCTION create_organization_onboarding(
   p_name TEXT,
   p_sigle TEXT DEFAULT NULL,
