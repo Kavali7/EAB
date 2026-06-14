@@ -135,8 +135,9 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
   Widget build(BuildContext context) {
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final activeAssembleeId = ref.watch(assembleeActiveIdProvider);
+    final activeChurchUnitId = ref.watch(churchUnitActiveIdProvider);
     final memberUnits = _memberAssignableUnits(churchUnitsAsync.value ?? []);
-    _initializeChurchUnit(memberUnits, activeAssembleeId);
+    _initializeChurchUnit(memberUnits, activeChurchUnitId, activeAssembleeId);
 
     return EabDialog(
       title: _isEditing ? 'Modifier un fidele' : 'Nouveau fidele',
@@ -611,11 +612,23 @@ class _MemberFormV2State extends ConsumerState<_MemberFormV2> {
 
   void _initializeChurchUnit(
     List<ChurchUnit> units,
+    String? activeChurchUnitId,
     String? activeAssembleeId,
   ) {
     if (_churchUnitInitialized || units.isEmpty) return;
 
     final member = widget.member;
+    final memberChurchUnitId = member?.churchUnitId;
+    if (_churchUnitId == null &&
+        memberChurchUnitId != null &&
+        units.any((unit) => unit.id == memberChurchUnitId)) {
+      _churchUnitId = memberChurchUnitId;
+    }
+    if (_churchUnitId == null &&
+        activeChurchUnitId != null &&
+        units.any((unit) => unit.id == activeChurchUnitId)) {
+      _churchUnitId = activeChurchUnitId;
+    }
     final legacyAssembleeId = member?.idAssembleeLocale ?? activeAssembleeId;
     if (_churchUnitId == null && legacyAssembleeId != null) {
       for (final unit in units) {

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../features/church_units/application/church_units_provider.dart';
+import '../features/church_units/data/church_unit_model.dart';
 import '../features/notifications/presentation/notification_panel.dart';
 import '../features/search/presentation/global_search_dialog.dart';
 import '../models/assemblee_locale.dart';
@@ -45,6 +47,8 @@ class AppShell extends ConsumerWidget {
     final districtsAsync = ref.watch(districtsProvider);
     final regionsAsync = ref.watch(regionsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
 
     profilsAsync.whenData((profils) {
       if (profilCourant == null && profils.isNotEmpty) {
@@ -66,7 +70,34 @@ class AppShell extends ConsumerWidget {
       districtsAsync.value ?? const [],
       regionsAsync.value ?? const [],
     );
-    if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
+    final churchUnitsAutorisees = _churchUnitsAutorisees(
+      profilCourant,
+      churchUnitsAsync.value ?? const [],
+    );
+    final selectedChurchUnit = _selectedChurchUnit(
+      churchUnitsAutorisees,
+      churchUnitActiveId,
+    );
+    if ((churchUnitActiveId == null ||
+            !churchUnitsAutorisees.any((u) => u.id == churchUnitActiveId)) &&
+        churchUnitsAutorisees.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final defaultUnit = churchUnitsAutorisees.first;
+        ref
+            .read(churchUnitActiveIdProvider.notifier)
+            .setChurchUnit(defaultUnit.id);
+        ref
+            .read(assembleeActiveIdProvider.notifier)
+            .setAssemblee(defaultUnit.legacyAssembleeId);
+      });
+    } else if (selectedChurchUnit != null &&
+        assembleeActiveId != selectedChurchUnit.legacyAssembleeId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(assembleeActiveIdProvider.notifier)
+            .setAssemblee(selectedChurchUnit.legacyAssembleeId);
+      });
+    } else if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(assembleeActiveIdProvider.notifier)
@@ -113,9 +144,10 @@ class AppShell extends ConsumerWidget {
                       isWide: isWide,
                       profilsAsync: profilsAsync,
                       profilCourant: profilCourant,
-                      assembleesAutorisees: assembleesAutorisees,
+                      contextUnits: churchUnitsAutorisees,
+                      selectedContextUnit: selectedChurchUnit,
                       selectedAssemblee: selectedAssemblee,
-                      canChangeAssemblee: _peutChangerAssemblee(profilCourant),
+                      canChangeContext: _peutChangerContexte(profilCourant),
                       actions: actions,
                       showBackButton: effectiveShowBackButton,
                       backRoute: effectiveBackRoute,
@@ -124,11 +156,24 @@ class AppShell extends ConsumerWidget {
                         ref
                             .read(profilUtilisateurCourantProvider.notifier)
                             .setProfil(profil);
-                      },
-                      onSelectAssemblee: (id) {
+                        ref
+                            .read(churchUnitActiveIdProvider.notifier)
+                            .setChurchUnit(profil.primaryChurchUnitId);
                         ref
                             .read(assembleeActiveIdProvider.notifier)
-                            .setAssemblee(id);
+                            .setAssemblee(profil.idAssembleeLocale);
+                      },
+                      onSelectContextUnit: (id) {
+                        final unit = churchUnitsAutorisees.firstWhere(
+                          (u) => u.id == id,
+                          orElse: () => churchUnitsAutorisees.first,
+                        );
+                        ref
+                            .read(churchUnitActiveIdProvider.notifier)
+                            .setChurchUnit(id);
+                        ref
+                            .read(assembleeActiveIdProvider.notifier)
+                            .setAssemblee(unit.legacyAssembleeId);
                       },
                     ),
                     Expanded(
@@ -159,6 +204,88 @@ class AppShell extends ConsumerWidget {
       (a) => a.id == activeId,
       orElse: () => assemblees.first,
     );
+  }
+
+  ChurchUnit? _selectedChurchUnit(List<ChurchUnit> units, String? activeId) {
+    if (units.isEmpty) return null;
+    if (activeId == null) return units.first;
+    return units.firstWhere((u) => u.id == activeId, orElse: () => units.first);
+  }
+
+  List<ChurchUnit> _churchUnitsAutorisees(
+    ProfilUtilisateur? profil,
+    List<ChurchUnit> units,
+  ) {
+    if (profil == null) return [];
+    final activeUnits = units.where((u) => u.active).toList();
+    if (activeUnits.isEmpty) return [];
+
+    if (profil.role == RoleUtilisateur.adminNational) {
+      return _sortUnits(activeUnits);
+    }
+
+    final primaryId = profil.primaryChurchUnitId;
+    if (primaryId != null && primaryId.isNotEmpty) {
+      return _sortUnits(_unitAndDescendants(activeUnits, primaryId));
+    }
+
+    switch (profil.role) {
+      case RoleUtilisateur.adminNational:
+        return _sortUnits(activeUnits);
+      case RoleUtilisateur.responsableRegion:
+        final idRegion = profil.idRegion;
+        if (idRegion == null) return [];
+        return _sortUnits(
+          activeUnits.where((u) => u.legacyRegionId == idRegion).toList(),
+        );
+      case RoleUtilisateur.surintendantDistrict:
+        final idDistrict = profil.idDistrict;
+        if (idDistrict == null) return [];
+        return _sortUnits(
+          activeUnits.where((u) => u.legacyDistrictId == idDistrict).toList(),
+        );
+      case RoleUtilisateur.tresorierAssemblee:
+        final idAss = profil.idAssembleeLocale;
+        if (idAss == null) return [];
+        return _sortUnits(
+          activeUnits.where((u) => u.legacyAssembleeId == idAss).toList(),
+        );
+    }
+  }
+
+  List<ChurchUnit> _unitAndDescendants(List<ChurchUnit> units, String rootId) {
+    final byParent = <String?, List<ChurchUnit>>{};
+    for (final unit in units) {
+      byParent.putIfAbsent(unit.parentId, () => []).add(unit);
+    }
+
+    final result = <ChurchUnit>[];
+    final visited = <String>{};
+    void visit(String id) {
+      if (!visited.add(id)) return;
+      ChurchUnit? unit;
+      for (final candidate in units) {
+        if (candidate.id == id) {
+          unit = candidate;
+          break;
+        }
+      }
+      if (unit != null) result.add(unit);
+      for (final child in byParent[id] ?? const <ChurchUnit>[]) {
+        visit(child.id);
+      }
+    }
+
+    visit(rootId);
+    return result;
+  }
+
+  List<ChurchUnit> _sortUnits(List<ChurchUnit> units) {
+    return [...units]..sort((a, b) {
+      final level = a.levelOrder.compareTo(b.levelOrder);
+      if (level != 0) return level;
+      return a.nom.toLowerCase().compareTo(b.nom.toLowerCase());
+    });
   }
 
   List<AssembleeLocale> _assembleesAutorisees(
@@ -192,7 +319,7 @@ class AppShell extends ConsumerWidget {
     }
   }
 
-  bool _peutChangerAssemblee(ProfilUtilisateur? profil) {
+  bool _peutChangerContexte(ProfilUtilisateur? profil) {
     if (profil == null) return false;
     switch (profil.role) {
       case RoleUtilisateur.adminNational:
@@ -212,11 +339,12 @@ class _TopBar extends StatelessWidget {
     required this.isWide,
     required this.profilsAsync,
     required this.profilCourant,
-    required this.assembleesAutorisees,
+    required this.contextUnits,
+    required this.selectedContextUnit,
     required this.selectedAssemblee,
-    required this.canChangeAssemblee,
+    required this.canChangeContext,
     required this.onSelectProfil,
-    required this.onSelectAssemblee,
+    required this.onSelectContextUnit,
     required this.showBackButton,
     required this.backTooltip,
     this.actions,
@@ -228,11 +356,12 @@ class _TopBar extends StatelessWidget {
   final bool isWide;
   final AsyncValue<List<ProfilUtilisateur>> profilsAsync;
   final ProfilUtilisateur? profilCourant;
-  final List<AssembleeLocale> assembleesAutorisees;
+  final List<ChurchUnit> contextUnits;
+  final ChurchUnit? selectedContextUnit;
   final AssembleeLocale? selectedAssemblee;
-  final bool canChangeAssemblee;
+  final bool canChangeContext;
   final ValueChanged<ProfilUtilisateur> onSelectProfil;
-  final ValueChanged<String> onSelectAssemblee;
+  final ValueChanged<String> onSelectContextUnit;
   final bool showBackButton;
   final String backTooltip;
   final List<Widget>? actions;
@@ -299,7 +428,8 @@ class _TopBar extends StatelessWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              selectedAssemblee?.nom ??
+                              selectedContextUnit?.nom ??
+                                  selectedAssemblee?.nom ??
                                   'Aucune assemblee selectionnee',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -312,11 +442,17 @@ class _TopBar extends StatelessWidget {
                       if (!compact) ...[
                         _ContextPill(
                           icon: Icons.location_city_outlined,
-                          label: selectedAssemblee?.code ?? 'Assemblee',
-                          value: selectedAssemblee?.ville ?? 'Contexte',
-                          items: assembleesAutorisees,
-                          enabled: canChangeAssemblee,
-                          onSelected: onSelectAssemblee,
+                          label:
+                              selectedContextUnit?.code ??
+                              selectedAssemblee?.code ??
+                              'Perimetre',
+                          value:
+                              selectedContextUnit?.typeLabel ??
+                              selectedAssemblee?.ville ??
+                              'Contexte',
+                          items: contextUnits,
+                          enabled: canChangeContext,
+                          onSelected: onSelectContextUnit,
                         ),
                         const SizedBox(width: 10),
                         _ProfilePill(
@@ -370,7 +506,7 @@ class _ContextPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final List<AssembleeLocale> items;
+  final List<ChurchUnit> items;
   final bool enabled;
   final ValueChanged<String> onSelected;
 
@@ -384,7 +520,10 @@ class _ContextPill extends StatelessWidget {
       onSelected: onSelected,
       itemBuilder: (context) => [
         for (final item in items)
-          PopupMenuItem(value: item.id, child: Text(item.nom)),
+          PopupMenuItem(
+            value: item.id,
+            child: Text('${item.typeLabel} - ${item.nom}'),
+          ),
       ],
       child: _PillSurface(icon: icon, label: label, value: value),
     );

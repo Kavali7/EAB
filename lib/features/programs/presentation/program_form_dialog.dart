@@ -131,8 +131,9 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
     final members = membersAsync.value ?? [];
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final activeAssembleeId = ref.watch(assembleeActiveIdProvider);
+    final activeChurchUnitId = ref.watch(churchUnitActiveIdProvider);
     final units = _programAssignableUnits(churchUnitsAsync.value ?? []);
-    _initializeChurchUnit(units, activeAssembleeId);
+    _initializeChurchUnit(units, activeChurchUnitId, activeAssembleeId);
 
     return EabDialog(
       title: _isEditing ? 'Modifier le programme' : 'Nouveau programme',
@@ -524,11 +525,23 @@ class _ProgramFormV2State extends ConsumerState<_ProgramFormV2> {
 
   void _initializeChurchUnit(
     List<ChurchUnit> units,
+    String? activeChurchUnitId,
     String? activeAssembleeId,
   ) {
     if (_churchUnitInitialized || units.isEmpty) return;
 
     final program = widget.program;
+    final programChurchUnitId = program?.churchUnitId;
+    if (_churchUnitId == null &&
+        programChurchUnitId != null &&
+        units.any((unit) => unit.id == programChurchUnitId)) {
+      _churchUnitId = programChurchUnitId;
+    }
+    if (_churchUnitId == null &&
+        activeChurchUnitId != null &&
+        units.any((unit) => unit.id == activeChurchUnitId)) {
+      _churchUnitId = activeChurchUnitId;
+    }
     final legacyAssembleeId = program?.idAssembleeLocale ?? activeAssembleeId;
     if (_churchUnitId == null && legacyAssembleeId != null) {
       for (final unit in units) {

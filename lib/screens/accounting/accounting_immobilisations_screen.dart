@@ -344,6 +344,7 @@ class _AccountingImmobilisationsScreenState
       ref.read(churchUnitsProvider).value ?? [],
     );
     final assembleeActiveId = ref.read(assembleeActiveIdProvider);
+    final activeChurchUnitId = ref.read(churchUnitActiveIdProvider);
 
     final comptes = comptesAsync.asData?.value ?? <CompteComptable>[];
     final centres = centresAsync.asData?.value ?? <CentreAnalytique>[];
@@ -363,6 +364,7 @@ class _AccountingImmobilisationsScreenState
     String? idAssembleeLocale = immo?.idAssembleeLocale ?? assembleeActiveId;
     String? churchUnitId =
         immo?.churchUnitId ??
+        activeChurchUnitId ??
         churchUnitIdForLegacyAssemblee(churchUnits, idAssembleeLocale);
     if (churchUnitId != null &&
         !churchUnits.any((unit) => unit.id == churchUnitId)) {

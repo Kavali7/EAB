@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProfilUtilisateur {
 
- String get id; String get nom; RoleUtilisateur get role; String? get idRegion; String? get idDistrict; String? get idAssembleeLocale;
+ String get id; String get nom; RoleUtilisateur get role; String? get idRegion; String? get idDistrict; String? get idAssembleeLocale; String? get primaryChurchUnitId;
 /// Create a copy of ProfilUtilisateur
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ProfilUtilisateurCopyWith<ProfilUtilisateur> get copyWith => _$ProfilUtilisateu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfilUtilisateur&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.role, role) || other.role == role)&&(identical(other.idRegion, idRegion) || other.idRegion == idRegion)&&(identical(other.idDistrict, idDistrict) || other.idDistrict == idDistrict)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfilUtilisateur&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.role, role) || other.role == role)&&(identical(other.idRegion, idRegion) || other.idRegion == idRegion)&&(identical(other.idDistrict, idDistrict) || other.idDistrict == idDistrict)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.primaryChurchUnitId, primaryChurchUnitId) || other.primaryChurchUnitId == primaryChurchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,nom,role,idRegion,idDistrict,idAssembleeLocale);
+int get hashCode => Object.hash(runtimeType,id,nom,role,idRegion,idDistrict,idAssembleeLocale,primaryChurchUnitId);
 
 @override
 String toString() {
-  return 'ProfilUtilisateur(id: $id, nom: $nom, role: $role, idRegion: $idRegion, idDistrict: $idDistrict, idAssembleeLocale: $idAssembleeLocale)';
+  return 'ProfilUtilisateur(id: $id, nom: $nom, role: $role, idRegion: $idRegion, idDistrict: $idDistrict, idAssembleeLocale: $idAssembleeLocale, primaryChurchUnitId: $primaryChurchUnitId)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ProfilUtilisateurCopyWith<$Res>  {
   factory $ProfilUtilisateurCopyWith(ProfilUtilisateur value, $Res Function(ProfilUtilisateur) _then) = _$ProfilUtilisateurCopyWithImpl;
 @useResult
 $Res call({
- String id, String nom, RoleUtilisateur role, String? idRegion, String? idDistrict, String? idAssembleeLocale
+ String id, String nom, RoleUtilisateur role, String? idRegion, String? idDistrict, String? idAssembleeLocale, String? primaryChurchUnitId
 });
 
 
@@ -65,7 +65,7 @@ class _$ProfilUtilisateurCopyWithImpl<$Res>
 
 /// Create a copy of ProfilUtilisateur
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nom = null,Object? role = null,Object? idRegion = freezed,Object? idDistrict = freezed,Object? idAssembleeLocale = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? nom = null,Object? role = null,Object? idRegion = freezed,Object? idDistrict = freezed,Object? idAssembleeLocale = freezed,Object? primaryChurchUnitId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nullable
@@ -73,6 +73,7 @@ as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non
 as RoleUtilisateur,idRegion: freezed == idRegion ? _self.idRegion : idRegion // ignore: cast_nullable_to_non_nullable
 as String?,idDistrict: freezed == idDistrict ? _self.idDistrict : idDistrict // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,primaryChurchUnitId: freezed == primaryChurchUnitId ? _self.primaryChurchUnitId : primaryChurchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale,  String? primaryChurchUnitId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfilUtilisateur() when $default != null:
-return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale,_that.primaryChurchUnitId);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale,  String? primaryChurchUnitId)  $default,) {final _that = this;
 switch (_that) {
 case _ProfilUtilisateur():
-return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale,_that.primaryChurchUnitId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String nom,  RoleUtilisateur role,  String? idRegion,  String? idDistrict,  String? idAssembleeLocale,  String? primaryChurchUnitId)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfilUtilisateur() when $default != null:
-return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale);case _:
+return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_that.idAssembleeLocale,_that.primaryChurchUnitId);case _:
   return null;
 
 }
@@ -214,7 +215,7 @@ return $default(_that.id,_that.nom,_that.role,_that.idRegion,_that.idDistrict,_t
 @JsonSerializable()
 
 class _ProfilUtilisateur implements ProfilUtilisateur {
-  const _ProfilUtilisateur({required this.id, required this.nom, required this.role, this.idRegion, this.idDistrict, this.idAssembleeLocale});
+  const _ProfilUtilisateur({required this.id, required this.nom, required this.role, this.idRegion, this.idDistrict, this.idAssembleeLocale, this.primaryChurchUnitId});
   factory _ProfilUtilisateur.fromJson(Map<String, dynamic> json) => _$ProfilUtilisateurFromJson(json);
 
 @override final  String id;
@@ -223,6 +224,7 @@ class _ProfilUtilisateur implements ProfilUtilisateur {
 @override final  String? idRegion;
 @override final  String? idDistrict;
 @override final  String? idAssembleeLocale;
+@override final  String? primaryChurchUnitId;
 
 /// Create a copy of ProfilUtilisateur
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfilUtilisateur&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.role, role) || other.role == role)&&(identical(other.idRegion, idRegion) || other.idRegion == idRegion)&&(identical(other.idDistrict, idDistrict) || other.idDistrict == idDistrict)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfilUtilisateur&&(identical(other.id, id) || other.id == id)&&(identical(other.nom, nom) || other.nom == nom)&&(identical(other.role, role) || other.role == role)&&(identical(other.idRegion, idRegion) || other.idRegion == idRegion)&&(identical(other.idDistrict, idDistrict) || other.idDistrict == idDistrict)&&(identical(other.idAssembleeLocale, idAssembleeLocale) || other.idAssembleeLocale == idAssembleeLocale)&&(identical(other.primaryChurchUnitId, primaryChurchUnitId) || other.primaryChurchUnitId == primaryChurchUnitId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,nom,role,idRegion,idDistrict,idAssembleeLocale);
+int get hashCode => Object.hash(runtimeType,id,nom,role,idRegion,idDistrict,idAssembleeLocale,primaryChurchUnitId);
 
 @override
 String toString() {
-  return 'ProfilUtilisateur(id: $id, nom: $nom, role: $role, idRegion: $idRegion, idDistrict: $idDistrict, idAssembleeLocale: $idAssembleeLocale)';
+  return 'ProfilUtilisateur(id: $id, nom: $nom, role: $role, idRegion: $idRegion, idDistrict: $idDistrict, idAssembleeLocale: $idAssembleeLocale, primaryChurchUnitId: $primaryChurchUnitId)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$ProfilUtilisateurCopyWith<$Res> implements $ProfilUtilisa
   factory _$ProfilUtilisateurCopyWith(_ProfilUtilisateur value, $Res Function(_ProfilUtilisateur) _then) = __$ProfilUtilisateurCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String nom, RoleUtilisateur role, String? idRegion, String? idDistrict, String? idAssembleeLocale
+ String id, String nom, RoleUtilisateur role, String? idRegion, String? idDistrict, String? idAssembleeLocale, String? primaryChurchUnitId
 });
 
 
@@ -274,7 +276,7 @@ class __$ProfilUtilisateurCopyWithImpl<$Res>
 
 /// Create a copy of ProfilUtilisateur
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nom = null,Object? role = null,Object? idRegion = freezed,Object? idDistrict = freezed,Object? idAssembleeLocale = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? nom = null,Object? role = null,Object? idRegion = freezed,Object? idDistrict = freezed,Object? idAssembleeLocale = freezed,Object? primaryChurchUnitId = freezed,}) {
   return _then(_ProfilUtilisateur(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,nom: null == nom ? _self.nom : nom // ignore: cast_nullable_to_non_nullable
@@ -282,6 +284,7 @@ as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non
 as RoleUtilisateur,idRegion: freezed == idRegion ? _self.idRegion : idRegion // ignore: cast_nullable_to_non_nullable
 as String?,idDistrict: freezed == idDistrict ? _self.idDistrict : idDistrict // ignore: cast_nullable_to_non_nullable
 as String?,idAssembleeLocale: freezed == idAssembleeLocale ? _self.idAssembleeLocale : idAssembleeLocale // ignore: cast_nullable_to_non_nullable
+as String?,primaryChurchUnitId: freezed == primaryChurchUnitId ? _self.primaryChurchUnitId : primaryChurchUnitId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

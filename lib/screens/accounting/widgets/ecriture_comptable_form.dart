@@ -99,6 +99,7 @@ class _EcritureComptableFormDialogState
     final tiersAsync = ref.watch(tiersProvider);
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final selectedChurchUnitId = ref.watch(churchUnitActiveIdProvider);
 
     if (journauxAsync.isLoading ||
         comptesAsync.isLoading ||
@@ -146,15 +147,15 @@ class _EcritureComptableFormDialogState
     final centres = centresAsync.value ?? [];
     final tiers = tiersAsync.value ?? [];
     final churchUnits = churchUnitsAsync.value ?? [];
-    final activeChurchUnitId = churchUnitIdForLegacyAssemblee(
-      churchUnits,
-      assembleeActiveId,
-    );
+    final activeChurchUnitId =
+        selectedChurchUnitId ??
+        churchUnitIdForLegacyAssemblee(churchUnits, assembleeActiveId);
     final centreById = {for (final c in centres) c.id: c};
 
     _initialiserSiBesoin(journaux, centreById);
 
-    final centresFiltres = assembleeActiveId == null
+    final centresFiltres =
+        activeChurchUnitId == null && assembleeActiveId == null
         ? centres
         : centres.where((c) {
             if (activeChurchUnitId != null &&
@@ -599,9 +600,9 @@ class _EcritureComptableFormDialogState
       _showMessage('Veuillez choisir un journal.');
       return;
     }
-    if (assembleeActiveId == null) {
+    if (assembleeActiveId == null && activeChurchUnitId == null) {
       _showMessage(
-        "Aucune assemblee active n'est selectionnee : impossible d'enregistrer.",
+        "Aucun perimetre actif n'est selectionne : impossible d'enregistrer.",
       );
       return;
     }

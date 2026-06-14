@@ -542,6 +542,7 @@ class _AccountingBudgetsScreenState
     String? idAssemblee = budget?.idAssembleeLocale;
     String? churchUnitId =
         budget?.churchUnitId ??
+        ref.read(churchUnitActiveIdProvider) ??
         churchUnitIdForLegacyAssemblee(churchUnits, idAssemblee);
     if (churchUnitId != null &&
         !churchUnits.any((unit) => unit.id == churchUnitId)) {

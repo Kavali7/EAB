@@ -4,10 +4,10 @@ import '../core/services/error_reporting.dart';
 import '../models/profil_utilisateur.dart';
 import 'data_service_provider.dart';
 
-final profilsUtilisateursProvider = AsyncNotifierProvider<
-    ProfilsUtilisateursNotifier, List<ProfilUtilisateur>>(
-  ProfilsUtilisateursNotifier.new,
-);
+final profilsUtilisateursProvider =
+    AsyncNotifierProvider<ProfilsUtilisateursNotifier, List<ProfilUtilisateur>>(
+      ProfilsUtilisateursNotifier.new,
+    );
 
 class ProfilsUtilisateursNotifier
     extends AsyncNotifier<List<ProfilUtilisateur>> {
@@ -30,7 +30,11 @@ class ProfilsUtilisateursNotifier
       }
       return profils;
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'profilsUtilisateursProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'profilsUtilisateursProvider'},
+      );
       rethrow;
     }
   }
@@ -47,8 +51,8 @@ class ProfilUtilisateurCourantNotifier extends Notifier<ProfilUtilisateur?> {
 
 final profilUtilisateurCourantProvider =
     NotifierProvider<ProfilUtilisateurCourantNotifier, ProfilUtilisateur?>(
-  ProfilUtilisateurCourantNotifier.new,
-);
+      ProfilUtilisateurCourantNotifier.new,
+    );
 
 class AssembleeActiveNotifier extends Notifier<String?> {
   @override
@@ -61,5 +65,19 @@ class AssembleeActiveNotifier extends Notifier<String?> {
 
 final assembleeActiveIdProvider =
     NotifierProvider<AssembleeActiveNotifier, String?>(
-  AssembleeActiveNotifier.new,
-);
+      AssembleeActiveNotifier.new,
+    );
+
+class ChurchUnitActiveNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setChurchUnit(String? id) {
+    state = id;
+  }
+}
+
+final churchUnitActiveIdProvider =
+    NotifierProvider<ChurchUnitActiveNotifier, String?>(
+      ChurchUnitActiveNotifier.new,
+    );

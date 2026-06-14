@@ -19,6 +19,7 @@ abstract class ProfilUtilisateur with _$ProfilUtilisateur {
     String? idRegion,
     String? idDistrict,
     String? idAssembleeLocale,
+    String? primaryChurchUnitId,
   }) = _ProfilUtilisateur;
 
   factory ProfilUtilisateur.fromJson(Map<String, dynamic> json) =>

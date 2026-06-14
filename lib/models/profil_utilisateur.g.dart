@@ -14,6 +14,7 @@ _ProfilUtilisateur _$ProfilUtilisateurFromJson(Map<String, dynamic> json) =>
       idRegion: json['idRegion'] as String?,
       idDistrict: json['idDistrict'] as String?,
       idAssembleeLocale: json['idAssembleeLocale'] as String?,
+      primaryChurchUnitId: json['primaryChurchUnitId'] as String?,
     );
 
 Map<String, dynamic> _$ProfilUtilisateurToJson(_ProfilUtilisateur instance) =>
@@ -24,6 +25,7 @@ Map<String, dynamic> _$ProfilUtilisateurToJson(_ProfilUtilisateur instance) =>
       'idRegion': instance.idRegion,
       'idDistrict': instance.idDistrict,
       'idAssembleeLocale': instance.idAssembleeLocale,
+      'primaryChurchUnitId': instance.primaryChurchUnitId,
     };
 
 const _$RoleUtilisateurEnumMap = {
