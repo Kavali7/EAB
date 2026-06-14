@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:eab/core/theme.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
 import 'package:eab/features/organization/presentation/organization_onboarding_screen.dart';
+import 'package:eab/screens/auth/login_screen.dart';
 import 'package:eab/ui/ui.dart';
 
 class OrganizationGate extends ConsumerWidget {
@@ -14,6 +15,10 @@ class OrganizationGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (Supabase.instance.client.auth.currentSession == null) {
+      return const LoginScreen();
+    }
+
     final organizationAsync = ref.watch(currentOrganizationProvider);
 
     return organizationAsync.when(

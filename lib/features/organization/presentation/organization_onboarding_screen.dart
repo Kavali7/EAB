@@ -82,6 +82,10 @@ class _OrganizationOnboardingScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (Supabase.instance.client.auth.currentSession == null) {
+      return const _OnboardingAuthRequired();
+    }
+
     final size = MediaQuery.of(context).size;
     final isWide = size.width >= 980;
 
@@ -159,6 +163,69 @@ class _OrganizationOnboardingScreenState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingAuthRequired extends StatelessWidget {
+  const _OnboardingAuthRequired();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppRadius.xlAll,
+                  border: Border.all(color: AppColors.divider),
+                  boxShadow: AppElevation.cardShadow,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandMark(size: 52),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Connexion requise',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.heading2,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Connectez-vous ou creez un compte avant de configurer une eglise.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/login'),
+                      icon: const Icon(Icons.login),
+                      label: const Text('Se connecter'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/signup'),
+                      icon: const Icon(Icons.person_add_alt_1),
+                      label: const Text('Creer un compte'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
