@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,8 +21,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _signupSuccess = false;
-  int _rateLimitSeconds = 0;
-  Timer? _rateLimitTimer;
+  bool _emailRateLimited = false;
   String? _errorMessage;
 
   @override
@@ -33,23 +30,15 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _rateLimitTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _signup() async {
-    if (_rateLimitSeconds > 0) {
-      setState(() {
-        _errorMessage =
-            'Trop de demandes. Patientez encore $_rateLimitSeconds secondes avant de reessayer.';
-      });
-      return;
-    }
-
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
+      _emailRateLimited = false;
       _errorMessage = null;
     });
 
@@ -63,8 +52,10 @@ class _SignupScreenState extends State<SignupScreen> {
     } on AuthException catch (e) {
       if (mounted) {
         final shouldCooldown = _isRateLimitError(e.message);
-        setState(() => _errorMessage = _translateAuthError(e.message));
-        if (shouldCooldown) _startRateLimitCooldown();
+        setState(() {
+          _emailRateLimited = shouldCooldown;
+          _errorMessage = _translateAuthError(e.message);
+        });
       }
     } catch (_) {
       if (mounted) {
@@ -81,7 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String _translateAuthError(String message) {
     final normalized = message.toLowerCase();
     if (_isRateLimitError(message)) {
-      return 'Trop de demandes d inscription ou d email de confirmation. Patientez avant de reessayer. En production, configurez un SMTP personnalise dans Supabase.';
+      return 'Trop de demandes d inscription ou d email de confirmation. Le blocage vient de Supabase Auth. Reessayez plus tard ou contactez l administrateur.';
     }
     if (normalized.contains('email_address_invalid') ||
         normalized.contains('email address') &&
@@ -105,23 +96,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return normalized.contains('email rate limit') ||
         normalized.contains('rate limit') ||
         normalized.contains('too many requests');
-  }
-
-  void _startRateLimitCooldown({int seconds = 60}) {
-    _rateLimitTimer?.cancel();
-    setState(() => _rateLimitSeconds = seconds);
-    _rateLimitTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_rateLimitSeconds <= 1) {
-        timer.cancel();
-        setState(() => _rateLimitSeconds = 0);
-      } else {
-        setState(() => _rateLimitSeconds -= 1);
-      }
-    });
   }
 
   @override
@@ -254,7 +228,7 @@ class _SignupScreenState extends State<SignupScreen> {
           SizedBox(
             height: 50,
             child: ElevatedButton.icon(
-              onPressed: _isLoading || _rateLimitSeconds > 0 ? null : _signup,
+              onPressed: _isLoading ? null : _signup,
               icon: _isLoading
                   ? const SizedBox(
                       height: 18,
@@ -265,15 +239,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     )
                   : Icon(
-                      _rateLimitSeconds > 0
-                          ? Icons.hourglass_bottom
+                      _emailRateLimited
+                          ? Icons.refresh
                           : Icons.person_add_alt_1,
                     ),
               label: Text(
                 _isLoading
                     ? 'Creation...'
-                    : _rateLimitSeconds > 0
-                    ? 'Reessayer dans ${_rateLimitSeconds}s'
+                    : _emailRateLimited
+                    ? 'Reessayer plus tard'
                     : 'Creer le compte',
               ),
             ),
