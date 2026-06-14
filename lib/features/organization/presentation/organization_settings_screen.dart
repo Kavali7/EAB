@@ -47,6 +47,8 @@ class _OrganizationSettingsScreenState
   bool _saving = false;
   bool _inviting = false;
 
+  bool get _inviteIsGlobalAdmin => _inviteRole == 'adminNational';
+
   @override
   void dispose() {
     _nomCtrl.dispose();
@@ -114,8 +116,20 @@ class _OrganizationSettingsScreenState
   }
 
   Future<void> _inviteUser(String orgId) async {
-    if (_inviteEmailCtrl.text.trim().isEmpty) return;
-    if (_inviteRole != 'adminNational' && _inviteChurchUnitId == null) {
+    final email = _inviteEmailCtrl.text.trim().toLowerCase();
+    if (email.isEmpty) return;
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      context.showError(
+        const BusinessRuleException('Saisissez un email valide.'),
+      );
+      return;
+    }
+
+    final selectedUnitId = _inviteIsGlobalAdmin ? null : _inviteChurchUnitId;
+    final canManageChildren = _inviteIsGlobalAdmin
+        ? true
+        : _inviteCanManageChildren;
+    if (!_inviteIsGlobalAdmin && selectedUnitId == null) {
       context.showError(
         const BusinessRuleException(
           'Choisissez le perimetre de ce sous-compte.',
@@ -128,15 +142,15 @@ class _OrganizationSettingsScreenState
       final repo = ref.read(organizationRepositoryProvider);
       await repo.inviteUser(
         orgId: orgId,
-        email: _inviteEmailCtrl.text.trim(),
+        email: email,
         role: _inviteRole,
-        primaryChurchUnitId: _inviteChurchUnitId,
-        canManageChildren: _inviteCanManageChildren,
+        primaryChurchUnitId: selectedUnitId,
+        canManageChildren: canManageChildren,
       );
       _inviteEmailCtrl.clear();
       if (mounted) {
         context.showSuccess(
-          'Invitation enregistree. Le compte sera rattache a l inscription.',
+          "Invitation enregistree. Le compte sera rattache a l'inscription.",
         );
       }
     } catch (e) {
@@ -388,7 +402,10 @@ class _OrganizationSettingsScreenState
     required String orgId,
     required List<ChurchUnit> churchUnits,
   }) {
-    final scopedUnits = accountingScopeUnits(churchUnits);
+    final scopedUnits = userScopeUnits(churchUnits);
+    if (_inviteIsGlobalAdmin && _inviteChurchUnitId != null) {
+      _inviteChurchUnitId = null;
+    }
     if (_inviteChurchUnitId != null &&
         !scopedUnits.any((unit) => unit.id == _inviteChurchUnitId)) {
       _inviteChurchUnitId = null;
@@ -441,8 +458,12 @@ class _OrganizationSettingsScreenState
                 ],
                 onChanged: (v) => setState(() {
                   _inviteRole = v!;
-                  if (_inviteRole == 'adminNational') {
+                  if (_inviteIsGlobalAdmin) {
+                    _inviteChurchUnitId = null;
                     _inviteCanManageChildren = true;
+                  } else {
+                    _inviteCanManageChildren =
+                        _inviteRole != 'tresorierAssemblee';
                   }
                 }),
               ),
@@ -452,36 +473,62 @@ class _OrganizationSettingsScreenState
           ResponsiveFormRow(
             children: [
               DropdownButtonFormField<String?>(
-                initialValue: _inviteChurchUnitId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Perimetre',
-                  border: OutlineInputBorder(),
+                key: ValueKey(
+                  'invite-scope-${_inviteIsGlobalAdmin ? 'global' : 'scoped'}'
+                  '-${_inviteChurchUnitId ?? 'none'}',
                 ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Toute l organisation'),
-                  ),
-                  ...scopedUnits.map(
-                    (unit) => DropdownMenuItem<String?>(
-                      value: unit.id,
-                      child: Text(
-                        '${unit.typeLabel} - ${churchUnitLabel(unit)}',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _inviteChurchUnitId = v),
+                initialValue: _inviteIsGlobalAdmin ? null : _inviteChurchUnitId,
+                isExpanded: true,
+                hint: Text(
+                  _inviteIsGlobalAdmin
+                      ? 'Toute l organisation'
+                      : scopedUnits.isEmpty
+                      ? 'Aucun perimetre disponible'
+                      : 'Choisir un perimetre',
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Perimetre',
+                  helperText: _inviteIsGlobalAdmin
+                      ? 'Acces complet a l organisation.'
+                      : 'Un sous-compte doit etre limite a un niveau.',
+                  border: const OutlineInputBorder(),
+                ),
+                items: _inviteIsGlobalAdmin
+                    ? const [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Toute l organisation'),
+                        ),
+                      ]
+                    : scopedUnits
+                          .map(
+                            (unit) => DropdownMenuItem<String?>(
+                              value: unit.id,
+                              child: Text(
+                                '${unit.typeLabel} - ${churchUnitLabel(unit)}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                onChanged: _inviteIsGlobalAdmin || scopedUnits.isEmpty
+                    ? null
+                    : (v) => setState(() => _inviteChurchUnitId = v),
               ),
               CheckboxListTile(
                 value: _inviteCanManageChildren,
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 title: const Text('Autoriser les sous-niveaux'),
-                onChanged: (v) =>
-                    setState(() => _inviteCanManageChildren = v ?? false),
+                subtitle: Text(
+                  _inviteIsGlobalAdmin
+                      ? 'Toujours actif pour un admin national.'
+                      : 'Inclut les niveaux descendants du perimetre choisi.',
+                ),
+                onChanged: _inviteIsGlobalAdmin
+                    ? null
+                    : (v) =>
+                          setState(() => _inviteCanManageChildren = v ?? false),
               ),
               compact
                   ? SizedBox(width: double.infinity, child: button)

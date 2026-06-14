@@ -17,6 +17,18 @@ List<ChurchUnit> accountingScopeUnits(List<ChurchUnit> units) {
   return result;
 }
 
+List<ChurchUnit> userScopeUnits(List<ChurchUnit> units) {
+  final result = units.where((unit) => unit.active).toList()
+    ..sort((a, b) {
+      final level = a.levelOrder.compareTo(b.levelOrder);
+      if (level != 0) return level;
+      final type = a.typeLabel.compareTo(b.typeLabel);
+      if (type != 0) return type;
+      return a.nom.compareTo(b.nom);
+    });
+  return result;
+}
+
 ChurchUnit? churchUnitForLegacyAssemblee(
   List<ChurchUnit> units,
   String? legacyAssembleeId,
