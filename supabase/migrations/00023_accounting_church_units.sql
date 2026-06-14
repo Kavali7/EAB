@@ -1,5 +1,5 @@
 -- ============================================================================
--- EAB Backend - 00022 Accounting scopes linked to flexible church units
+-- EAB Backend - 00023 Accounting scopes linked to flexible church units
 -- ============================================================================
 -- Extends the flexible church hierarchy to operational accounting tables while
 -- keeping legacy assemblee references during the progressive migration.

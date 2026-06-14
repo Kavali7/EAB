@@ -1,5 +1,5 @@
 -- ============================================================================
--- EAB Backend - 00016 Fix user_id references in RPCs
+-- EAB Backend - 00017 Fix user_id references in RPCs
 -- ============================================================================
 -- Corrige le bug: les RPCs open_exercice() et cloturer_exercice() référencent
 -- m.user_id sur la table membres, mais cette colonne n'existe pas.

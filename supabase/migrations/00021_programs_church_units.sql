@@ -1,35 +1,28 @@
 -- ============================================================================
--- EAB Backend - 00021 Monthly reports linked to flexible church units
+-- EAB Backend - 00021 Programs linked to flexible church units
 -- ============================================================================
--- Connects monthly reports to the generic church_units hierarchy while keeping
--- the legacy local church reference for existing EAB demo data.
+-- Connects programmes to the generic church_units hierarchy while preserving
+-- legacy assemblee references during the progressive migration.
 
-ALTER TABLE rapports_mensuels_eab
+ALTER TABLE programmes
   ADD COLUMN IF NOT EXISTS church_unit_id UUID
   REFERENCES church_units(id) ON DELETE SET NULL;
 
-ALTER TABLE rapports_mensuels_eab
-  ALTER COLUMN id_assemblee_locale DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_programmes_church_unit
+  ON programmes(church_unit_id);
 
-CREATE INDEX IF NOT EXISTS idx_rapports_church_unit
-  ON rapports_mensuels_eab(church_unit_id);
+COMMENT ON COLUMN programmes.church_unit_id IS
+  'Flexible church unit that owns this programme. Kept in sync with id_assemblee_locale during migration.';
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_rapports_church_unit_periode
-  ON rapports_mensuels_eab(organization_id, church_unit_id, annee, mois)
-  WHERE church_unit_id IS NOT NULL;
-
-COMMENT ON COLUMN rapports_mensuels_eab.church_unit_id IS
-  'Flexible church unit/perimeter for this monthly report. Kept in sync with id_assemblee_locale during migration.';
-
-UPDATE rapports_mensuels_eab r
+UPDATE programmes p
 SET church_unit_id = cu.id
 FROM church_units cu
-WHERE r.church_unit_id IS NULL
-  AND r.id_assemblee_locale IS NOT NULL
-  AND cu.legacy_assemblee_id = r.id_assemblee_locale
-  AND cu.organization_id = r.organization_id;
+WHERE p.church_unit_id IS NULL
+  AND p.id_assemblee_locale IS NOT NULL
+  AND cu.legacy_assemblee_id = p.id_assemblee_locale
+  AND cu.organization_id = p.organization_id;
 
-CREATE OR REPLACE FUNCTION sync_monthly_report_church_unit_scope()
+CREATE OR REPLACE FUNCTION sync_program_church_unit_scope()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -66,20 +59,17 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS sync_monthly_report_church_unit_scope_trigger
-  ON rapports_mensuels_eab;
-CREATE TRIGGER sync_monthly_report_church_unit_scope_trigger
+DROP TRIGGER IF EXISTS sync_program_church_unit_scope_trigger ON programmes;
+CREATE TRIGGER sync_program_church_unit_scope_trigger
   BEFORE INSERT OR UPDATE OF organization_id, id_assemblee_locale, church_unit_id
-  ON rapports_mensuels_eab
-  FOR EACH ROW EXECUTE FUNCTION sync_monthly_report_church_unit_scope();
+  ON programmes
+  FOR EACH ROW EXECUTE FUNCTION sync_program_church_unit_scope();
 
-DROP POLICY IF EXISTS "Users can view rapports based on access"
-  ON rapports_mensuels_eab;
-DROP POLICY IF EXISTS "Users can manage rapports based on access"
-  ON rapports_mensuels_eab;
+DROP POLICY IF EXISTS "Users can view programmes based on access" ON programmes;
+DROP POLICY IF EXISTS "Users can manage programmes based on access" ON programmes;
 
-CREATE POLICY "Users can view rapports based on access"
-  ON rapports_mensuels_eab FOR SELECT
+CREATE POLICY "Users can view programmes based on access"
+  ON programmes FOR SELECT
   USING (
     organization_id = get_user_organization_id()
     AND (
@@ -89,8 +79,8 @@ CREATE POLICY "Users can view rapports based on access"
     )
   );
 
-CREATE POLICY "Users can manage rapports based on access"
-  ON rapports_mensuels_eab FOR ALL
+CREATE POLICY "Users can manage programmes based on access"
+  ON programmes FOR ALL
   USING (
     organization_id = get_user_organization_id()
     AND (

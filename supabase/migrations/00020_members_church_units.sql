@@ -1,5 +1,5 @@
 -- ============================================================================
--- EAB Backend - 00019 Members linked to flexible church units
+-- EAB Backend - 00020 Members linked to flexible church units
 -- ============================================================================
 -- Connects the members module to the generic church_units hierarchy while
 -- preserving legacy assemblee references during the progressive migration.

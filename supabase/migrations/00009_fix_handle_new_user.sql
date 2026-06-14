@@ -1,5 +1,5 @@
 -- ============================================================================
--- EAB Backend - 00008 Fix handle_new_user trigger
+-- EAB Backend - 00009 Fix handle_new_user trigger
 -- ============================================================================
 -- Correctif : le trigger handle_new_user() échouait à l'inscription
 -- car la politique RLS sur profiles bloquait l'INSERT.

@@ -1,5 +1,5 @@
 -- ============================================================================
--- EAB Backend - 00023 Organization user invitations
+-- EAB Backend - 00024 Organization user invitations
 -- ============================================================================
 -- Lets a tenant admin prepare sub-accounts for their organization.
 -- The invited user signs up with the same email; handle_new_user() then attaches

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration 00011 : Tables Dossier Fiscal SYSCEBNL
+-- Migration 00012 : Tables Dossier Fiscal SYSCEBNL
 -- =============================================================================
 -- Objectif : Créer les tables pour le générateur de dossier fiscal multi-pages
 -- Tables : fiscal_templates, fiscal_template_pages, fiscal_template_fields,

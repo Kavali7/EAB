@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église–Administration–Budget)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-14
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00025`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00026`
 
 ---
 
@@ -56,7 +56,7 @@
 | `statut_ecriture` | `brouillon`, `validee`, `cloturee` | 00002 |
 | `action_audit` | `INSERT`, `UPDATE`, `DELETE`, `SOFT_DELETE`, `LOGIN`, `LOGOUT`, `VALIDATION`, `CLOTURE` | 00007 |
 | `statut_exercice` | `brouillon`, `ouvert`, `cloture` | 00008 |
-| `fiscal_dossier_status` | `draft`, `in_progress`, `ready`, `locked`, `submitted` | 00011 |
+| `fiscal_dossier_status` | `draft`, `in_progress`, `ready`, `locked`, `submitted` | 00012 |
 
 ---
 
@@ -265,7 +265,7 @@
 
 ### 2.10 `familles`
 
-> Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Ce champ est synchronise avec `id_assemblee_locale` quand l'unite flexible pointe vers une assemblee legacy.
 
 > Familles de fidèles pour le suivi familial.
@@ -288,7 +288,7 @@
 
 ### 2.11 `membres`
 
-> Migration `00019` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_member_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
 
 > Membres/fidèles de l'église avec toutes leurs informations.
@@ -327,7 +327,7 @@
 
 ### 2.12 `programmes`
 
-> Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Migration `00021` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_program_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
 
 > Activités et programmes de l'église (cultes, évangélisations, etc.).
@@ -585,7 +585,7 @@
 | `observations` | TEXT | OUI | — | Observations |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-> Migration `00021` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
+> Migration `00022` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > `id_assemblee_locale` devient nullable pour permettre des rapports sur une eglise unique, une region, un district ou tout autre niveau configure.
 
 **RLS** : ✅ — **UNIQUE** : `(organization_id, id_assemblee_locale, annee, mois)` + `(organization_id, church_unit_id, annee, mois)` si `church_unit_id IS NOT NULL` — **CHECK** : `mois >= 1 AND mois <= 12`
@@ -609,7 +609,7 @@
 | `fichier_url` | TEXT | OUI | — | URL du fichier |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-> Migration `00022` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`
+> Migration `00023` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`
 > sur `centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`,
 > `immobilisations_comptables` et `releves_bancaires`.
 > Les anciennes colonnes `id_assemblee_locale` restent en place pendant la transition.
@@ -689,7 +689,7 @@
 
 ---
 
-## 4bis. Tables — Dossier Fiscal SYSCEBNL (00011)
+## 4bis. Tables — Dossier Fiscal SYSCEBNL (00012)
 
 ### 4bis.1 `fiscal_templates`
 
@@ -917,11 +917,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 
 ## 7. Politiques RLS
 
-> RLS est active sur toutes les tables metier multi-tenant, y compris les tables de hierarchie flexible ajoutees en `00018`. Toutes les fonctions helper sont `SECURITY DEFINER STABLE`.
+> RLS est active sur toutes les tables metier multi-tenant, y compris les tables de hierarchie flexible ajoutees en `00019`. Toutes les fonctions helper sont `SECURITY DEFINER STABLE`.
 
 ### Fonctions helper RLS
 
-> Migration `00019` ajoute `user_has_church_unit_access(UUID)` pour verifier les perimetres `church_units`,
+> Migration `00020` ajoute `user_has_church_unit_access(UUID)` pour verifier les perimetres `church_units`,
 > en tenant compte de `profiles.primary_church_unit_id`, de `church_unit_user_scopes`
 > et des descendants via `get_church_unit_descendants(UUID)`.
 
@@ -1010,7 +1010,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 
 ## 9. Triggers
 
-Migration `00019` ajoute :
+Migration `00020` ajoute :
 
 - `sync_member_church_unit_scope_trigger` sur `membres`
 - `sync_family_church_unit_scope_trigger` sur `familles`
@@ -1018,19 +1018,19 @@ Migration `00019` ajoute :
 Ces triggers renseignent `organization_id` si besoin et synchronisent `church_unit_id`
 avec `id_assemblee_locale` lorsque l'unite flexible conserve un lien legacy.
 
-Migration `00020` ajoute :
+Migration `00021` ajoute :
 
 - `sync_program_church_unit_scope_trigger` sur `programmes`
 
 Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les programmes.
 
-Migration `00021` ajoute :
+Migration `00022` ajoute :
 
 - `sync_monthly_report_church_unit_scope_trigger` sur `rapports_mensuels_eab`
 
 Ce trigger synchronise `church_unit_id` avec `id_assemblee_locale` pour les rapports mensuels.
 
-Migration `00022` ajoute :
+Migration `00023` ajoute :
 
 - `sync_centre_church_unit_scope_trigger` sur `centres_analytiques`
 - `sync_tiers_church_unit_scope_trigger` sur `tiers`
@@ -1041,7 +1041,7 @@ Migration `00022` ajoute :
 
 Ces triggers synchronisent `church_unit_id` avec `id_assemblee_locale` pour les objets comptables operationnels.
 
-Migration `00023` remplace `handle_new_user()` pour appliquer les invitations de sous-comptes :
+Migration `00024` remplace `handle_new_user()` pour appliquer les invitations de sous-comptes :
 
 - si l'email d'inscription correspond a une invitation active, le profil recoit `organization_id`, `role`, `primary_church_unit_id` et le perimetre `church_unit_user_scopes` ;
 - sinon, le comportement historique cree un profil `tresorier_assemblee` sans organisation.
@@ -1064,7 +1064,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~100 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00018`.
+> **Total : ~100 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00019`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -1263,24 +1263,24 @@ supabase/migrations/00005_indexes.sql
 supabase/migrations/00006_storage_buckets.sql
 supabase/migrations/00007_improvements.sql
 supabase/migrations/00008_exercices_v2.sql
-supabase/migrations/00008_fix_handle_new_user.sql
-supabase/migrations/00009_patch_post_revue.sql
-supabase/migrations/00010_dashboard_finance.sql
-supabase/migrations/00011_fiscal_tables.sql
-supabase/migrations/00012_fiscal_rls.sql
-supabase/migrations/00013_fiscal_rpcs.sql
-supabase/migrations/00014_fiscal_import_balance.sql
-supabase/migrations/00015_seed_syscebnl_template_v1.sql
-supabase/migrations/00016_fix_user_id_rpcs.sql
-supabase/migrations/00017_organization_branding.sql
-supabase/migrations/00018_flexible_church_units.sql
-supabase/migrations/00019_members_church_units.sql
-supabase/migrations/00020_programs_church_units.sql
-supabase/migrations/00021_monthly_reports_church_units.sql
-supabase/migrations/00022_accounting_church_units.sql
-supabase/migrations/00023_user_invitations.sql
-supabase/migrations/00024_fix_user_invitation_legacy_scope.sql
-supabase/migrations/00025_organization_onboarding.sql
+supabase/migrations/00009_fix_handle_new_user.sql
+supabase/migrations/00010_patch_post_revue.sql
+supabase/migrations/00011_dashboard_finance.sql
+supabase/migrations/00012_fiscal_tables.sql
+supabase/migrations/00013_fiscal_rls.sql
+supabase/migrations/00014_fiscal_rpcs.sql
+supabase/migrations/00015_fiscal_import_balance.sql
+supabase/migrations/00016_seed_syscebnl_template_v1.sql
+supabase/migrations/00017_fix_user_id_rpcs.sql
+supabase/migrations/00018_organization_branding.sql
+supabase/migrations/00019_flexible_church_units.sql
+supabase/migrations/00020_members_church_units.sql
+supabase/migrations/00021_programs_church_units.sql
+supabase/migrations/00022_monthly_reports_church_units.sql
+supabase/migrations/00023_accounting_church_units.sql
+supabase/migrations/00024_user_invitations.sql
+supabase/migrations/00025_fix_user_invitation_legacy_scope.sql
+supabase/migrations/00026_organization_onboarding.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1343,25 +1343,25 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
-| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00025`, buckets Storage, tests de verification et branchement frontend. |
-| 2026-06-14 | Agent IA | **Correction 00025** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
-| 2026-06-14 | Agent IA | **Migration 00025** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
-| 2026-06-14 | Agent IA | **Migration 00024** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |
-| 2026-06-13 | Agent IA | **Migration 00023** : Ajout des invitations de sous-comptes (`organization_user_invitations`), RPC `invite_user_to_org`, normalisation des roles et adaptation de `handle_new_user()` pour rattacher automatiquement un nouvel inscrit a son organisation, son role et son perimetre `church_units`. |
-| 2026-06-13 | Agent IA | **Migration 00022** : Rattachement progressif de la comptabilite operationnelle a `church_units` via `church_unit_id` (`centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`, `immobilisations_comptables`, `releves_bancaires`). Backfill depuis les assemblees legacy, triggers de synchronisation, index et politiques RLS hybrides pour les objets comptables rattaches a un perimetre. |
-| 2026-06-13 | Agent IA | **Migration 00021** : Rattachement progressif de `rapports_mensuels_eab` a `church_units` via `church_unit_id`. `id_assemblee_locale` devient nullable pour les rapports sur niveaux non locaux, backfill depuis les assemblees legacy, trigger de synchronisation, index unique par unite/periode et politiques RLS hybrides. |
-| 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |
-| 2026-06-13 | Agent IA | **Migration 00019** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |
-| 2026-06-13 | Agent IA | **Migration 00018** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
-| 2026-06-13 | Agent IA | **Migration 00017** : Branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et conservation de `logo_url`. L'application utilise une marque neutre par defaut et l'identite de l'organisation active. |
+| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00026`, buckets Storage, tests de verification et branchement frontend. |
+| 2026-06-14 | Agent IA | **Correction 00026** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
+| 2026-06-14 | Agent IA | **Migration 00026** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
+| 2026-06-14 | Agent IA | **Migration 00025** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |
+| 2026-06-13 | Agent IA | **Migration 00024** : Ajout des invitations de sous-comptes (`organization_user_invitations`), RPC `invite_user_to_org`, normalisation des roles et adaptation de `handle_new_user()` pour rattacher automatiquement un nouvel inscrit a son organisation, son role et son perimetre `church_units`. |
+| 2026-06-13 | Agent IA | **Migration 00023** : Rattachement progressif de la comptabilite operationnelle a `church_units` via `church_unit_id` (`centres_analytiques`, `tiers`, `ecritures_comptables`, `budgets_comptables`, `immobilisations_comptables`, `releves_bancaires`). Backfill depuis les assemblees legacy, triggers de synchronisation, index et politiques RLS hybrides pour les objets comptables rattaches a un perimetre. |
+| 2026-06-13 | Agent IA | **Migration 00022** : Rattachement progressif de `rapports_mensuels_eab` a `church_units` via `church_unit_id`. `id_assemblee_locale` devient nullable pour les rapports sur niveaux non locaux, backfill depuis les assemblees legacy, trigger de synchronisation, index unique par unite/periode et politiques RLS hybrides. |
+| 2026-06-13 | Agent IA | **Migration 00021** : Rattachement progressif de `programmes` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, trigger de synchronisation `id_assemblee_locale` <-> `church_unit_id`, index et politiques RLS hybrides basees sur `user_has_church_unit_access(UUID)`. |
+| 2026-06-13 | Agent IA | **Migration 00020** : Rattachement progressif de `membres` et `familles` a `church_units` via `church_unit_id`. Backfill depuis les assemblees legacy, triggers de synchronisation `id_assemblee_locale` <-> `church_unit_id`, fonction RLS `user_has_church_unit_access(UUID)`, index et politiques RLS hybrides pendant la transition. |
+| 2026-06-13 | Agent IA | **Migration 00019** : Ajout de la hierarchie flexible multi-eglises (`church_unit_types`, `church_units`, `church_unit_user_scopes`). Backfill des regions, districts et assemblees EAB existants comme donnees de demonstration. Ajout de `profiles.primary_church_unit_id`, fonction recursive `get_church_unit_descendants(UUID)`, index et politiques RLS. |
+| 2026-06-13 | Agent IA | **Migration 00018** : Branding organisation personnalisable (`sigle`, couleurs, contact, devise, `parametres`) et conservation de `logo_url`. L'application utilise une marque neutre par defaut et l'identite de l'organisation active. |
 | 2026-03-02 | Agent IA | **PR4** : `FiscalPdfService` — Génération PDF multi-pages dossier fiscal (COVER avec badge/watermark, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT). Rendu dynamique depuis template fields + valeurs. Header/footer cohérents avec pagination. Intégration dans wizard (bouton PDF). |
-| 2026-03-02 | Agent IA | **Migration 00015** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
-| 2026-03-02 | Agent IA | **Migration 00013** : 4 RPCs dossier fiscal — `prefill_fiscal_dossier` (pré-remplissage depuis écritures via mappings sum_prefixes/balance_class/sum_accounts), `prefill_fiscal_dossier_from_import` (depuis balance CSV), `validate_fiscal_dossier` (contrôles actif=passif + résultat + champs requis), `lock_fiscal_dossier` (verrouillage avec validation + contrôle rôle admin/resp_region). Toutes SECURITY DEFINER + vérification org. |
-| 2026-03-02 | Agent IA | **Migrations 00011+00012** : Module Dossier Fiscal SYSCEBNL. 8 nouvelles tables (`fiscal_templates`, `fiscal_template_pages`, `fiscal_template_fields`, `fiscal_account_mapping`, `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances`, `imported_trial_balance_lines`). Enum `fiscal_dossier_status` (draft/in_progress/ready/locked/submitted). 17 index. 2 triggers `updated_at`. RLS activé sur 8 tables. 14 policies (templates=lecture auth, dossiers/values=isolation org avec protection status, import=isolation org). |
+| 2026-03-02 | Agent IA | **Migration 00016** : Seed template SYSCEBNL V1. 1 template (`SYSCEBNL_2026`), 5 pages (COVER, IDENTITY, BILAN_ACTIF, BILAN_PASSIF, RESULTAT), 30 champs typés avec sections et ordres, 11 mappings comptes→champs (sum_prefixes + balance_class). Tests SQL : `test_fiscal_rls.sql` (RLS/policies/RPCs/seed check) + `test_e2e_fiscal_dossier.sql` (cycle complet). |
+| 2026-03-02 | Agent IA | **Migration 00014** : 4 RPCs dossier fiscal — `prefill_fiscal_dossier` (pré-remplissage depuis écritures via mappings sum_prefixes/balance_class/sum_accounts), `prefill_fiscal_dossier_from_import` (depuis balance CSV), `validate_fiscal_dossier` (contrôles actif=passif + résultat + champs requis), `lock_fiscal_dossier` (verrouillage avec validation + contrôle rôle admin/resp_region). Toutes SECURITY DEFINER + vérification org. |
+| 2026-03-02 | Agent IA | **Migrations 00012+00013** : Module Dossier Fiscal SYSCEBNL. 8 nouvelles tables (`fiscal_templates`, `fiscal_template_pages`, `fiscal_template_fields`, `fiscal_account_mapping`, `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances`, `imported_trial_balance_lines`). Enum `fiscal_dossier_status` (draft/in_progress/ready/locked/submitted). 17 index. 2 triggers `updated_at`. RLS activé sur 8 tables. 14 policies (templates=lecture auth, dossiers/values=isolation org avec protection status, import=isolation org). |
 | 2026-03-02 | Agent IA | **Session frontend/UX uniquement** — aucun changement backend. Côté frontend : fix zone mismatch Sentry (`main.dart` : bindings+Supabase dans `appRunner`), fix auth réactive (`app.dart` : `StatefulWidget` + `onAuthStateChange`, TOKEN_REFRESH ignoré), auto-init `profilUtilisateurCourant` dans `ProfilsUtilisateursNotifier.build()`, refonte `EabTable` (row #, zebra stripes, fixedWidth/flex), `ResponsiveFormRow`+`ResponsiveLayout`, `error_handler` enrichi (onRetry, icônes/couleurs par type, +20 patterns d'erreur RPC). |
 | 2026-02-28 | Agent IA | **Migration 00008** : `statut_exercice` enum, colonnes `statut`/`opening_entry_id`/`closing_entry_id`/`deleted_at` sur `exercices_comptables`, CHECK `date_debut<=date_fin`, index unique partiel 1 ouvert/org, RPCs `open_exercice`, `get_exercice_ouvert`, `can_post_in_exercice`. `cloturer_exercice` enrichi : génère écriture résultat (classes 6/7→131) + à-nouveaux (classes 1-5). |
 | 2026-02-23 | Agent IA | **Fix affichage tableau de bord** : correction des mappings JSON dans `SupabaseDataService` — `ProfilUtilisateur` (fullName→nom, role snake→camel), `Member` (dateNaissance→birthDate, statutMatrimonial→maritalStatus FR→EN, dateBapteme→baptismDate), `Program` (type/typeVisite snake→camel). Ajout helpers `_snakeValueToCamel()` et `_mapStatutMatrimonialToEnglish()`. Remplacement de `accountingEntriesProvider` (retournait `[]`) par `ecrituresComptablesProvider` dans le dashboard. **Convention** : `_snakeToCamel()` convertit les clés JSON uniquement ; les valeurs enum et les champs renommés doivent être mappés manuellement dans chaque méthode `get*()`. |
-| 2026-02-23 | Agent IA | Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recréation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Création organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Désactivation confirmation email dans Auth. |
+| 2026-02-23 | Agent IA | **Migration 00009** : Correction du trigger `handle_new_user()` : ajout politique RLS INSERT `Service role can insert profiles` (WITH CHECK true) sur `profiles`, recreation de la fonction avec `SET search_path = public` et `OWNER TO postgres` pour bypass RLS. Creation organisation `EAB-001`. Promotion `georgesbusiness54@gmail.com` en `admin_national`. Desactivation confirmation email dans Auth. |
 | 2026-02-22 | Système | Création initiale à partir des migrations 00001-00007 |
 
 ---
