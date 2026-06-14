@@ -149,8 +149,8 @@ BEGIN
         ', unit_count=' || v_unit_count::text
     );
 
-  DELETE FROM organizations WHERE id = v_org_id;
   DELETE FROM profiles WHERE id = v_user_id;
+  DELETE FROM organizations WHERE id = v_org_id;
   DELETE FROM auth.users WHERE id = v_user_id;
   PERFORM set_config('request.jwt.claim.sub', '', true);
 END $$;
