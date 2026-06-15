@@ -45,6 +45,7 @@ class ProfilUtilisateurCourantNotifier extends Notifier<ProfilUtilisateur?> {
   ProfilUtilisateur? build() => null;
 
   void setProfil(ProfilUtilisateur profil) {
+    if (state == profil) return;
     state = profil;
   }
 }
@@ -59,6 +60,7 @@ class AssembleeActiveNotifier extends Notifier<String?> {
   String? build() => null;
 
   void setAssemblee(String? id) {
+    if (state == id) return;
     state = id;
   }
 }
@@ -73,6 +75,7 @@ class ChurchUnitActiveNotifier extends Notifier<String?> {
   String? build() => null;
 
   void setChurchUnit(String? id) {
+    if (state == id) return;
     state = id;
   }
 }

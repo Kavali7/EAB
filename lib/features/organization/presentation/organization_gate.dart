@@ -26,7 +26,15 @@ class OrganizationGate extends ConsumerWidget {
         if (organization == null) {
           return const OrganizationOnboardingScreen();
         }
-        return child;
+        final branding = OrganisationBranding.fromOrganization(organization);
+        return Title(
+          title: branding.nom,
+          color: branding.couleurPrimaire,
+          child: Theme(
+            data: buildAppTheme(colorScheme: branding.toColorScheme()),
+            child: child,
+          ),
+        );
       },
       loading: () => const _GateScaffold(
         child: Center(child: SkeletonLoader(lineCount: 5, lineHeight: 22)),

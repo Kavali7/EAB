@@ -6,11 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
-import 'package:eab/features/church_units/application/church_units_provider.dart';
-import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/exercices/application/exercices_providers.dart';
 import 'package:eab/models/ecriture_comptable.dart';
-import 'package:eab/models/profil_utilisateur.dart';
 import 'package:eab/models/program.dart';
 import 'package:eab/providers/accounting_providers.dart';
 import 'package:eab/providers/church_structure_providers.dart';
@@ -32,25 +29,15 @@ class DashboardScreenV2 extends ConsumerWidget {
     final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
-    final profilCourant = ref.watch(profilUtilisateurCourantProvider);
-    final churchUnitsAsync = ref.watch(churchUnitsProvider);
-    final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
 
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
     final ecritures = ecrituresAsync.value ?? [];
-    final isContextResolving = _isContextResolving(
-      profilCourant: profilCourant,
-      churchUnitsAsync: churchUnitsAsync,
-      churchUnitActiveId: churchUnitActiveId,
-      assembleeActiveId: assembleeActiveId,
-    );
     final isLoading =
         membersAsync.isLoading ||
         programsAsync.isLoading ||
         ecrituresAsync.isLoading ||
-        assembleesAsync.isLoading ||
-        isContextResolving;
+        assembleesAsync.isLoading;
 
     final filteredMembers = assembleeActiveId == null
         ? members
@@ -102,11 +89,7 @@ class DashboardScreenV2 extends ConsumerWidget {
       title: 'Tableau de bord',
       currentRoute: '/',
       body:
-          isContextResolving ||
-              (isLoading &&
-                  members.isEmpty &&
-                  programs.isEmpty &&
-                  ecritures.isEmpty)
+          isLoading && members.isEmpty && programs.isEmpty && ecritures.isEmpty
           ? const Padding(
               padding: EdgeInsets.all(AppSpacing.pagePadding),
               child: SkeletonLoader(lineCount: 8, lineHeight: 24),
@@ -239,31 +222,6 @@ class DashboardScreenV2 extends ConsumerWidget {
               ),
             ),
     );
-  }
-
-  bool _isContextResolving({
-    required ProfilUtilisateur? profilCourant,
-    required AsyncValue<List<ChurchUnit>> churchUnitsAsync,
-    required String? churchUnitActiveId,
-    required String? assembleeActiveId,
-  }) {
-    if (profilCourant == null) return true;
-
-    final churchUnits = churchUnitsAsync.value ?? const <ChurchUnit>[];
-    if (churchUnitsAsync.isLoading && churchUnits.isEmpty) return true;
-    if (churchUnits.isEmpty) return false;
-    if (churchUnitActiveId == null) return true;
-
-    ChurchUnit? selectedUnit;
-    for (final unit in churchUnits) {
-      if (unit.id == churchUnitActiveId) {
-        selectedUnit = unit;
-        break;
-      }
-    }
-
-    if (selectedUnit == null) return true;
-    return selectedUnit.legacyAssembleeId != assembleeActiveId;
   }
 
   Map<String, int> _programDistribution(List<Program> programs) {
