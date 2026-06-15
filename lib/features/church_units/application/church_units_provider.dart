@@ -35,6 +35,13 @@ final churchUnitsProvider = FutureProvider<List<ChurchUnit>>((ref) async {
   return _legacyUnits(ref);
 });
 
+final churchUnitFinancialAccountsProvider =
+    FutureProvider<List<ChurchUnitFinancialAccount>>((ref) async {
+      final repository = ref.read(churchUnitsRepositoryProvider);
+      if (repository == null) return const [];
+      return repository.fetchFinancialAccounts();
+    });
+
 List<ChurchUnitType> _legacyTypes() {
   return const [
     ChurchUnitType(
@@ -46,6 +53,15 @@ List<ChurchUnitType> _legacyTypes() {
       isLocal: false,
       isFinancialScope: true,
       canHaveMembers: false,
+      canHaveCashAccounts: true,
+      canHaveBankAccounts: true,
+      canHaveMobileMoneyAccounts: true,
+      canCreatePrograms: true,
+      canLaunchContributions: true,
+      canValidateFinances: true,
+      canConsolidateFinances: true,
+      canNotifyDescendants: true,
+      canViewDescendants: true,
     ),
     ChurchUnitType(
       id: 'legacy_region',
@@ -56,6 +72,15 @@ List<ChurchUnitType> _legacyTypes() {
       isLocal: false,
       isFinancialScope: false,
       canHaveMembers: false,
+      canHaveCashAccounts: false,
+      canHaveBankAccounts: false,
+      canHaveMobileMoneyAccounts: false,
+      canCreatePrograms: true,
+      canLaunchContributions: true,
+      canValidateFinances: true,
+      canConsolidateFinances: true,
+      canNotifyDescendants: true,
+      canViewDescendants: true,
     ),
     ChurchUnitType(
       id: 'legacy_district',
@@ -66,6 +91,15 @@ List<ChurchUnitType> _legacyTypes() {
       isLocal: false,
       isFinancialScope: false,
       canHaveMembers: false,
+      canHaveCashAccounts: false,
+      canHaveBankAccounts: false,
+      canHaveMobileMoneyAccounts: false,
+      canCreatePrograms: true,
+      canLaunchContributions: true,
+      canValidateFinances: true,
+      canConsolidateFinances: true,
+      canNotifyDescendants: true,
+      canViewDescendants: true,
     ),
     ChurchUnitType(
       id: 'legacy_local_church',
@@ -76,6 +110,15 @@ List<ChurchUnitType> _legacyTypes() {
       isLocal: true,
       isFinancialScope: true,
       canHaveMembers: true,
+      canHaveCashAccounts: true,
+      canHaveBankAccounts: true,
+      canHaveMobileMoneyAccounts: true,
+      canCreatePrograms: true,
+      canLaunchContributions: true,
+      canValidateFinances: false,
+      canConsolidateFinances: false,
+      canNotifyDescendants: false,
+      canViewDescendants: true,
     ),
   ];
 }

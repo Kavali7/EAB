@@ -60,6 +60,15 @@ ChurchUnit _unit({
     isLocal: false,
     isFinancialScope: false,
     canHaveMembers: false,
+    canHaveCashAccounts: false,
+    canHaveBankAccounts: false,
+    canHaveMobileMoneyAccounts: false,
+    canCreatePrograms: false,
+    canLaunchContributions: false,
+    canValidateFinances: false,
+    canConsolidateFinances: false,
+    canNotifyDescendants: false,
+    canViewDescendants: true,
     active: active,
   );
 }

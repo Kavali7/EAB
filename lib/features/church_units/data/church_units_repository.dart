@@ -52,7 +52,16 @@ class ChurchUnitsRepository {
               level_order,
               is_local,
               is_financial_scope,
-              can_have_members
+              can_have_members,
+              can_have_cash_accounts,
+              can_have_bank_accounts,
+              can_have_mobile_money_accounts,
+              can_create_programs,
+              can_launch_contributions,
+              can_validate_finances,
+              can_consolidate_finances,
+              can_notify_descendants,
+              can_view_descendants
             )
           ''')
           .eq('active', true)
@@ -81,6 +90,15 @@ class ChurchUnitsRepository {
     required bool isLocal,
     required bool isFinancialScope,
     required bool canHaveMembers,
+    required bool canHaveCashAccounts,
+    required bool canHaveBankAccounts,
+    required bool canHaveMobileMoneyAccounts,
+    required bool canCreatePrograms,
+    required bool canLaunchContributions,
+    required bool canValidateFinances,
+    required bool canConsolidateFinances,
+    required bool canNotifyDescendants,
+    required bool canViewDescendants,
   }) async {
     await _dataService.client.from('church_unit_types').insert({
       'organization_id': organizationId,
@@ -90,6 +108,15 @@ class ChurchUnitsRepository {
       'is_local': isLocal,
       'is_financial_scope': isFinancialScope,
       'can_have_members': canHaveMembers,
+      'can_have_cash_accounts': canHaveCashAccounts,
+      'can_have_bank_accounts': canHaveBankAccounts,
+      'can_have_mobile_money_accounts': canHaveMobileMoneyAccounts,
+      'can_create_programs': canCreatePrograms,
+      'can_launch_contributions': canLaunchContributions,
+      'can_validate_finances': canValidateFinances,
+      'can_consolidate_finances': canConsolidateFinances,
+      'can_notify_descendants': canNotifyDescendants,
+      'can_view_descendants': canViewDescendants,
     });
   }
 
@@ -101,6 +128,15 @@ class ChurchUnitsRepository {
     required bool isLocal,
     required bool isFinancialScope,
     required bool canHaveMembers,
+    required bool canHaveCashAccounts,
+    required bool canHaveBankAccounts,
+    required bool canHaveMobileMoneyAccounts,
+    required bool canCreatePrograms,
+    required bool canLaunchContributions,
+    required bool canValidateFinances,
+    required bool canConsolidateFinances,
+    required bool canNotifyDescendants,
+    required bool canViewDescendants,
   }) async {
     await _dataService.client
         .from('church_unit_types')
@@ -111,6 +147,15 @@ class ChurchUnitsRepository {
           'is_local': isLocal,
           'is_financial_scope': isFinancialScope,
           'can_have_members': canHaveMembers,
+          'can_have_cash_accounts': canHaveCashAccounts,
+          'can_have_bank_accounts': canHaveBankAccounts,
+          'can_have_mobile_money_accounts': canHaveMobileMoneyAccounts,
+          'can_create_programs': canCreatePrograms,
+          'can_launch_contributions': canLaunchContributions,
+          'can_validate_finances': canValidateFinances,
+          'can_consolidate_finances': canConsolidateFinances,
+          'can_notify_descendants': canNotifyDescendants,
+          'can_view_descendants': canViewDescendants,
         })
         .eq('id', id);
   }
@@ -184,11 +229,94 @@ class ChurchUnitsRepository {
         .eq('id', id);
   }
 
+  Future<List<ChurchUnitFinancialAccount>> fetchFinancialAccounts() async {
+    try {
+      final response = await _dataService.client
+          .from('church_unit_financial_accounts')
+          .select()
+          .eq('active', true)
+          .order('type', ascending: true)
+          .order('label', ascending: true);
+
+      return (response as List)
+          .map(
+            (json) => ChurchUnitFinancialAccount.fromJson(
+              json as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+    } on PostgrestException catch (e) {
+      if (_isMissingFinancialAccountsSchema(e)) return const [];
+      rethrow;
+    }
+  }
+
+  Future<void> createFinancialAccount({
+    required String organizationId,
+    required String churchUnitId,
+    required String type,
+    required String label,
+    String? provider,
+    String? accountNumber,
+    String? phoneNumber,
+    String currency = 'FCFA',
+    double openingBalance = 0,
+  }) async {
+    await _dataService.client.from('church_unit_financial_accounts').insert({
+      'organization_id': organizationId,
+      'church_unit_id': churchUnitId,
+      'type': type,
+      'label': label,
+      'provider': _blankToNull(provider),
+      'account_number': _blankToNull(accountNumber),
+      'phone_number': _blankToNull(phoneNumber),
+      'currency': currency.trim().isEmpty ? 'FCFA' : currency.trim(),
+      'opening_balance': openingBalance,
+    });
+  }
+
+  Future<void> updateFinancialAccount({
+    required String id,
+    required String type,
+    required String label,
+    String? provider,
+    String? accountNumber,
+    String? phoneNumber,
+    String currency = 'FCFA',
+    double openingBalance = 0,
+  }) async {
+    await _dataService.client
+        .from('church_unit_financial_accounts')
+        .update({
+          'type': type,
+          'label': label,
+          'provider': _blankToNull(provider),
+          'account_number': _blankToNull(accountNumber),
+          'phone_number': _blankToNull(phoneNumber),
+          'currency': currency.trim().isEmpty ? 'FCFA' : currency.trim(),
+          'opening_balance': openingBalance,
+        })
+        .eq('id', id);
+  }
+
+  Future<void> archiveFinancialAccount(String id) async {
+    await _dataService.client
+        .from('church_unit_financial_accounts')
+        .update({'active': false})
+        .eq('id', id);
+  }
+
   bool _isMissingFlexibleSchema(PostgrestException e) {
     final message = e.message.toLowerCase();
     return e.code == '42P01' ||
         message.contains('church_units') ||
         message.contains('church_unit_types');
+  }
+
+  bool _isMissingFinancialAccountsSchema(PostgrestException e) {
+    final message = e.message.toLowerCase();
+    return e.code == '42P01' ||
+        message.contains('church_unit_financial_accounts');
   }
 
   String? _blankToNull(String? value) {

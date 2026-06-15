@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-15
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00028`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00029`
 
 ---
 
@@ -186,6 +186,15 @@
 | `is_local` | BOOLEAN | NON | `FALSE` | Indique une eglise locale |
 | `is_financial_scope` | BOOLEAN | NON | `FALSE` | Peut servir de perimetre comptable |
 | `can_have_members` | BOOLEAN | NON | `FALSE` | Peut contenir des fideles |
+| `can_have_cash_accounts` | BOOLEAN | NON | `FALSE` | Peut posseder une ou plusieurs caisses |
+| `can_have_bank_accounts` | BOOLEAN | NON | `FALSE` | Peut posseder un ou plusieurs comptes bancaires |
+| `can_have_mobile_money_accounts` | BOOLEAN | NON | `FALSE` | Peut posseder un ou plusieurs portefeuilles Mobile Money |
+| `can_create_programs` | BOOLEAN | NON | `TRUE` | Peut creer des programmes ou activites |
+| `can_launch_contributions` | BOOLEAN | NON | `TRUE` | Peut lancer cotisations, campagnes ou promesses |
+| `can_validate_finances` | BOOLEAN | NON | `FALSE` | Peut valider ou reviser des mouvements financiers |
+| `can_consolidate_finances` | BOOLEAN | NON | `FALSE` | Peut consolider les finances des niveaux inferieurs |
+| `can_notify_descendants` | BOOLEAN | NON | `FALSE` | Peut notifier les niveaux inferieurs |
+| `can_view_descendants` | BOOLEAN | NON | `TRUE` | Peut inclure les descendants dans son perimetre de consultation |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
@@ -241,7 +250,36 @@
 
 ---
 
-### 2.9 `organization_user_invitations`
+### 2.9 `church_unit_financial_accounts`
+
+> Comptes financiers attaches aux unites configurables : caisse, banque et Mobile Money. Cette table permet a chaque niveau autorise de posseder ses propres moyens financiers sans figer la structure autour de EAB.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | — | FK -> `organizations(id)` ON DELETE CASCADE |
+| `church_unit_id` | UUID | NON | — | FK -> `church_units(id)` ON DELETE CASCADE |
+| `type` | TEXT | NON | — | `cash`, `bank` ou `mobile_money` |
+| `label` | TEXT | NON | — | Libelle visible du compte |
+| `provider` | TEXT | OUI | — | Banque, Moov, MTN, Celtiis, etc. |
+| `account_number` | TEXT | OUI | — | Numero bancaire ou reference externe |
+| `phone_number` | TEXT | OUI | — | Numero associe au wallet Mobile Money |
+| `currency` | TEXT | NON | `'FCFA'` | Devise du compte |
+| `opening_balance` | DECIMAL(15,2) | NON | `0` | Solde initial de parametrage uniquement |
+| `journal_id` | UUID | OUI | — | FK -> `journaux_comptables(id)` ON DELETE SET NULL |
+| `comptable_account_id` | UUID | OUI | — | FK -> `comptes_comptables(id)` ON DELETE SET NULL |
+| `active` | BOOLEAN | NON | `TRUE` | Compte actif |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+| `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
+
+**RLS** : ✅ — **CHECK** : `type IN ('cash','bank','mobile_money')` — **UNIQUE partiel** : `(organization_id, church_unit_id, lower(label))` si `active = TRUE`.
+
+> Le trigger `enforce_church_unit_financial_account_capability()` refuse la creation d'un compte financier si le type du niveau (`church_unit_types`) n'autorise pas ce moyen. Les soldes vivants doivent etre calcules depuis les mouvements valides ; `opening_balance` sert seulement a initialiser le compte.
+
+---
+
+### 2.10 `organization_user_invitations`
 
 > Invitations de sous-comptes rattachees a une organisation et, optionnellement, a un perimetre `church_units`.
 
@@ -263,7 +301,7 @@
 
 ---
 
-### 2.10 `familles`
+### 2.11 `familles`
 
 > Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Ce champ est synchronise avec `id_assemblee_locale` quand l'unite flexible pointe vers une assemblee legacy.
@@ -286,7 +324,7 @@
 
 ---
 
-### 2.11 `membres`
+### 2.12 `membres`
 
 > Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_member_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -325,7 +363,7 @@
 
 ---
 
-### 2.12 `programmes`
+### 2.13 `programmes`
 
 > Migration `00021` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_program_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -868,6 +906,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_unit_user_scopes` | `organization_id` | `organizations(id)` | CASCADE |
 | `church_unit_user_scopes` | `user_id` | `profiles(id)` | CASCADE |
 | `church_unit_user_scopes` | `unit_id` | `church_units(id)` | CASCADE |
+| `church_unit_financial_accounts` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_unit_financial_accounts` | `church_unit_id` | `church_units(id)` | CASCADE |
+| `church_unit_financial_accounts` | `journal_id` | `journaux_comptables(id)` | SET NULL |
+| `church_unit_financial_accounts` | `comptable_account_id` | `comptes_comptables(id)` | SET NULL |
 | `districts_eglise` | `id_region` | `regions_eglise(id)` | CASCADE |
 | `assemblees_locales` | `id_district` | `districts_eglise(id)` | CASCADE |
 | `assemblees_locales` | `id_fidele_pasteur_responsable` | `membres(id)` | SET NULL |
@@ -895,6 +937,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_units` | CHECK | `parent_id IS NULL OR parent_id <> id` |
 | `church_units` | UNIQUE INDEX | `(organization_id, type_id, code)` si `code IS NOT NULL` |
 | `church_unit_user_scopes` | UNIQUE | `(user_id, unit_id, role)` |
+| `church_unit_financial_accounts` | CHECK | `type IN ('cash','bank','mobile_money')` |
+| `church_unit_financial_accounts` | CHECK | `length(trim(label)) > 0` et `length(trim(currency)) > 0` |
+| `church_unit_financial_accounts` | UNIQUE INDEX | `(organization_id, church_unit_id, lower(label))` si `active = TRUE` |
 | `organization_user_invitations` | UNIQUE INDEX | `(organization_id, email)` si invitation active |
 | `organization_user_invitations` | CHECK | `email = lower(trim(email))` et contient `@` |
 | `regions_eglise` | UNIQUE | `(organization_id, code)` |
@@ -945,6 +990,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_unit_types` | Même org | Admin national | Configuration niveaux |
 | `church_units` | Même org | Admin national | Hierarchie flexible |
 | `church_unit_user_scopes` | Même org | Admin national | Perimetres utilisateurs |
+| `church_unit_financial_accounts` | Org + `user_has_church_unit_access` | Admin national | Moyens financiers par unite |
 | `organization_user_invitations` | Admin national propre org | Admin national propre org | Sous-comptes |
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
@@ -1001,6 +1047,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
 | `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
+| `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `prefill_fiscal_dossier(UUID)` | plpgsql | DEFINER | Pré-remplit les champs du dossier fiscal depuis les écritures comptables via `fiscal_account_mapping` (sum_prefixes, balance_class, sum_accounts) |
 | `prefill_fiscal_dossier_from_import(UUID, UUID)` | plpgsql | DEFINER | Pré-remplit depuis une balance CSV importée (`imported_trial_balance_lines`) |
 | `validate_fiscal_dossier(UUID)` | plpgsql | DEFINER | Valide le dossier : champs requis, actif=passif, résultat=produits-charges, cohérence bilan/résultat. Passe statut `ready` si OK. |
@@ -1046,9 +1093,15 @@ Migration `00024` remplace `handle_new_user()` pour appliquer les invitations de
 - si l'email d'inscription correspond a une invitation active, le profil recoit `organization_id`, `role`, `primary_church_unit_id` et le perimetre `church_unit_user_scopes` ;
 - sinon, le comportement historique cree un profil `tresorier_assemblee` sans organisation.
 
+Migration `00029` ajoute :
+
+- `enforce_church_unit_financial_account_capability_trigger` sur `church_unit_financial_accounts`
+
+Ce trigger bloque toute caisse, banque ou Mobile Money si le type de l'unite ne l'autorise pas.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
-Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations` (21 tables).
+Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts` (22 tables).
 
 ### Triggers métier
 
@@ -1057,6 +1110,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` |
 | `check_ecriture_equilibree` | `lignes_ecritures` | AFTER INSERT/UPDATE/DELETE | `verify_ecriture_equilibree()` |
 | `protect_validated_ecritures` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `prevent_modification_validated_ecriture()` |
+| `enforce_church_unit_financial_account_capability_trigger` | `church_unit_financial_accounts` | BEFORE INSERT/UPDATE | `enforce_church_unit_financial_account_capability()` |
 | `audit_membres_trigger` | `membres` | AFTER INSERT/UPDATE/DELETE | `audit_membres()` |
 | `audit_ecritures_trigger` | `ecritures_comptables` | AFTER INSERT/UPDATE/DELETE | `audit_ecritures()` |
 
@@ -1085,6 +1139,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_church_units_legacy_region` | `church_units` | `legacy_region_id` WHERE NOT NULL |
 | `idx_church_units_legacy_district` | `church_units` | `legacy_district_id` WHERE NOT NULL |
 | `idx_church_units_legacy_assemblee` | `church_units` | `legacy_assemblee_id` WHERE NOT NULL |
+| `idx_church_unit_financial_accounts_*` | `church_unit_financial_accounts` | `organization_id`, `church_unit_id`, `type`, unique actif `(organization_id, church_unit_id, lower(label))` |
 | `idx_org_user_invitations_*` | `organization_user_invitations` | `organization_id`, `email`, `primary_church_unit_id`, unique actif `(organization_id, email)` |
 | `idx_regions_organization` | `regions_eglise` | `organization_id` |
 | `idx_regions_code` | `regions_eglise` | `(organization_id, code)` |
@@ -1199,6 +1254,7 @@ erDiagram
     church_unit_types ||--o{ church_units : "type"
     church_units ||--o{ church_units : "sous-unites"
     church_units ||--o{ church_unit_user_scopes : "perimetres"
+    church_units ||--o{ church_unit_financial_accounts : "comptes financiers"
     church_units ||--o{ organization_user_invitations : "perimetres invites"
     church_units ||--o{ ecritures_comptables : "ecritures"
     church_units ||--o{ budgets_comptables : "budgets"
@@ -1283,6 +1339,7 @@ supabase/migrations/00025_fix_user_invitation_legacy_scope.sql
 supabase/migrations/00026_organization_onboarding.sql
 supabase/migrations/00027_onboarding_completion_and_eab_demo.sql
 supabase/migrations/00028_ensure_storage_buckets.sql
+supabase/migrations/00029_church_unit_capabilities_financial_accounts.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1319,7 +1376,7 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage et `00029` pour les capacites/moyens financiers configurables.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1337,6 +1394,8 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 - Toute table metier doit rester rattachee a `organizations.id`.
 - Les nouveaux perimetres doivent passer par `church_units` et `church_unit_id`.
+- Les caisses, banques et portefeuilles Mobile Money doivent passer par `church_unit_financial_accounts`; leur type doit etre autorise par `church_unit_types`.
+- Les soldes financiers vivants doivent etre calcules depuis les mouvements valides, pas saisis directement dans `church_unit_financial_accounts.opening_balance`.
 - Les sous-comptes doivent passer par `organization_user_invitations` et `invite_user_to_org()`.
 - La creation d'une nouvelle eglise autonome doit passer par `create_organization_onboarding()`.
 - Les logos importes doivent etre stockes dans `organization-assets/{organization_id}/branding/`.
@@ -1347,6 +1406,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-15 | Agent IA | **Migration 00029** : Ajout des capacites configurables sur `church_unit_types` (membres, programmes, cotisations, finances, notifications, descendants) et de `church_unit_financial_accounts` pour rattacher caisses, banques et Mobile Money aux unites autorisees. |
 | 2026-06-15 | Agent IA | **Migration 00028** : Creation idempotente des buckets Supabase Storage (`member-photos`, `documents`, `organization-assets`) et recreation des politiques `storage.objects` pour rendre la duplication du backend executable depuis les migrations seules. |
 | 2026-06-15 | Agent IA | **Migration 00027** : Ajout du RPC `complete_organization_onboarding_steps(UUID, JSONB)` pour finaliser les etapes ignorees depuis les parametres, et correction de l'organisation demo EAB en `Église Apostolique du Bénin`. |
 | 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations, buckets Storage, tests de verification et branchement frontend. |

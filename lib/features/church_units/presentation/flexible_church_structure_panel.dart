@@ -15,6 +15,7 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unitsAsync = ref.watch(churchUnitsProvider);
     final typesAsync = ref.watch(churchUnitTypesProvider);
+    final accountsAsync = ref.watch(churchUnitFinancialAccountsProvider);
     final organization = ref.watch(currentOrganizationProvider).value;
     final repository = ref.watch(churchUnitsRepositoryProvider);
     final types = typesAsync.value ?? const <ChurchUnitType>[];
@@ -49,6 +50,9 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
         final financialScopes = units
             .where((unit) => unit.isFinancialScope)
             .length;
+        final accounts =
+            accountsAsync.value ?? const <ChurchUnitFinancialAccount>[];
+        final accountsByUnit = _financialAccountsByUnit(accounts);
 
         return SectionCard(
           title: 'Architecture configurable',
@@ -56,6 +60,7 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
             _MetricChip(label: 'Unites', value: units.length.toString()),
             _MetricChip(label: 'Locales', value: localCount.toString()),
             _MetricChip(label: 'Perimetres', value: financialScopes.toString()),
+            _MetricChip(label: 'Comptes', value: accounts.length.toString()),
             if (canEdit) ...[
               EabButton(
                 label: 'Niveaux',
@@ -103,6 +108,7 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
                           _UnitNode(
                             unit: root,
                             childrenByParent: childrenByParent,
+                            accountsByUnit: accountsByUnit,
                             depth: 0,
                             canEdit: canEdit,
                             onAddChild: (unit) => _openUnitDialog(
@@ -127,6 +133,16 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
                               unit: unit,
                               childrenByParent: childrenByParent,
                             ),
+                            onAddFinancialAccount: (unit, account) =>
+                                _openFinancialAccountDialog(
+                                  context,
+                                  ref,
+                                  organizationId: organization!.id,
+                                  unit: unit,
+                                  account: account,
+                                ),
+                            onArchiveFinancialAccount: (account) =>
+                                _archiveFinancialAccount(context, ref, account),
                           ),
                       ],
                     ),
@@ -149,6 +165,23 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
         final level = a.levelOrder.compareTo(b.levelOrder);
         if (level != 0) return level;
         return a.nom.toLowerCase().compareTo(b.nom.toLowerCase());
+      });
+    }
+    return map;
+  }
+
+  Map<String, List<ChurchUnitFinancialAccount>> _financialAccountsByUnit(
+    List<ChurchUnitFinancialAccount> accounts,
+  ) {
+    final map = <String, List<ChurchUnitFinancialAccount>>{};
+    for (final account in accounts) {
+      map.putIfAbsent(account.churchUnitId, () => []).add(account);
+    }
+    for (final unitAccounts in map.values) {
+      unitAccounts.sort((a, b) {
+        final type = a.type.compareTo(b.type);
+        if (type != 0) return type;
+        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
       });
     }
     return map;
@@ -232,6 +265,15 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
     var isLocal = type?.isLocal ?? false;
     var isFinancialScope = type?.isFinancialScope ?? false;
     var canHaveMembers = type?.canHaveMembers ?? false;
+    var canHaveCashAccounts = type?.canHaveCashAccounts ?? false;
+    var canHaveBankAccounts = type?.canHaveBankAccounts ?? false;
+    var canHaveMobileMoneyAccounts = type?.canHaveMobileMoneyAccounts ?? false;
+    var canCreatePrograms = type?.canCreatePrograms ?? true;
+    var canLaunchContributions = type?.canLaunchContributions ?? true;
+    var canValidateFinances = type?.canValidateFinances ?? false;
+    var canConsolidateFinances = type?.canConsolidateFinances ?? false;
+    var canNotifyDescendants = type?.canNotifyDescendants ?? false;
+    var canViewDescendants = type?.canViewDescendants ?? true;
 
     await EabDialog.show<void>(
       context,
@@ -268,26 +310,106 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
                       : null,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: isLocal,
-                  title: const Text('Eglise locale'),
-                  onChanged: (value) =>
-                      setDialogState(() => isLocal = value ?? false),
+                _CapabilityGroup(
+                  title: "Vie de l'eglise",
+                  children: [
+                    _CapabilityCheckbox(
+                      value: isLocal,
+                      title: 'Niveau local',
+                      onChanged: (value) =>
+                          setDialogState(() => isLocal = value),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canHaveMembers,
+                      title: 'Peut contenir des fideles',
+                      onChanged: (value) =>
+                          setDialogState(() => canHaveMembers = value),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canCreatePrograms,
+                      title: 'Peut creer des programmes',
+                      onChanged: (value) =>
+                          setDialogState(() => canCreatePrograms = value),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canLaunchContributions,
+                      title: 'Peut lancer cotisations/promesses',
+                      onChanged: (value) =>
+                          setDialogState(() => canLaunchContributions = value),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canNotifyDescendants,
+                      title: 'Peut notifier les sous-niveaux',
+                      onChanged: (value) =>
+                          setDialogState(() => canNotifyDescendants = value),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canViewDescendants,
+                      title: 'Peut voir les sous-niveaux',
+                      onChanged: (value) =>
+                          setDialogState(() => canViewDescendants = value),
+                    ),
+                  ],
                 ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: isFinancialScope,
-                  title: const Text('Perimetre comptable'),
-                  onChanged: (value) =>
-                      setDialogState(() => isFinancialScope = value ?? false),
-                ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: canHaveMembers,
-                  title: const Text('Peut contenir des fideles'),
-                  onChanged: (value) =>
-                      setDialogState(() => canHaveMembers = value ?? false),
+                const SizedBox(height: AppSpacing.sm),
+                _CapabilityGroup(
+                  title: 'Finances',
+                  children: [
+                    _CapabilityCheckbox(
+                      value: isFinancialScope,
+                      title: 'Perimetre financier/comptable',
+                      onChanged: (value) => setDialogState(() {
+                        isFinancialScope = value;
+                        if (!value) {
+                          canHaveCashAccounts = false;
+                          canHaveBankAccounts = false;
+                          canHaveMobileMoneyAccounts = false;
+                          canValidateFinances = false;
+                          canConsolidateFinances = false;
+                        }
+                      }),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canHaveCashAccounts,
+                      title: 'Peut avoir une caisse',
+                      onChanged: (value) => setDialogState(() {
+                        canHaveCashAccounts = value;
+                        if (value) isFinancialScope = true;
+                      }),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canHaveBankAccounts,
+                      title: 'Peut avoir une banque',
+                      onChanged: (value) => setDialogState(() {
+                        canHaveBankAccounts = value;
+                        if (value) isFinancialScope = true;
+                      }),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canHaveMobileMoneyAccounts,
+                      title: 'Peut avoir MoMo',
+                      onChanged: (value) => setDialogState(() {
+                        canHaveMobileMoneyAccounts = value;
+                        if (value) isFinancialScope = true;
+                      }),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canValidateFinances,
+                      title: 'Peut valider les finances',
+                      onChanged: (value) => setDialogState(() {
+                        canValidateFinances = value;
+                        if (value) isFinancialScope = true;
+                      }),
+                    ),
+                    _CapabilityCheckbox(
+                      value: canConsolidateFinances,
+                      title: 'Peut consolider',
+                      onChanged: (value) => setDialogState(() {
+                        canConsolidateFinances = value;
+                        if (value) isFinancialScope = true;
+                      }),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -314,6 +436,15 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
                   isLocal: isLocal,
                   isFinancialScope: isFinancialScope,
                   canHaveMembers: canHaveMembers,
+                  canHaveCashAccounts: canHaveCashAccounts,
+                  canHaveBankAccounts: canHaveBankAccounts,
+                  canHaveMobileMoneyAccounts: canHaveMobileMoneyAccounts,
+                  canCreatePrograms: canCreatePrograms,
+                  canLaunchContributions: canLaunchContributions,
+                  canValidateFinances: canValidateFinances,
+                  canConsolidateFinances: canConsolidateFinances,
+                  canNotifyDescendants: canNotifyDescendants,
+                  canViewDescendants: canViewDescendants,
                 );
               } else {
                 await repository.updateType(
@@ -324,6 +455,15 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
                   isLocal: isLocal,
                   isFinancialScope: isFinancialScope,
                   canHaveMembers: canHaveMembers,
+                  canHaveCashAccounts: canHaveCashAccounts,
+                  canHaveBankAccounts: canHaveBankAccounts,
+                  canHaveMobileMoneyAccounts: canHaveMobileMoneyAccounts,
+                  canCreatePrograms: canCreatePrograms,
+                  canLaunchContributions: canLaunchContributions,
+                  canValidateFinances: canValidateFinances,
+                  canConsolidateFinances: canConsolidateFinances,
+                  canNotifyDescendants: canNotifyDescendants,
+                  canViewDescendants: canViewDescendants,
                 );
               }
               ref.invalidate(churchUnitTypesProvider);
@@ -592,6 +732,225 @@ class FlexibleChurchStructurePanel extends ConsumerWidget {
     }
   }
 
+  Future<void> _openFinancialAccountDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required String organizationId,
+    required ChurchUnit unit,
+    ChurchUnitFinancialAccount? account,
+  }) async {
+    final repository = ref.read(churchUnitsRepositoryProvider);
+    if (repository == null) return;
+
+    final allowedTypes = _allowedFinancialAccountTypes(unit);
+    if (allowedTypes.isEmpty) {
+      context.showWarning(
+        "Ce niveau n'autorise pas encore caisse, banque ou mobile money.",
+      );
+      return;
+    }
+
+    final formKey = GlobalKey<FormState>();
+    var selectedType = account?.type;
+    if (selectedType == null || !allowedTypes.contains(selectedType)) {
+      selectedType = allowedTypes.first;
+    }
+    final labelCtrl = TextEditingController(text: account?.label ?? '');
+    final providerCtrl = TextEditingController(text: account?.provider ?? '');
+    final accountCtrl = TextEditingController(
+      text: account?.accountNumber ?? '',
+    );
+    final phoneCtrl = TextEditingController(text: account?.phoneNumber ?? '');
+    final currencyCtrl = TextEditingController(
+      text: account?.currency.isNotEmpty == true ? account!.currency : 'FCFA',
+    );
+    final openingBalanceCtrl = TextEditingController(
+      text: account == null || account.openingBalance == 0
+          ? ''
+          : account.openingBalance.toStringAsFixed(0),
+    );
+
+    await EabDialog.show<void>(
+      context,
+      title: account == null
+          ? 'Nouveau moyen financier'
+          : 'Modifier le moyen financier',
+      width: 560,
+      content: StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedType,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Type *'),
+                  items: [
+                    for (final type in allowedTypes)
+                      DropdownMenuItem(
+                        value: type,
+                        child: Text(_financialAccountTypeLabel(type)),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() => selectedType = value);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                EabTextField(
+                  label: 'Libelle *',
+                  controller: labelCtrl,
+                  helper: 'Ex: Caisse principale, MTN offrandes, Banque siege',
+                  validator: (value) =>
+                      _required(value, 'Le libelle est obligatoire.'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ResponsiveFormRow(
+                  children: [
+                    EabTextField(
+                      label: selectedType == 'bank'
+                          ? 'Banque'
+                          : selectedType == 'mobile_money'
+                          ? 'Operateur'
+                          : 'Gestionnaire',
+                      controller: providerCtrl,
+                      helper: selectedType == 'mobile_money'
+                          ? 'Moov, MTN, Celtiis, autre'
+                          : null,
+                    ),
+                    EabTextField(
+                      label: selectedType == 'mobile_money'
+                          ? 'Numero telephone'
+                          : 'Numero compte',
+                      controller: selectedType == 'mobile_money'
+                          ? phoneCtrl
+                          : accountCtrl,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ResponsiveFormRow(
+                  children: [
+                    EabTextField(label: 'Devise', controller: currencyCtrl),
+                    EabTextField(
+                      label: 'Solde initial',
+                      controller: openingBalanceCtrl,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        final clean = value?.trim() ?? '';
+                        if (clean.isEmpty) return null;
+                        return double.tryParse(clean.replaceAll(',', '.')) ==
+                                null
+                            ? 'Montant invalide.'
+                            : null;
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      actions: [
+        EabButton(
+          label: 'Annuler',
+          variant: EabButtonVariant.ghost,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        EabButton(
+          label: account == null ? 'Creer' : 'Enregistrer',
+          onPressed: () async {
+            if (!formKey.currentState!.validate()) return;
+            final openingBalance =
+                double.tryParse(
+                  openingBalanceCtrl.text.trim().replaceAll(',', '.'),
+                ) ??
+                0;
+            try {
+              if (account == null) {
+                await repository.createFinancialAccount(
+                  organizationId: organizationId,
+                  churchUnitId: unit.id,
+                  type: selectedType!,
+                  label: labelCtrl.text.trim(),
+                  provider: providerCtrl.text,
+                  accountNumber: accountCtrl.text,
+                  phoneNumber: phoneCtrl.text,
+                  currency: currencyCtrl.text,
+                  openingBalance: openingBalance,
+                );
+              } else {
+                await repository.updateFinancialAccount(
+                  id: account.id,
+                  type: selectedType!,
+                  label: labelCtrl.text.trim(),
+                  provider: providerCtrl.text,
+                  accountNumber: accountCtrl.text,
+                  phoneNumber: phoneCtrl.text,
+                  currency: currencyCtrl.text,
+                  openingBalance: openingBalance,
+                );
+              }
+              ref.invalidate(churchUnitFinancialAccountsProvider);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                context.showSuccess('Moyen financier enregistre.');
+              }
+            } catch (e) {
+              if (context.mounted) context.showError(e);
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _archiveFinancialAccount(
+    BuildContext context,
+    WidgetRef ref,
+    ChurchUnitFinancialAccount account,
+  ) async {
+    final repository = ref.read(churchUnitsRepositoryProvider);
+    if (repository == null) return;
+
+    final confirmed = await EabDialog.confirm(
+      context,
+      title: 'Archiver le moyen financier',
+      message: 'Archiver "${account.label}" ?',
+      confirmLabel: 'Archiver',
+      isDanger: true,
+    );
+    if (confirmed != true) return;
+
+    try {
+      await repository.archiveFinancialAccount(account.id);
+      ref.invalidate(churchUnitFinancialAccountsProvider);
+      if (context.mounted) context.showSuccess('Moyen financier archive.');
+    } catch (e) {
+      if (context.mounted) context.showError(e);
+    }
+  }
+
+  List<String> _allowedFinancialAccountTypes(ChurchUnit unit) {
+    return [
+      if (unit.canHaveCashAccounts) 'cash',
+      if (unit.canHaveBankAccounts) 'bank',
+      if (unit.canHaveMobileMoneyAccounts) 'mobile_money',
+    ];
+  }
+
+  String _financialAccountTypeLabel(String type) {
+    return switch (type) {
+      'bank' => 'Banque',
+      'mobile_money' => 'Mobile Money',
+      _ => 'Caisse',
+    };
+  }
+
   Set<String> _descendantIds(
     String unitId,
     Map<String?, List<ChurchUnit>> childrenByParent,
@@ -626,24 +985,32 @@ class _UnitNode extends StatelessWidget {
   const _UnitNode({
     required this.unit,
     required this.childrenByParent,
+    required this.accountsByUnit,
     required this.depth,
     required this.canEdit,
     required this.onAddChild,
     required this.onEdit,
     required this.onArchive,
+    required this.onAddFinancialAccount,
+    required this.onArchiveFinancialAccount,
   });
 
   final ChurchUnit unit;
   final Map<String?, List<ChurchUnit>> childrenByParent;
+  final Map<String, List<ChurchUnitFinancialAccount>> accountsByUnit;
   final int depth;
   final bool canEdit;
   final ValueChanged<ChurchUnit> onAddChild;
   final ValueChanged<ChurchUnit> onEdit;
   final ValueChanged<ChurchUnit> onArchive;
+  final void Function(ChurchUnit unit, ChurchUnitFinancialAccount? account)
+  onAddFinancialAccount;
+  final ValueChanged<ChurchUnitFinancialAccount> onArchiveFinancialAccount;
 
   @override
   Widget build(BuildContext context) {
     final children = childrenByParent[unit.id] ?? const <ChurchUnit>[];
+    final accounts = accountsByUnit[unit.id] ?? const [];
     final theme = Theme.of(context);
     final left = depth * 14.0;
 
@@ -685,6 +1052,10 @@ class _UnitNode extends StatelessWidget {
                             _LevelChip(label: unit.typeLabel),
                             if (unit.code != null && unit.code!.isNotEmpty)
                               _LevelChip(label: unit.code!),
+                            if (unit.canHaveMembers)
+                              const _LevelChip(label: 'Fideles'),
+                            if (unit.isFinancialScope)
+                              const _LevelChip(label: 'Finances'),
                           ],
                         ),
                         if (_subtitle.isNotEmpty) ...[
@@ -696,6 +1067,24 @@ class _UnitNode extends StatelessWidget {
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF64748B),
                             ),
+                          ),
+                        ],
+                        if (accounts.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final account in accounts)
+                                _FinancialAccountChip(
+                                  account: account,
+                                  canEdit: canEdit,
+                                  onEdit: () =>
+                                      onAddFinancialAccount(unit, account),
+                                  onArchive: () =>
+                                      onArchiveFinancialAccount(account),
+                                ),
+                            ],
                           ),
                         ],
                       ],
@@ -724,18 +1113,25 @@ class _UnitNode extends StatelessWidget {
                             onEdit(unit);
                           case 'archive':
                             onArchive(unit);
+                          case 'financial':
+                            onAddFinancialAccount(unit, null);
                         }
                       },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
                           value: 'add',
                           child: Text('Ajouter dessous'),
                         ),
-                        PopupMenuItem(
+                        if (unit.canHaveFinancialAccounts)
+                          const PopupMenuItem(
+                            value: 'financial',
+                            child: Text('Ajouter caisse/banque/MoMo'),
+                          ),
+                        const PopupMenuItem(
                           value: 'edit',
                           child: Text('Modifier / deplacer'),
                         ),
-                        PopupMenuItem(
+                        const PopupMenuItem(
                           value: 'archive',
                           child: Text('Archiver'),
                         ),
@@ -752,11 +1148,14 @@ class _UnitNode extends StatelessWidget {
               _UnitNode(
                 unit: child,
                 childrenByParent: childrenByParent,
+                accountsByUnit: accountsByUnit,
                 depth: depth + 1,
                 canEdit: canEdit,
                 onAddChild: onAddChild,
                 onEdit: onEdit,
                 onArchive: onArchive,
+                onAddFinancialAccount: onAddFinancialAccount,
+                onArchiveFinancialAccount: onArchiveFinancialAccount,
               ),
           ],
         ],
@@ -805,6 +1204,14 @@ class _TypeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final capabilities = [
+      if (type.canHaveMembers) 'Fideles',
+      if (type.canHaveCashAccounts) 'Caisse',
+      if (type.canHaveBankAccounts) 'Banque',
+      if (type.canHaveMobileMoneyAccounts) 'MoMo',
+      if (type.canValidateFinances) 'Validation',
+      if (type.canConsolidateFinances) 'Consolidation',
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: DecoratedBox(
@@ -814,7 +1221,15 @@ class _TypeTile extends StatelessWidget {
         ),
         child: ListTile(
           title: Text(type.label),
-          subtitle: Text('${type.code} | ordre ${type.levelOrder}'),
+          subtitle: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _LevelChip(label: '${type.code} | ordre ${type.levelOrder}'),
+              for (final capability in capabilities)
+                _LevelChip(label: capability),
+            ],
+          ),
           trailing: Wrap(
             spacing: 4,
             children: [
@@ -834,6 +1249,155 @@ class _TypeTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CapabilityGroup extends StatelessWidget {
+  const _CapabilityGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE1E7EC)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: const Color(0xFF0F4C5C),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CapabilityCheckbox extends StatelessWidget {
+  const _CapabilityCheckbox({
+    required this.value,
+    required this.title,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final String title;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      value: value,
+      title: Text(title),
+      onChanged: (value) => onChanged(value ?? false),
+    );
+  }
+}
+
+class _FinancialAccountChip extends StatelessWidget {
+  const _FinancialAccountChip({
+    required this.account,
+    required this.canEdit,
+    required this.onEdit,
+    required this.onArchive,
+  });
+
+  final ChurchUnitFinancialAccount account;
+  final bool canEdit;
+  final VoidCallback onEdit;
+  final VoidCallback onArchive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (account.type) {
+      'bank' => const Color(0xFF2563EB),
+      'mobile_money' => const Color(0xFF7C3AED),
+      _ => const Color(0xFF0F766E),
+    };
+    final details = [
+      account.typeLabel,
+      if (account.provider != null && account.provider!.trim().isNotEmpty)
+        account.provider!,
+      if (account.currency.trim().isNotEmpty) account.currency,
+    ].join(' - ');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_iconForType(account.type), size: 15, color: color),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                account.label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                details,
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          if (canEdit) ...[
+            const SizedBox(width: 4),
+            PopupMenuButton<String>(
+              tooltip: 'Actions moyen financier',
+              padding: EdgeInsets.zero,
+              iconSize: 16,
+              onSelected: (value) {
+                if (value == 'edit') onEdit();
+                if (value == 'archive') onArchive();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('Modifier')),
+                PopupMenuItem(value: 'archive', child: Text('Archiver')),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData _iconForType(String type) {
+    return switch (type) {
+      'bank' => Icons.account_balance_outlined,
+      'mobile_money' => Icons.phone_android_outlined,
+      _ => Icons.payments_outlined,
+    };
   }
 }
 
