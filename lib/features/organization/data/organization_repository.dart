@@ -105,6 +105,27 @@ class OrganizationRepository {
         .eq('id', orgId);
   }
 
+  /// Marque des etapes d'onboarding comme completees.
+  Future<void> completeOnboardingSteps({
+    required String orgId,
+    required List<String> completedSteps,
+  }) async {
+    if (completedSteps.isEmpty) return;
+
+    try {
+      await _dataService.client.rpc(
+        'complete_organization_onboarding_steps',
+        params: {'p_org_id': orgId, 'p_completed_steps': completedSteps},
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST202' ||
+          e.message.contains('complete_organization_onboarding_steps')) {
+        return;
+      }
+      rethrow;
+    }
+  }
+
   /// Invite un utilisateur par email.
   Future<void> inviteUser({
     required String orgId,

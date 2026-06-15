@@ -112,6 +112,10 @@ class _OrganizationSettingsScreenState
       );
       final repo = ref.read(organizationRepositoryProvider);
       await repo.updateOrganization(updated);
+      await repo.completeOnboardingSteps(
+        orgId: org.id,
+        completedSteps: _completedOnboardingStepsFromCurrentValues(),
+      );
       await ref.read(currentOrganizationProvider.notifier).refresh();
       if (mounted) context.showSuccess('Organisation mise a jour.');
     } catch (e) {
@@ -159,6 +163,10 @@ class _OrganizationSettingsScreenState
       );
 
       await repo.updateOrganizationLogo(orgId: org.id, logoUrl: logoUrl);
+      await repo.completeOnboardingSteps(
+        orgId: org.id,
+        completedSteps: const ['logo'],
+      );
       _logoUrlCtrl.text = logoUrl;
       await ref.read(currentOrganizationProvider.notifier).refresh();
 
@@ -271,6 +279,10 @@ class _OrganizationSettingsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (org.hasPendingOnboardingSteps) ...[
+                            _onboardingSection(org, compact: compact),
+                            const SizedBox(height: AppSpacing.cardGap),
+                          ],
                           _identitySection(org, compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
                           _themeSection(compact: compact),
@@ -375,6 +387,40 @@ class _OrganizationSettingsScreenState
                 Expanded(child: fields),
               ],
             ),
+    );
+  }
+
+  Widget _onboardingSection(Organization org, {required bool compact}) {
+    final pendingSteps = org.onboardingSkippedSteps;
+    return SectionCard(
+      title: 'Demarrage a terminer',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Ces points ont ete reportes pendant la creation. Ils seront marques comme termines quand les informations correspondantes seront enregistrees.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: pendingSteps
+                .map(
+                  (step) => _OnboardingStepCard(
+                    step: step,
+                    compact: compact,
+                    onOpenStructure: step == 'hierarchy_details'
+                        ? () => Navigator.of(context).pushNamed('/structure')
+                        : null,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -705,10 +751,31 @@ class _OrganizationSettingsScreenState
             label: label,
             controller: controller,
             onChanged: (_) => setState(() {}),
+            validator: _validateHexColor,
           ),
         ),
       ],
     );
+  }
+
+  List<String> _completedOnboardingStepsFromCurrentValues() {
+    final steps = <String>[];
+    if (_logoUrlCtrl.text.trim().isNotEmpty) {
+      steps.add('logo');
+    }
+    if (_isValidHexColor(_couleurPrimaireCtrl.text) &&
+        _isValidHexColor(_couleurSecondaireCtrl.text)) {
+      steps.add('colors');
+    }
+    if ([
+      _adresseCtrl.text,
+      _telCtrl.text,
+      _emailCtrl.text,
+      _siteCtrl.text,
+    ].any((value) => value.trim().isNotEmpty)) {
+      steps.add('contact');
+    }
+    return steps;
   }
 
   String _logoContentType(PickedLogoFile file) {
@@ -737,6 +804,117 @@ class _OrganizationSettingsScreenState
     } catch (_) {
       return fallback;
     }
+  }
+
+  String? _validateHexColor(String? value) {
+    if (_isValidHexColor(value)) return null;
+    return 'Format attendu : #123ABC';
+  }
+
+  bool _isValidHexColor(String? value) {
+    final clean = value?.trim();
+    if (clean == null || clean.isEmpty) return false;
+    return RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(clean);
+  }
+}
+
+class _OnboardingStepCard extends StatelessWidget {
+  const _OnboardingStepCard({
+    required this.step,
+    required this.compact,
+    this.onOpenStructure,
+  });
+
+  final String step;
+  final bool compact;
+  final VoidCallback? onOpenStructure;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final width = compact ? double.infinity : 286.0;
+    return SizedBox(
+      width: width,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 106),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.32),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(_iconForStep(step), size: 20, color: colorScheme.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _titleForStep(step),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              _descriptionForStep(step),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+            if (onOpenStructure != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              EabButton(
+                label: 'Ouvrir Structure',
+                icon: Icons.account_tree_outlined,
+                variant: EabButtonVariant.outline,
+                size: EabButtonSize.small,
+                onPressed: onOpenStructure,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForStep(String value) {
+    return switch (value) {
+      'logo' => Icons.image_outlined,
+      'colors' => Icons.palette_outlined,
+      'contact' => Icons.contact_mail_outlined,
+      'hierarchy_details' => Icons.account_tree_outlined,
+      _ => Icons.task_alt_outlined,
+    };
+  }
+
+  String _titleForStep(String value) {
+    return switch (value) {
+      'logo' => 'Logo',
+      'colors' => 'Couleurs',
+      'contact' => 'Contact',
+      'hierarchy_details' => 'Structure detaillee',
+      _ => value,
+    };
+  }
+
+  String _descriptionForStep(String value) {
+    return switch (value) {
+      'logo' => 'Importez le logo officiel depuis le bloc Identite.',
+      'colors' => 'Choisissez les couleurs principales du site.',
+      'contact' => 'Ajoutez adresse, telephone, email ou site web.',
+      'hierarchy_details' =>
+        'Ajoutez les niveaux et les unites depuis l ecran Structure.',
+      _ => 'Completez cette information dans les parametres.',
+    };
   }
 }
 

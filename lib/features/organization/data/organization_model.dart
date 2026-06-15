@@ -108,4 +108,40 @@ class Organization {
     final hex = couleurSecondaire!.replaceAll('#', '');
     return Color(int.parse('FF$hex', radix: 16));
   }
+
+  Map<String, dynamic> get onboarding {
+    final raw = parametres?['onboarding'];
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return const {};
+  }
+
+  List<String> get onboardingSkippedSteps {
+    final raw = onboarding['skipped_steps'];
+    if (raw is List) {
+      return raw
+          .map((step) => step.toString().trim())
+          .where((step) => step.isNotEmpty)
+          .toList(growable: false);
+    }
+    return const [];
+  }
+
+  List<String> get onboardingCompletedSteps {
+    final raw = onboarding['completed_steps'];
+    if (raw is List) {
+      return raw
+          .map((step) => step.toString().trim())
+          .where((step) => step.isNotEmpty)
+          .toList(growable: false);
+    }
+    return const [];
+  }
+
+  String? get onboardingStructureModel {
+    final value = onboarding['structure_model']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  bool get hasPendingOnboardingSteps => onboardingSkippedSteps.isNotEmpty;
 }

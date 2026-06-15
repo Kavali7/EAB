@@ -7,10 +7,10 @@
 > **DOIT être reflétée ici AVANT de commiter.**
 > Ne JAMAIS se fier uniquement aux fichiers de migration — ce document reflète l'état RÉEL.
 
-- **Projet** : EAB (Église–Administration–Budget)
+- **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-14
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00026`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00027`
 
 ---
 
@@ -1281,6 +1281,7 @@ supabase/migrations/00023_accounting_church_units.sql
 supabase/migrations/00024_user_invitations.sql
 supabase/migrations/00025_fix_user_invitation_legacy_scope.sql
 supabase/migrations/00026_organization_onboarding.sql
+supabase/migrations/00027_onboarding_completion_and_eab_demo.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1343,7 +1344,8 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
-| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00026`, buckets Storage, tests de verification et branchement frontend. |
+| 2026-06-15 | Agent IA | **Migration 00027** : Ajout du RPC `complete_organization_onboarding_steps(UUID, JSONB)` pour finaliser les etapes ignorees depuis les parametres, et correction de l'organisation demo EAB en `Église Apostolique du Bénin`. |
+| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00027`, buckets Storage, tests de verification et branchement frontend. |
 | 2026-06-14 | Agent IA | **Correction 00026** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
 | 2026-06-14 | Agent IA | **Migration 00026** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
 | 2026-06-14 | Agent IA | **Migration 00025** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |

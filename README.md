@@ -7,7 +7,7 @@
 
 ## 📋 Présentation
 
-**Gestion Eglise** est une application web personnalisable de gestion complete destinee aux organisations ecclesiastiques. Les donnees **EAB** sont conservees comme compte de demonstration pour montrer un cas multi-niveaux complet. Elle permet de gerer :
+**Gestion Eglise** est une application web personnalisable de gestion complete destinee aux organisations ecclesiastiques. Les donnees **EAB** (**Église Apostolique du Bénin**) sont conservees comme compte de demonstration pour montrer un cas multi-niveaux complet. Elle permet de gerer :
 
 - 🏛️ **Structure ecclesiastique** : eglise unique ou hierarchie configurable multi-niveaux
 - 👥 **Membres / Fidèles** : Informations personnelles, vie spirituelle, familles

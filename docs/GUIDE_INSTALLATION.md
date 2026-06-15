@@ -87,8 +87,9 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00024_user_invitations.sql`
    - `supabase/migrations/00025_fix_user_invitation_legacy_scope.sql`
    - `supabase/migrations/00026_organization_onboarding.sql`
+   - `supabase/migrations/00027_onboarding_completion_and_eab_demo.sql`
 
-   Les migrations `00018` a `00026` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, puis ajoutent l'onboarding de creation d'une eglise autonome. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+   Les migrations `00018` a `00027` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, puis permettent de finaliser les etapes ignorees depuis les parametres. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`

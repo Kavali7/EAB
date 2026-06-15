@@ -10,8 +10,8 @@
 -- ============================================================================
 
 INSERT INTO organizations (id, name, code, description) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'Église Assemblée de Dieu du Bénin', 'EAB-BENIN', 
-     'Organisation principale de démonstration pour le projet EAB');
+    ('00000000-0000-0000-0000-000000000001', 'Église Apostolique du Bénin', 'EAB-BENIN',
+     'Organisation principale de démonstration pour l''Église Apostolique du Bénin');
 
 -- ============================================================================
 -- STRUCTURE ECCLÉSIASTIQUE : RÉGIONS
