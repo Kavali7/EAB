@@ -2,23 +2,72 @@
 ///
 /// Ces tests ne nécessitent PAS Supabase (composants purs).
 library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:eab/features/organization/data/organization_model.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/section_card.dart';
 
 void main() {
+  group('Branding theme', () {
+    test('OrganisationBranding construit une palette personnalisee', () {
+      final branding = OrganisationBranding.fromOrganization(
+        const Organization(
+          id: 'org-test',
+          nom: 'Eglise Test',
+          sigle: 'ET',
+          couleurPrimaire: '#005B4F',
+          couleurSecondaire: '#FFC400',
+        ),
+      );
+
+      final scheme = branding.toColorScheme();
+
+      expect(scheme.primary, const Color(0xFF005B4F));
+      expect(scheme.secondary, const Color(0xFFFFC400));
+    });
+
+    testWidgets('EabButton utilise la couleur primaire du theme', (
+      tester,
+    ) async {
+      const customScheme = ColorScheme.light(
+        primary: Color(0xFF005B4F),
+        onPrimary: Colors.white,
+        secondary: Color(0xFFFFC400),
+        onSecondary: Colors.black,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(colorScheme: customScheme),
+          home: Scaffold(
+            body: EabButton(label: 'Tester', onPressed: () {}),
+          ),
+        ),
+      );
+
+      final buttonMaterial = find.descendant(
+        of: find.byType(EabButton),
+        matching: find.byType(Material),
+      );
+
+      expect(buttonMaterial, findsOneWidget);
+      expect(
+        tester.widget<Material>(buttonMaterial).color,
+        customScheme.primary,
+      );
+    });
+  });
+
   // ── EabButton ──
   group('EabButton', () {
     testWidgets('affiche le label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: EabButton(
-              label: 'Enregistrer',
-              onPressed: () {},
-            ),
+            body: EabButton(label: 'Enregistrer', onPressed: () {}),
           ),
         ),
       );
@@ -30,10 +79,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: EabButton(
-              label: 'Go',
-              onPressed: () => pressed = true,
-            ),
+            body: EabButton(label: 'Go', onPressed: () => pressed = true),
           ),
         ),
       );
@@ -146,9 +192,7 @@ void main() {
     testWidgets('affiche le nombre de lignes demandé', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SkeletonLoader(lineCount: 4, lineHeight: 16),
-          ),
+          home: Scaffold(body: SkeletonLoader(lineCount: 4, lineHeight: 16)),
         ),
       );
       // Le skeleton devrait créer 4 containers animés
@@ -163,10 +207,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SectionCard(
-              title: 'Détails',
-              child: Text('Contenu ici'),
-            ),
+            body: SectionCard(title: 'Détails', child: Text('Contenu ici')),
           ),
         ),
       );

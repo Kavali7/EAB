@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../core/product_branding.dart';
 import '../core/theme.dart';
 import '../providers/accounting_providers.dart';
 import '../providers/church_structure_providers.dart';
@@ -16,6 +15,7 @@ import '../features/organization/application/organization_providers.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
+import '../ui/theme/organisation_branding.dart';
 import '../screens/accounting/accounting_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen_v2.dart';
 import '../features/members/presentation/members_screen_v2.dart';
@@ -116,11 +116,17 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
 
   @override
   Widget build(BuildContext context) {
+    final branding = _isLoggedIn
+        ? OrganisationBranding.fromOrganization(
+            ref.watch(currentOrganizationProvider).value,
+          )
+        : OrganisationBranding.defaultBranding;
+
     return MaterialApp(
-      title: ProductBranding.appName,
+      title: branding.nom,
       debugShowCheckedModeBanner: false,
       navigatorKey: _navigatorKey,
-      theme: buildAppTheme(),
+      theme: buildAppTheme(colorScheme: branding.toColorScheme()),
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(
           child: child!,

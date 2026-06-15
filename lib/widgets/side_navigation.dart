@@ -15,9 +15,11 @@ class SideNavigation extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orgAsync = ref.watch(currentOrganizationProvider);
     final branding = OrganisationBranding.fromOrganization(orgAsync.value);
+    final colors = Theme.of(context).colorScheme;
+    final sidebarColor = Color.lerp(colors.primary, Colors.black, 0.42)!;
 
     return Container(
-      color: AppColors.sidebar,
+      color: sidebarColor,
       child: SafeArea(
         child: Column(
           children: [
@@ -216,24 +218,23 @@ class _BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logoUrl = branding.logoUrl;
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       width: 42,
       height: 42,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.secondary,
+        color: colors.secondary,
         borderRadius: AppRadius.mdAll,
       ),
       child: logoUrl == null
-          ? const Icon(Icons.church, color: AppColors.primaryDark, size: 24)
+          ? Icon(Icons.church, color: colors.onSecondary, size: 24)
           : Image.network(
               logoUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.church,
-                color: AppColors.primaryDark,
-                size: 24,
-              ),
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.church, color: colors.onSecondary, size: 24),
             ),
     );
   }
@@ -283,12 +284,14 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final color = selected ? Colors.white : const Color(0xFFD6E1E6);
+    final selectedBg = Color.lerp(colors.primary, Colors.black, 0.22)!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: selected ? const Color(0xFF164557) : Colors.transparent,
+        color: selected ? selectedBg : Colors.transparent,
         borderRadius: AppRadius.mdAll,
         child: InkWell(
           borderRadius: AppRadius.mdAll,
@@ -302,7 +305,7 @@ class _NavTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: AppRadius.mdAll,
               border: selected
-                  ? Border.all(color: const Color(0x334FC3D7))
+                  ? Border.all(color: colors.secondary.withValues(alpha: 0.45))
                   : Border.all(color: Colors.transparent),
             ),
             child: Row(
@@ -325,8 +328,8 @@ class _NavTile extends StatelessWidget {
                   Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
+                    decoration: BoxDecoration(
+                      color: colors.secondary,
                       shape: BoxShape.circle,
                     ),
                   ),

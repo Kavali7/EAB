@@ -221,7 +221,27 @@ class AppTextStyles {
 // THEME DATA
 // ══════════════════════════════════════════════════════════════
 
-ThemeData buildAppTheme() {
+ThemeData buildAppTheme({ColorScheme? colorScheme}) {
+  final colors =
+      (colorScheme ??
+              const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                secondary: AppColors.secondary,
+                onSecondary: AppColors.textPrimary,
+                surface: AppColors.surface,
+                onSurface: AppColors.textPrimary,
+                error: AppColors.error,
+                onError: Colors.white,
+                primaryContainer: AppColors.primaryLight,
+                secondaryContainer: AppColors.secondaryLight,
+              ))
+          .copyWith(
+            surface: AppColors.surface,
+            onSurface: AppColors.textPrimary,
+            error: AppColors.error,
+            onError: Colors.white,
+          );
   final textTheme = GoogleFonts.interTextTheme().apply(
     bodyColor: AppColors.textPrimary,
     displayColor: AppColors.textPrimary,
@@ -231,19 +251,8 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     brightness: Brightness.light,
     textTheme: textTheme,
-    colorScheme: const ColorScheme.light(
-      primary: AppColors.primary,
-      onPrimary: Colors.white,
-      secondary: AppColors.secondary,
-      onSecondary: AppColors.textPrimary,
-      surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
-      error: AppColors.error,
-      onError: Colors.white,
-      primaryContainer: AppColors.primaryLight,
-      secondaryContainer: AppColors.secondaryLight,
-    ),
-    primaryColor: AppColors.primary,
+    colorScheme: colors,
+    primaryColor: colors.primary,
     scaffoldBackgroundColor: AppColors.background,
 
     // ── AppBar ──
@@ -263,8 +272,8 @@ ThemeData buildAppTheme() {
 
     // ── FAB ──
     floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      backgroundColor: colors.primary,
+      foregroundColor: colors.onPrimary,
       elevation: AppElevation.medium,
       shape: RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
     ),
@@ -272,8 +281,8 @@ ThemeData buildAppTheme() {
     // ── Boutons ──
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -283,14 +292,14 @@ ThemeData buildAppTheme() {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: colors.primary,
         minimumSize: const Size(0, AppAccessibility.minTapTarget),
         textStyle: AppTextStyles.buttonText,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: colors.primary,
         side: const BorderSide(color: AppColors.border),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -308,7 +317,7 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: AppRadius.mdAll,
-        borderSide: const BorderSide(color: AppColors.borderFocus, width: 2),
+        borderSide: BorderSide(color: colors.primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: AppRadius.mdAll,
@@ -341,9 +350,9 @@ ThemeData buildAppTheme() {
 
     // ── TabBar ──
     tabBarTheme: TabBarThemeData(
-      labelColor: AppColors.primary,
+      labelColor: colors.primary,
       unselectedLabelColor: AppColors.textSecondary,
-      indicatorColor: AppColors.secondary,
+      indicatorColor: colors.secondary,
       labelStyle: AppTextStyles.subtitle,
       unselectedLabelStyle: AppTextStyles.body.copyWith(
         color: AppColors.textSecondary,
@@ -393,7 +402,7 @@ ThemeData buildAppTheme() {
     // ── Scrollbar ──
     scrollbarTheme: ScrollbarThemeData(
       thumbColor: WidgetStateProperty.all(
-        AppColors.primary.withValues(alpha: 0.4),
+        colors.primary.withValues(alpha: 0.4),
       ),
       radius: const Radius.circular(8),
       thickness: WidgetStateProperty.all(6.0),
