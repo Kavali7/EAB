@@ -4,6 +4,7 @@ import 'package:responsive_framework/responsive_framework.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/theme.dart';
+import '../core/utils/auth_callback_url_cleaner.dart';
 import '../providers/accounting_providers.dart';
 import '../providers/church_structure_providers.dart';
 import '../providers/families_provider.dart';
@@ -55,6 +56,9 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
   void initState() {
     super.initState();
     _isLoggedIn = Supabase.instance.client.auth.currentSession != null;
+    if (_isLoggedIn) {
+      cleanAuthCallbackUrl();
+    }
 
     // Écouter les changements d'état d'auth (login, logout, token refresh)
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -71,6 +75,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
           (route) => false,
         );
       } else if (event == AuthChangeEvent.signedIn && !_isLoggedIn) {
+        cleanAuthCallbackUrl();
         // Invalider TOUS les providers pour forcer le rechargement
         // avec la nouvelle session authentifiée
         _invalidateAllProviders();
@@ -81,6 +86,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
           (route) => false,
         );
       } else if (hasSession && !_isLoggedIn) {
+        cleanAuthCallbackUrl();
         // Fallback : si on a une session mais l'état dit non-connecté
         _invalidateAllProviders();
         setState(() => _isLoggedIn = true);
