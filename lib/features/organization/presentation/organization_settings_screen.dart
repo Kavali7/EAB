@@ -172,7 +172,7 @@ class _OrganizationSettingsScreenState
 
       if (mounted) context.showSuccess('Logo importe.');
     } catch (e) {
-      if (mounted) context.showError(e);
+      if (mounted) context.showError(_logoImportError(e));
     } finally {
       if (mounted) setState(() => _uploadingLogo = false);
     }
@@ -794,6 +794,51 @@ class _OrganizationSettingsScreenState
   String _formatLogoSize(int bytes) {
     final megaBytes = bytes / (1024 * 1024);
     return '${megaBytes.toStringAsFixed(0)} Mo';
+  }
+
+  AppException _logoImportError(Object error) {
+    final detail = error.toString();
+    final message = detail.toLowerCase();
+
+    if (message.contains('bucket') &&
+        (message.contains('not found') ||
+            message.contains('does not exist') ||
+            message.contains('introuvable'))) {
+      return const DataException(
+        'Le bucket Storage organization-assets est introuvable. Appliquez la migration 00028 ou creez ce bucket public dans Supabase.',
+      );
+    }
+
+    if (message.contains('row-level security') ||
+        message.contains('rls') ||
+        message.contains('unauthorized') ||
+        message.contains('403') ||
+        message.contains('permission denied')) {
+      return PermissionException(
+        'Import refuse par Supabase Storage. Verifiez que votre compte est admin national et que les politiques Storage sont appliquees.',
+        detail,
+      );
+    }
+
+    if (message.contains('payload too large') ||
+        message.contains('file size') ||
+        message.contains('too large')) {
+      return BusinessRuleException(
+        'Le logo ne doit pas depasser ${_formatLogoSize(_maxLogoBytes)}.',
+        technicalDetail: detail,
+      );
+    }
+
+    return UnknownException(
+      'Le logo n a pas pu etre importe. Detail : ${_compactErrorDetail(detail)}',
+      detail,
+    );
+  }
+
+  String _compactErrorDetail(String detail) {
+    final normalized = detail.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.length <= 110) return normalized;
+    return '${normalized.substring(0, 107)}...';
   }
 
   Color _parseColor(String hex, Color fallback) {

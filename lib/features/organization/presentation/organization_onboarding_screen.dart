@@ -411,7 +411,7 @@ class _OnboardingFormCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            Text('Mode de structure', style: AppTextStyles.subtitle),
+            Text('Organisation de l eglise', style: AppTextStyles.subtitle),
             const SizedBox(height: 10),
             if (compact)
               _StructureOptionList(
@@ -430,12 +430,12 @@ class _OnboardingFormCard extends StatelessWidget {
                   ButtonSegment(
                     value: 'two_level',
                     icon: Icon(Icons.account_tree_outlined),
-                    label: Text('Simple'),
+                    label: Text('Siege + locales'),
                   ),
                   ButtonSegment(
                     value: 'multi_level',
                     icon: Icon(Icons.hub_outlined),
-                    label: Text('Multi'),
+                    label: Text('Multi-niveaux'),
                   ),
                 ],
                 selected: {structureModel},
@@ -443,6 +443,8 @@ class _OnboardingFormCard extends StatelessWidget {
                     ? null
                     : (values) => onStructureChanged(values.first),
               ),
+            const SizedBox(height: 10),
+            _StructureModelHelp(value: structureModel),
             const SizedBox(height: 18),
             Text(
               'A terminer depuis les parametres',
@@ -527,6 +529,7 @@ class _StructureOptionList extends StatelessWidget {
           enabled: enabled,
           icon: Icons.church_outlined,
           title: 'Eglise unique',
+          subtitle: 'Une seule entite gere membres, activites et finances.',
           onChanged: onChanged,
         ),
         const SizedBox(height: 8),
@@ -536,6 +539,7 @@ class _StructureOptionList extends StatelessWidget {
           enabled: enabled,
           icon: Icons.account_tree_outlined,
           title: 'Siege + assemblee',
+          subtitle: 'Un siege controle une ou plusieurs eglises locales.',
           onChanged: onChanged,
         ),
         const SizedBox(height: 8),
@@ -545,6 +549,8 @@ class _StructureOptionList extends StatelessWidget {
           enabled: enabled,
           icon: Icons.hub_outlined,
           title: 'Multi-niveaux',
+          subtitle:
+              'Niveaux configurables ensuite : pays, region, district, section.',
           onChanged: onChanged,
         ),
       ],
@@ -559,6 +565,7 @@ class _StructureOption extends StatelessWidget {
     required this.enabled,
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.onChanged,
   });
 
@@ -567,6 +574,7 @@ class _StructureOption extends StatelessWidget {
   final bool enabled;
   final IconData icon;
   final String title;
+  final String subtitle;
   final ValueChanged<String> onChanged;
 
   @override
@@ -575,7 +583,7 @@ class _StructureOption extends StatelessWidget {
       onTap: enabled ? () => onChanged(value) : null,
       borderRadius: AppRadius.mdAll,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
+        constraints: const BoxConstraints(minHeight: 68),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
@@ -591,11 +599,27 @@ class _StructureOption extends StatelessWidget {
             Icon(icon, size: 19, color: AppColors.primary),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
             if (selected)
@@ -606,6 +630,32 @@ class _StructureOption extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StructureModelHelp extends StatelessWidget {
+  const _StructureModelHelp({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = switch (value) {
+      'two_level' =>
+        'Mode simple : une organisation au-dessus d une ou plusieurs eglises locales.',
+      'multi_level' =>
+        'Mode multi-niveaux : vous pourrez ajouter autant de niveaux que necessaire depuis Structure.',
+      _ =>
+        'Mode unique : une seule eglise, sans niveau intermediaire obligatoire.',
+    };
+
+    return Text(
+      text,
+      style: AppTextStyles.bodySmall.copyWith(
+        color: AppColors.textSecondary,
+        height: 1.35,
       ),
     );
   }

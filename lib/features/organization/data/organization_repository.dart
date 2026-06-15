@@ -67,10 +67,14 @@ class OrganizationRepository {
       ),
     );
 
-    await deleteOrganizationLogoFiles(
-      orgId: orgId,
-      exceptExtension: safeExtension,
-    );
+    try {
+      await deleteOrganizationLogoFiles(
+        orgId: orgId,
+        exceptExtension: safeExtension,
+      );
+    } catch (e) {
+      if (!_isIgnorableStorageCleanupError(e)) rethrow;
+    }
 
     final publicUrl = bucket.getPublicUrl(objectPath);
     return '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
@@ -186,5 +190,13 @@ class OrganizationRepository {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return null;
     return trimmed;
+  }
+
+  bool _isIgnorableStorageCleanupError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('not found') ||
+        message.contains('does not exist') ||
+        message.contains('resource was not found') ||
+        message.contains('object not found');
   }
 }

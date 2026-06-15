@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-14
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00027`
+- **Derniere mise a jour** : 2026-06-15
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00028`
 
 ---
 
@@ -1282,12 +1282,15 @@ supabase/migrations/00024_user_invitations.sql
 supabase/migrations/00025_fix_user_invitation_legacy_scope.sql
 supabase/migrations/00026_organization_onboarding.sql
 supabase/migrations/00027_onboarding_completion_and_eab_demo.sql
+supabase/migrations/00028_ensure_storage_buckets.sql
 ```
 
 ### Storage a creer dans Supabase
 
-La migration `00006_storage_buckets.sql` cree les politiques RLS, mais les
-buckets doivent exister dans Supabase Storage :
+La migration `00028_ensure_storage_buckets.sql` cree ou corrige
+automatiquement les buckets Storage indispensables. La migration `00006`
+conserve les politiques historiques, et `00028` les recree de facon
+idempotente pour les nouvelles bases.
 
 | Bucket | Visibilite | Obligatoire | Usage |
 | ------ | ---------- | ----------- | ----- |
@@ -1316,7 +1319,7 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations et creer les buckets Storage.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1344,8 +1347,9 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-15 | Agent IA | **Migration 00028** : Creation idempotente des buckets Supabase Storage (`member-photos`, `documents`, `organization-assets`) et recreation des politiques `storage.objects` pour rendre la duplication du backend executable depuis les migrations seules. |
 | 2026-06-15 | Agent IA | **Migration 00027** : Ajout du RPC `complete_organization_onboarding_steps(UUID, JSONB)` pour finaliser les etapes ignorees depuis les parametres, et correction de l'organisation demo EAB en `Église Apostolique du Bénin`. |
-| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations `00001` a `00027`, buckets Storage, tests de verification et branchement frontend. |
+| 2026-06-14 | Agent IA | **Reference backend** : Ajout de la procedure de reconstruction/deploiement pour dupliquer le backend sur une nouvelle base Supabase, avec ordre complet des migrations, buckets Storage, tests de verification et branchement frontend. |
 | 2026-06-14 | Agent IA | **Correction 00026** : Remplacement de `uuid_generate_v4()` par `gen_random_uuid()` dans l'onboarding progressif afin que le RPC fonctionne dans le contexte Supabase avec `search_path` restreint. |
 | 2026-06-14 | Agent IA | **Migration 00026** : Ajout de l'onboarding progressif `create_organization_onboarding()` pour creer une organisation autonome, initialiser sa hierarchie flexible minimale et rattacher le premier administrateur sans imposer logo, couleurs, contact ou niveaux detailles. |
 | 2026-06-14 | Agent IA | **Migration 00025** : Correction de `invite_user_to_org()` et `handle_new_user()` pour qualifier explicitement les colonnes legacy de `church_units` et eviter l'ambiguite PL/pgSQL lors des invitations de sous-comptes. |

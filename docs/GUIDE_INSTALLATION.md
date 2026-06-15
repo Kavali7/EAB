@@ -88,8 +88,9 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00025_fix_user_invitation_legacy_scope.sql`
    - `supabase/migrations/00026_organization_onboarding.sql`
    - `supabase/migrations/00027_onboarding_completion_and_eab_demo.sql`
+   - `supabase/migrations/00028_ensure_storage_buckets.sql`
 
-   Les migrations `00018` a `00027` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, puis permettent de finaliser les etapes ignorees depuis les parametres. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+   Les migrations `00018` a `00028` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, puis creent les buckets Storage indispensables. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`
@@ -107,9 +108,9 @@ supabase link --project-ref <votre-project-ref>
 supabase db push
 ```
 
-### 4. Créer les buckets Storage
+### 4. Vérifier les buckets Storage
 
-Dans Supabase, allez dans **Storage** et créez :
+La migration `00028_ensure_storage_buckets.sql` cree automatiquement :
 
 1. **member-photos** (privé)
    - Pour les photos des membres
@@ -119,6 +120,8 @@ Dans Supabase, allez dans **Storage** et créez :
 
 3. **organization-assets** (public)
    - Pour les logos et ressources publiques
+
+Si vous n'avez pas encore applique `00028`, creez ces buckets manuellement dans Supabase Storage avant de tester l'import de logo.
 
 ### 5. Configurer l'authentification
 
