@@ -93,8 +93,9 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00030_operational_financial_movements.sql`
    - `supabase/migrations/00031_hierarchical_permission_matrix.sql`
    - `supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql`
+   - `supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql`
 
-   Les migrations `00018` a `00032` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, ajoutent les capacites et moyens financiers configurables par unite, structurent les cotisations, promesses et mouvements financiers operationnels, ajoutent la matrice d'autorisations hierarchiques, puis l'appliquent aux membres/familles/programmes. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+   Les migrations `00018` a `00033` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, ajoutent les capacites et moyens financiers configurables par unite, structurent les cotisations, promesses et mouvements financiers operationnels, ajoutent la matrice d'autorisations hierarchiques, puis l'appliquent aux membres/familles/programmes, finances operationnelles et rapports mensuels. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`
@@ -197,6 +198,7 @@ Apres application des migrations, executer dans Supabase SQL Editor :
 - `supabase/tests/test_operational_financial_movements.sql`
 - `supabase/tests/test_hierarchical_permission_matrix.sql`
 - `supabase/tests/test_hierarchy_permissions_members_programs.sql`
+- `supabase/tests/test_hierarchy_permissions_finance_reports.sql`
 
 ---
 

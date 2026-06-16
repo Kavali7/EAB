@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-16
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00032`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00033`
 
 ---
 
@@ -1206,6 +1206,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_members_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `membres`, avec fallback legacy si `church_unit_id IS NULL` |
 | `user_can_access_families_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `familles`, avec fallback legacy si `church_unit_id IS NULL` |
 | `user_can_access_programs_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `programmes`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_financial_campaigns_scope(UUID, TEXT)` | BOOLEAN | Helper RLS pour `campagnes_financieres` |
+| `user_can_access_financial_pledges_scope(UUID, TEXT)` | BOOLEAN | Helper RLS pour `promesses_financieres` |
+| `user_can_access_financial_movements_scope(UUID, TEXT)` | BOOLEAN | Helper RLS pour `mouvements_financiers` |
+| `user_can_access_monthly_reports_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `rapports_mensuels_eab`, avec fallback legacy si `church_unit_id IS NULL` |
 
 ### Récapitulatif par table
 
@@ -1228,9 +1232,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `membres` | Org + `user_can_access_members_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `familles` | Org + `user_can_access_families_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `programmes` | Org + `user_can_access_programs_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
-| `campagnes_financieres` | Org + `user_has_church_unit_access` | Idem | Cotisations/promesses par unite |
-| `promesses_financieres` | Org + `user_has_church_unit_access` | Idem | Promesses par campagne |
-| `mouvements_financiers` | Org + `user_has_church_unit_access` | Idem | Encaissements/decaissements operationnels |
+| `campagnes_financieres` | Org + `user_can_access_financial_campaigns_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `promesses_financieres` | Org + `user_can_access_financial_pledges_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `mouvements_financiers` | Org + `user_can_access_financial_movements_scope(..., 'view_details')` | `create`, `update`, `validate`, `reject` via matrice | Workflow validation/rejet controle par trigger |
 | `comptes_comptables` | Même org | Admin seulement | Org simple |
 | `journaux_comptables` | Même org | Admin seulement | Org simple |
 | `centres_analytiques` | Même org | Admin seulement | Org simple + `church_unit_id` |
@@ -1240,7 +1244,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `budgets_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `lignes_budgets` | Via parent `budgets_comptables` | Idem | Herite hybride |
 | `immobilisations_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `rapports_mensuels_eab` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `rapports_mensuels_eab` | Org + `user_can_access_monthly_reports_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `releves_bancaires` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
 | `exercices_comptables` | Même org | Admin seulement | Org simple |
 | `sequences_pieces` | Même org | Même org (système) | Org simple |
@@ -1290,6 +1294,12 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_members_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `membres` |
 | `user_can_access_families_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `familles` |
 | `user_can_access_programs_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `programmes` |
+| `ensure_extended_church_permission_rules(UUID)` | plpgsql | DEFINER | Complete les regles de matrice ajoutees apres `00031`, notamment rapports mensuels validation/consolidation/export |
+| `user_can_access_financial_campaigns_scope(UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `campagnes_financieres` |
+| `user_can_access_financial_pledges_scope(UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `promesses_financieres` |
+| `user_can_access_financial_movements_scope(UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `mouvements_financiers` |
+| `user_can_access_monthly_reports_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `rapports_mensuels_eab` |
+| `enforce_financial_movement_workflow_permission()` | plpgsql | — | Bloque validation/rejet de mouvement financier si l'action matrice n'est pas autorisee |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `enforce_financial_campaign_scope()` | plpgsql | — | Verifie qu'une campagne reste dans une organisation/unite autorisee |
@@ -1365,6 +1375,12 @@ Migration `00031` ajoute :
 
 Ces triggers maintiennent la matrice d'autorisations coherente avec l'organisation, la hierarchie et les niveaux configurables.
 
+Migration `00033` ajoute :
+
+- `enforce_financial_movement_workflow_permission_trigger` sur `mouvements_financiers`
+
+Ce trigger impose les actions matrice `validate` et `reject` lors des changements de statut des mouvements financiers.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
@@ -1380,6 +1396,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `enforce_financial_campaign_scope_trigger` | `campagnes_financieres` | BEFORE INSERT/UPDATE | `enforce_financial_campaign_scope()` |
 | `enforce_financial_pledge_scope_trigger` | `promesses_financieres` | BEFORE INSERT/UPDATE | `enforce_financial_pledge_scope()` |
 | `enforce_financial_movement_scope_trigger` | `mouvements_financiers` | BEFORE INSERT/UPDATE | `enforce_financial_movement_scope()` |
+| `enforce_financial_movement_workflow_permission_trigger` | `mouvements_financiers` | BEFORE UPDATE | `enforce_financial_movement_workflow_permission()` |
 | `refresh_financial_pledge_status_after_movement` | `mouvements_financiers` | AFTER INSERT/UPDATE/DELETE | `refresh_financial_pledge_status_trigger()` |
 | `validate_church_hierarchy_permission_rule_trigger` | `church_hierarchy_permission_rules` | BEFORE INSERT/UPDATE | `validate_church_hierarchy_permission_rule()` |
 | `validate_church_unit_permission_override_trigger` | `church_unit_permission_overrides` | BEFORE INSERT/UPDATE | `validate_church_unit_permission_override()` |
@@ -1644,6 +1661,7 @@ supabase/migrations/00029_church_unit_capabilities_financial_accounts.sql
 supabase/migrations/00030_operational_financial_movements.sql
 supabase/migrations/00031_hierarchical_permission_matrix.sql
 supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql
+supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1679,11 +1697,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_operational_financial_movements.sql` | 4 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchical_permission_matrix.sql` | 5 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_members_programs.sql` | 7 lignes avec `ok = true` |
+| `supabase/tests/test_hierarchy_permissions_finance_reports.sql` | 9 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques et `00032` pour l'application de cette matrice aux membres/familles/programmes.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes et `00033` pour finances operationnelles/rapports mensuels.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1710,6 +1729,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les logos importes doivent etre stockes dans `organization-assets/{organization_id}/branding/`.
 - Les droits superieur -> inferieur doivent passer par `church_hierarchy_permission_rules`, `church_unit_permission_overrides` et les RPCs de la migration `00031`.
 - Les acces descendants aux lignes `membres`, `familles` et `programmes` doivent passer par les helpers RLS granulaires de `00032`; `user_has_church_unit_access(UUID)` reste un acces structurel general, pas une autorisation metier suffisante.
+- Les acces descendants aux finances operationnelles et aux rapports mensuels doivent passer par les helpers RLS granulaires de `00033`; la validation/rejet des mouvements financiers est aussi controlee par trigger.
 
 ---
 
@@ -1717,6 +1737,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-16 | Agent IA | **Migration 00033** : Application effective de la matrice d'autorisations hierarchiques aux RLS `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` et `rapports_mensuels_eab`. Ajout des helpers RLS finances/rapports, extension des regles rapports mensuels `validate/reject/consolidate/export`, trigger de workflow pour validation/rejet des mouvements, et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00032** : Application effective de la matrice d'autorisations hierarchiques aux RLS `membres`, `familles` et `programmes`. Ajout des helpers `user_has_direct_church_unit_access`, `user_has_church_unit_action_permission`, `user_can_access_*_scope`, conservation de l'acces direct et fallback legacy uniquement si `church_unit_id IS NULL`, avec test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00031** : Ajout de la matrice d'autorisations hierarchiques (`church_permission_domains`, `church_permission_actions`, `church_hierarchy_permission_rules`, `church_unit_permission_overrides`) avec catalogues par organisation, regles superieur -> inferieur, exceptions par unite, acceptation optionnelle du niveau inferieur et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00030** : Ajout de la couche finance operationnelle (`campagnes_financieres`, `promesses_financieres`, `mouvements_financiers`) pour cotisations, promesses, encaissements/decaissements simples, rattaches aux unites et aux comptes financiers, avec vue `v_campagnes_financieres_resume` et test SQL E2E. |
