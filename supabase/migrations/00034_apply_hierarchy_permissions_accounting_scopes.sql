@@ -158,6 +158,41 @@ AS $$
     );
 $$;
 
+CREATE OR REPLACE FUNCTION prevent_modification_validated_ecriture()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.statut IN ('validee', 'cloturee') THEN
+      RAISE EXCEPTION
+        'Impossible de supprimer une ecriture validee ou cloturee';
+    END IF;
+
+    RETURN OLD;
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND OLD.statut IN ('validee', 'cloturee') THEN
+    -- Allow only changing status from validee to cloturee.
+    IF NEW.statut = OLD.statut
+       OR (OLD.statut = 'validee' AND NEW.statut = 'cloturee') THEN
+      IF NEW.date != OLD.date
+         OR NEW.id_journal != OLD.id_journal
+         OR NEW.libelle != OLD.libelle
+         OR NEW.reference_piece != OLD.reference_piece THEN
+        RAISE EXCEPTION
+          'Impossible de modifier une ecriture validee ou cloturee';
+      END IF;
+    ELSE
+      RAISE EXCEPTION
+        'Impossible de modifier le statut d''une ecriture cloturee';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION enforce_accounting_entry_workflow_permission()
 RETURNS TRIGGER
 LANGUAGE plpgsql
