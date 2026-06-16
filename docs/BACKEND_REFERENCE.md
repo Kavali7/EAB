@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-16
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00033`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00034`
 
 ---
 
@@ -1210,6 +1210,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_financial_pledges_scope(UUID, TEXT)` | BOOLEAN | Helper RLS pour `promesses_financieres` |
 | `user_can_access_financial_movements_scope(UUID, TEXT)` | BOOLEAN | Helper RLS pour `mouvements_financiers` |
 | `user_can_access_monthly_reports_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `rapports_mensuels_eab`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_accounting_references_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `centres_analytiques` et `tiers`, avec lecture des references globales |
+| `user_can_access_accounting_entries_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `ecritures_comptables` et `lignes_ecritures`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_accounting_budgets_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `budgets_comptables` et `lignes_budgets`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_accounting_assets_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `immobilisations_comptables`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `releves_bancaires`, avec fallback legacy si `church_unit_id IS NULL` |
 
 ### Récapitulatif par table
 
@@ -1237,15 +1242,15 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `mouvements_financiers` | Org + `user_can_access_financial_movements_scope(..., 'view_details')` | `create`, `update`, `validate`, `reject` via matrice | Workflow validation/rejet controle par trigger |
 | `comptes_comptables` | Même org | Admin seulement | Org simple |
 | `journaux_comptables` | Même org | Admin seulement | Org simple |
-| `centres_analytiques` | Même org | Admin seulement | Org simple + `church_unit_id` |
-| `tiers` | Org + `user_has_church_unit_access` / assemblee legacy (+NULL) | Idem | Acces hybride unite/assemblee |
-| `ecritures_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `lignes_ecritures` | Via parent `ecritures_comptables` | Idem | Herite hybride |
-| `budgets_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `lignes_budgets` | Via parent `budgets_comptables` | Idem | Herite hybride |
-| `immobilisations_comptables` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `centres_analytiques` | Org + `user_can_access_accounting_references_scope(..., 'view_details')` | `create` / `update` via matrice | References globales lisibles, references par unite controlees |
+| `tiers` | Org + `user_can_access_accounting_references_scope(..., 'view_details')` | `create` / `update` via matrice | References globales lisibles, references par unite controlees |
+| `ecritures_comptables` | Org + `user_can_access_accounting_entries_scope(..., 'view_details')` | `create`, `update`, `validate`, `consolidate` via matrice | Validation/cloture controlees par trigger |
+| `lignes_ecritures` | Via parent `ecritures_comptables` | Herite `create` / `update` du parent | Herite de la matrice des ecritures |
+| `budgets_comptables` | Org + `user_can_access_accounting_budgets_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `lignes_budgets` | Via parent `budgets_comptables` | Herite `create` / `update` du parent | Herite de la matrice des budgets |
+| `immobilisations_comptables` | Org + `user_can_access_accounting_assets_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `rapports_mensuels_eab` | Org + `user_can_access_monthly_reports_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
-| `releves_bancaires` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `releves_bancaires` | Org + `user_can_access_bank_reconciliation_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `exercices_comptables` | Même org | Admin seulement | Org simple |
 | `sequences_pieces` | Même org | Même org (système) | Org simple |
 | `audit_logs` | Admin national seulement | — | Lecture seule |
@@ -1300,6 +1305,12 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_financial_movements_scope(UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `mouvements_financiers` |
 | `user_can_access_monthly_reports_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `rapports_mensuels_eab` |
 | `enforce_financial_movement_workflow_permission()` | plpgsql | — | Bloque validation/rejet de mouvement financier si l'action matrice n'est pas autorisee |
+| `user_can_access_accounting_references_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `centres_analytiques` et `tiers` |
+| `user_can_access_accounting_entries_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `ecritures_comptables` et `lignes_ecritures` |
+| `user_can_access_accounting_budgets_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `budgets_comptables` et `lignes_budgets` |
+| `user_can_access_accounting_assets_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `immobilisations_comptables` |
+| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `releves_bancaires` |
+| `enforce_accounting_entry_workflow_permission()` | plpgsql | — | Bloque validation/cloture d'ecriture si l'action matrice n'est pas autorisee et refuse la validation directe d'une ecriture desequilibree |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `enforce_financial_campaign_scope()` | plpgsql | — | Verifie qu'une campagne reste dans une organisation/unite autorisee |
@@ -1381,6 +1392,12 @@ Migration `00033` ajoute :
 
 Ce trigger impose les actions matrice `validate` et `reject` lors des changements de statut des mouvements financiers.
 
+Migration `00034` ajoute :
+
+- `enforce_accounting_entry_workflow_permission_trigger` sur `ecritures_comptables`
+
+Ce trigger impose les actions matrice `validate` et `consolidate` lors des changements de statut des ecritures comptables. Il refuse aussi une validation directe si les lignes debit/credit sont absentes ou desequilibrees.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
@@ -1397,6 +1414,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `enforce_financial_pledge_scope_trigger` | `promesses_financieres` | BEFORE INSERT/UPDATE | `enforce_financial_pledge_scope()` |
 | `enforce_financial_movement_scope_trigger` | `mouvements_financiers` | BEFORE INSERT/UPDATE | `enforce_financial_movement_scope()` |
 | `enforce_financial_movement_workflow_permission_trigger` | `mouvements_financiers` | BEFORE UPDATE | `enforce_financial_movement_workflow_permission()` |
+| `enforce_accounting_entry_workflow_permission_trigger` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `enforce_accounting_entry_workflow_permission()` |
 | `refresh_financial_pledge_status_after_movement` | `mouvements_financiers` | AFTER INSERT/UPDATE/DELETE | `refresh_financial_pledge_status_trigger()` |
 | `validate_church_hierarchy_permission_rule_trigger` | `church_hierarchy_permission_rules` | BEFORE INSERT/UPDATE | `validate_church_hierarchy_permission_rule()` |
 | `validate_church_unit_permission_override_trigger` | `church_unit_permission_overrides` | BEFORE INSERT/UPDATE | `validate_church_unit_permission_override()` |
@@ -1662,6 +1680,7 @@ supabase/migrations/00030_operational_financial_movements.sql
 supabase/migrations/00031_hierarchical_permission_matrix.sql
 supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql
 supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql
+supabase/migrations/00034_apply_hierarchy_permissions_accounting_scopes.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1698,11 +1717,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchical_permission_matrix.sql` | 5 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_members_programs.sql` | 7 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_finance_reports.sql` | 9 lignes avec `ok = true` |
+| `supabase/tests/test_hierarchy_permissions_accounting_scopes.sql` | 11 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes et `00033` pour finances operationnelles/rapports mensuels.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels et `00034` pour les perimetres comptables.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1730,6 +1750,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les droits superieur -> inferieur doivent passer par `church_hierarchy_permission_rules`, `church_unit_permission_overrides` et les RPCs de la migration `00031`.
 - Les acces descendants aux lignes `membres`, `familles` et `programmes` doivent passer par les helpers RLS granulaires de `00032`; `user_has_church_unit_access(UUID)` reste un acces structurel general, pas une autorisation metier suffisante.
 - Les acces descendants aux finances operationnelles et aux rapports mensuels doivent passer par les helpers RLS granulaires de `00033`; la validation/rejet des mouvements financiers est aussi controlee par trigger.
+- Les acces descendants aux references comptables, ecritures, budgets, immobilisations et releves doivent passer par les helpers RLS granulaires de `00034`; la validation/cloture des ecritures est aussi controlee par trigger.
 
 ---
 
@@ -1737,6 +1758,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-16 | Agent IA | **Migration 00034** : Application effective de la matrice d'autorisations hierarchiques aux RLS `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables` et `releves_bancaires`. Ajout des helpers RLS comptables, trigger de workflow pour validation/cloture des ecritures et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00033** : Application effective de la matrice d'autorisations hierarchiques aux RLS `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` et `rapports_mensuels_eab`. Ajout des helpers RLS finances/rapports, extension des regles rapports mensuels `validate/reject/consolidate/export`, trigger de workflow pour validation/rejet des mouvements, et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00032** : Application effective de la matrice d'autorisations hierarchiques aux RLS `membres`, `familles` et `programmes`. Ajout des helpers `user_has_direct_church_unit_access`, `user_has_church_unit_action_permission`, `user_can_access_*_scope`, conservation de l'acces direct et fallback legacy uniquement si `church_unit_id IS NULL`, avec test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00031** : Ajout de la matrice d'autorisations hierarchiques (`church_permission_domains`, `church_permission_actions`, `church_hierarchy_permission_rules`, `church_unit_permission_overrides`) avec catalogues par organisation, regles superieur -> inferieur, exceptions par unite, acceptation optionnelle du niveau inferieur et test SQL E2E. |
