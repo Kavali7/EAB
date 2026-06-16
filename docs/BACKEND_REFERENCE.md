@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-16
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00031`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00032`
 
 ---
 
@@ -1201,6 +1201,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_has_assemblee_access(UUID)` | BOOLEAN | Vérifie accès à une assemblée |
 | `is_church_unit_ancestor(UUID, UUID)` | BOOLEAN | Verifie qu'une unite est ancetre d'une autre |
 | `get_church_hierarchy_permission(UUID, UUID, TEXT, TEXT)` | BOOLEAN | Calcule l'autorisation effective superieur -> inferieur |
+| `user_has_direct_church_unit_access(UUID)` | BOOLEAN | Verifie l'acces direct au perimetre propre ou explicitement rattache |
+| `user_has_church_unit_action_permission(UUID, TEXT, TEXT)` | BOOLEAN | Verifie une action metier sur une unite, en appliquant la matrice si l'unite est descendante |
+| `user_can_access_members_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `membres`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_families_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `familles`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_programs_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `programmes`, avec fallback legacy si `church_unit_id IS NULL` |
 
 ### Récapitulatif par table
 
@@ -1220,9 +1225,9 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
 | `assemblees_locales` | Même org | Admin / Resp. / Surint. / Trés. | Hiérarchique |
-| `membres` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `familles` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
-| `programmes` | Org + `user_has_church_unit_access` / assemblee legacy | Idem | Acces hybride unite/assemblee |
+| `membres` | Org + `user_can_access_members_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `familles` | Org + `user_can_access_families_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `programmes` | Org + `user_can_access_programs_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `campagnes_financieres` | Org + `user_has_church_unit_access` | Idem | Cotisations/promesses par unite |
 | `promesses_financieres` | Org + `user_has_church_unit_access` | Idem | Promesses par campagne |
 | `mouvements_financiers` | Org + `user_has_church_unit_access` | Idem | Encaissements/decaissements operationnels |
@@ -1280,6 +1285,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `set_church_unit_permission_override(UUID, UUID, TEXT, TEXT, BOOLEAN, BOOLEAN, TEXT)` | plpgsql | DEFINER | Cree ou met a jour une exception concrete entre deux unites |
 | `respond_church_unit_permission_override(UUID, BOOLEAN, TEXT)` | plpgsql | DEFINER | Accepte ou rejette une exception qui exige l'accord du niveau inferieur |
 | `get_effective_church_unit_permissions(UUID, UUID)` | SQL | DEFINER STABLE | Liste la matrice effective entre deux unites pour l'interface de parametrage |
+| `user_has_direct_church_unit_access(UUID)` | plpgsql | DEFINER STABLE | Verifie l'acces direct au perimetre propre ou explicitement rattache |
+| `user_has_church_unit_action_permission(UUID, TEXT, TEXT)` | plpgsql | DEFINER STABLE | Applique la matrice superieur -> inferieur a une action metier |
+| `user_can_access_members_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `membres` |
+| `user_can_access_families_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `familles` |
+| `user_can_access_programs_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `programmes` |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `enforce_financial_campaign_scope()` | plpgsql | — | Verifie qu'une campagne reste dans une organisation/unite autorisee |
@@ -1633,6 +1643,7 @@ supabase/migrations/00028_ensure_storage_buckets.sql
 supabase/migrations/00029_church_unit_capabilities_financial_accounts.sql
 supabase/migrations/00030_operational_financial_movements.sql
 supabase/migrations/00031_hierarchical_permission_matrix.sql
+supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1667,11 +1678,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_organization_onboarding.sql` | 6 lignes avec `ok = true` |
 | `supabase/tests/test_operational_financial_movements.sql` | 4 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchical_permission_matrix.sql` | 5 lignes avec `ok = true` |
+| `supabase/tests/test_hierarchy_permissions_members_programs.sql` | 7 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels et `00031` pour la matrice d'autorisations hierarchiques.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques et `00032` pour l'application de cette matrice aux membres/familles/programmes.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1697,6 +1709,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - La creation d'une nouvelle eglise autonome doit passer par `create_organization_onboarding()`.
 - Les logos importes doivent etre stockes dans `organization-assets/{organization_id}/branding/`.
 - Les droits superieur -> inferieur doivent passer par `church_hierarchy_permission_rules`, `church_unit_permission_overrides` et les RPCs de la migration `00031`.
+- Les acces descendants aux lignes `membres`, `familles` et `programmes` doivent passer par les helpers RLS granulaires de `00032`; `user_has_church_unit_access(UUID)` reste un acces structurel general, pas une autorisation metier suffisante.
 
 ---
 
@@ -1704,6 +1717,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-16 | Agent IA | **Migration 00032** : Application effective de la matrice d'autorisations hierarchiques aux RLS `membres`, `familles` et `programmes`. Ajout des helpers `user_has_direct_church_unit_access`, `user_has_church_unit_action_permission`, `user_can_access_*_scope`, conservation de l'acces direct et fallback legacy uniquement si `church_unit_id IS NULL`, avec test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00031** : Ajout de la matrice d'autorisations hierarchiques (`church_permission_domains`, `church_permission_actions`, `church_hierarchy_permission_rules`, `church_unit_permission_overrides`) avec catalogues par organisation, regles superieur -> inferieur, exceptions par unite, acceptation optionnelle du niveau inferieur et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00030** : Ajout de la couche finance operationnelle (`campagnes_financieres`, `promesses_financieres`, `mouvements_financiers`) pour cotisations, promesses, encaissements/decaissements simples, rattaches aux unites et aux comptes financiers, avec vue `v_campagnes_financieres_resume` et test SQL E2E. |
 | 2026-06-15 | Agent IA | **Migration 00029** : Ajout des capacites configurables sur `church_unit_types` (membres, programmes, cotisations, finances, notifications, descendants) et de `church_unit_financial_accounts` pour rattacher caisses, banques et Mobile Money aux unites autorisees. |
