@@ -125,6 +125,11 @@ class SideNavigation extends ConsumerWidget {
                         Icons.payments_outlined,
                       ),
                       _NavItem(
+                        'Collectes',
+                        '/financial-campaigns',
+                        Icons.savings_outlined,
+                      ),
+                      _NavItem(
                         'Rapprochement',
                         '/accounting-reconciliation',
                         Icons.compare_arrows,
