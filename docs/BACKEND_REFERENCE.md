@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-16
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00034`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00035`
 
 ---
 
@@ -990,6 +990,7 @@
 | --------- | ------ | ---------- | -------- | ------------- |
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `church_unit_id` | UUID | OUI | — | FK → `church_units(id)` SET NULL, perimetre flexible du dossier |
 | `template_id` | UUID | NON | — | FK → `fiscal_templates(id)` |
 | `exercice_id` | UUID | OUI | — | FK → `exercices_comptables(id)` |
 | `import_id` | UUID | OUI | — | FK → `imported_trial_balances(id)` SET NULL |
@@ -1001,7 +1002,7 @@
 | `locked_at` | TIMESTAMPTZ | OUI | — | Date de verrouillage |
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-**RLS** : ✅ — isolation par `organization_id`. UPDATE bloqué si `status IN ('locked','submitted')`. DELETE seulement si `status = 'draft'`.
+**RLS** : ✅ — depuis `00035`, acces par matrice hierarchique `financial_statements` sur `church_unit_id`. UPDATE bloque si `status IN ('locked','submitted')`. DELETE seulement si `status = 'draft'`.
 
 ---
 
@@ -1032,6 +1033,7 @@
 | --------- | ------ | ---------- | -------- | ------------- |
 | `id` | UUID | NON | `uuid_generate_v4()` | PK |
 | `organization_id` | UUID | NON | — | FK → `organizations(id)` CASCADE |
+| `church_unit_id` | UUID | OUI | — | FK → `church_units(id)` SET NULL, perimetre flexible de la balance importee |
 | `exercice_label` | TEXT | OUI | — | Libellé exercice |
 | `filename` | TEXT | OUI | — | Nom du fichier importé |
 | `total_debit` | DECIMAL(15,2) | NON | `0` | Total débits |
@@ -1040,7 +1042,7 @@
 | `created_by` | UUID | OUI | — | FK → `auth.users(id)` |
 | `created_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
-**RLS** : ✅ — isolation par `organization_id`
+**RLS** : ✅ — depuis `00035`, acces par matrice hierarchique `financial_statements` sur le perimetre de la balance importee.
 
 ---
 
@@ -1282,10 +1284,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `open_exercice(UUID)` | plpgsql | DEFINER | Ouvre exercice brouillon→ouvert (admin, unicité index) |
 | `get_exercice_ouvert(UUID)` | plpgsql | DEFINER STABLE | Retourne exercice ouvert ou NULL |
 | `can_post_in_exercice(UUID, DATE)` | plpgsql | DEFINER STABLE | Vérifie si date dans plage exercice ouvert |
-| `report_balance_generale(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Balance générale : débits, crédits, soldes par compte |
-| `report_compte_resultat(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Compte de résultat : produits (cl.7) - charges (cl.6) |
-| `report_bilan(UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan simplifié SYCEBNL : actif (cl.2-5) / passif (cl.1,4) |
-| `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumulé |
+| `report_balance_generale(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Balance generale : debits, credits, soldes par compte, filtree par droits hierarchiques `financial_statements` |
+| `report_compte_resultat(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Compte de resultat : produits (cl.7) - charges (cl.6), filtre par droits hierarchiques |
+| `report_bilan(UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan simplifie SYSCEBNL : actif (cl.2-5) / passif (cl.1,4), filtre par droits hierarchiques |
+| `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumule, filtre par droits hierarchiques |
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
 | `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
 | `is_church_unit_ancestor(UUID, UUID)` | SQL | STABLE | Verifie qu'une unite est ancetre d'une autre dans `church_units` |
@@ -1312,16 +1314,25 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `releves_bancaires` |
 | `enforce_accounting_entry_workflow_permission()` | plpgsql | — | Bloque validation/cloture d'ecriture si l'action matrice n'est pas autorisee et refuse la validation directe d'une ecriture desequilibree |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
+| `fiscal_scope_contains_unit(UUID, UUID)` | SQL | STABLE | Verifie qu'un dossier fiscal couvre une unite cible ou un descendant |
+| `user_can_access_financial_statements_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour dossiers fiscaux, imports de balance et rapports financiers |
+| `user_can_access_exports_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour les exports financiers |
+| `ensure_fiscal_statement_permission_rules(UUID)` | plpgsql | DEFINER | Complete les regles de matrice `financial_statements` et `exports` selon les capacites de niveaux |
+| `sync_fiscal_dossier_church_unit_scope()` | plpgsql | DEFINER | Renseigne et valide le perimetre `church_unit_id` des dossiers fiscaux |
+| `sync_imported_trial_balance_church_unit_scope()` | plpgsql | DEFINER | Renseigne et valide le perimetre `church_unit_id` des balances importees |
+| `sync_fiscal_dossier_value_scope()` | plpgsql | DEFINER | Herite l'organisation du dossier fiscal et bloque les valeurs d'un dossier verrouille/soumis |
+| `sync_imported_trial_balance_line_scope()` | plpgsql | DEFINER | Herite l'organisation de la balance importee pour chaque ligne |
+| `enforce_fiscal_dossier_workflow_permission()` | plpgsql | — | Bloque les changements de statut fiscal si l'action matrice requise n'est pas autorisee |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `enforce_financial_campaign_scope()` | plpgsql | — | Verifie qu'une campagne reste dans une organisation/unite autorisee |
 | `enforce_financial_pledge_scope()` | plpgsql | — | Verifie campagne, unite, membre et tiers d'une promesse |
 | `enforce_financial_movement_scope()` | plpgsql | — | Verifie compte financier, campagne, promesse, programme, membre et tiers d'un mouvement |
 | `recompute_financial_pledge_status(UUID)` | plpgsql | — | Recalcule `ouverte`/`partielle`/`reglee` selon les encaissements soumis ou valides |
 | `refresh_financial_pledge_status_trigger()` | plpgsql | — | Trigger de recalcul du statut de promesse apres mouvement |
-| `prefill_fiscal_dossier(UUID)` | plpgsql | DEFINER | Pré-remplit les champs du dossier fiscal depuis les écritures comptables via `fiscal_account_mapping` (sum_prefixes, balance_class, sum_accounts) |
-| `prefill_fiscal_dossier_from_import(UUID, UUID)` | plpgsql | DEFINER | Pré-remplit depuis une balance CSV importée (`imported_trial_balance_lines`) |
-| `validate_fiscal_dossier(UUID)` | plpgsql | DEFINER | Valide le dossier : champs requis, actif=passif, résultat=produits-charges, cohérence bilan/résultat. Passe statut `ready` si OK. |
-| `lock_fiscal_dossier(UUID)` | plpgsql | DEFINER | Verrouille le dossier si validation OK. Rôles autorisés : admin_national, responsable_region. Passe statut `locked`. |
+| `prefill_fiscal_dossier(UUID)` | plpgsql | DEFINER | Pre-remplit les champs depuis les ecritures validees/cloturees visibles dans le perimetre du dossier |
+| `prefill_fiscal_dossier_from_import(UUID, UUID)` | plpgsql | DEFINER | Pre-remplit depuis une balance importee visible et contenue dans le perimetre du dossier |
+| `validate_fiscal_dossier(UUID)` | plpgsql | DEFINER | Valide le dossier si l'action hierarchique `validate` est autorisee : champs requis, actif=passif, resultat=produits-charges, coherence bilan/resultat |
+| `lock_fiscal_dossier(UUID)` | plpgsql | DEFINER | Verrouille le dossier si l'action hierarchique `consolidate` est autorisee et si la validation passe |
 
 ---
 
@@ -1398,6 +1409,16 @@ Migration `00034` ajoute :
 
 Ce trigger impose les actions matrice `validate` et `consolidate` lors des changements de statut des ecritures comptables. Il refuse aussi une validation directe si les lignes debit/credit sont absentes ou desequilibrees.
 
+Migration `00035` ajoute :
+
+- `sync_fiscal_dossier_church_unit_scope_trigger` sur `fiscal_dossiers`
+- `sync_imported_trial_balance_church_unit_scope_trigger` sur `imported_trial_balances`
+- `sync_fiscal_dossier_value_scope_trigger` sur `fiscal_dossier_values`
+- `sync_imported_trial_balance_line_scope_trigger` sur `imported_trial_balance_lines`
+- `enforce_fiscal_dossier_workflow_permission_trigger` sur `fiscal_dossiers`
+
+Ces triggers rattachent les dossiers fiscaux et imports de balance a `church_units`, conservent l'organisation des lignes/valeurs depuis leur parent et imposent les actions matrice `update`, `validate` et `consolidate` au workflow fiscal.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
@@ -1415,6 +1436,11 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `enforce_financial_movement_scope_trigger` | `mouvements_financiers` | BEFORE INSERT/UPDATE | `enforce_financial_movement_scope()` |
 | `enforce_financial_movement_workflow_permission_trigger` | `mouvements_financiers` | BEFORE UPDATE | `enforce_financial_movement_workflow_permission()` |
 | `enforce_accounting_entry_workflow_permission_trigger` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `enforce_accounting_entry_workflow_permission()` |
+| `enforce_fiscal_dossier_workflow_permission_trigger` | `fiscal_dossiers` | BEFORE UPDATE/DELETE | `enforce_fiscal_dossier_workflow_permission()` |
+| `sync_fiscal_dossier_church_unit_scope_trigger` | `fiscal_dossiers` | BEFORE INSERT/UPDATE | `sync_fiscal_dossier_church_unit_scope()` |
+| `sync_imported_trial_balance_church_unit_scope_trigger` | `imported_trial_balances` | BEFORE INSERT/UPDATE | `sync_imported_trial_balance_church_unit_scope()` |
+| `sync_fiscal_dossier_value_scope_trigger` | `fiscal_dossier_values` | BEFORE INSERT/UPDATE | `sync_fiscal_dossier_value_scope()` |
+| `sync_imported_trial_balance_line_scope_trigger` | `imported_trial_balance_lines` | BEFORE INSERT/UPDATE | `sync_imported_trial_balance_line_scope()` |
 | `refresh_financial_pledge_status_after_movement` | `mouvements_financiers` | AFTER INSERT/UPDATE/DELETE | `refresh_financial_pledge_status_trigger()` |
 | `validate_church_hierarchy_permission_rule_trigger` | `church_hierarchy_permission_rules` | BEFORE INSERT/UPDATE | `validate_church_hierarchy_permission_rule()` |
 | `validate_church_unit_permission_override_trigger` | `church_unit_permission_overrides` | BEFORE INSERT/UPDATE | `validate_church_unit_permission_override()` |
@@ -1426,7 +1452,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~110 index**, dont les index metier existants, la recherche trigram, les index de hierarchie flexible `00019` et la matrice d'autorisations `00031`.
+> **Total : ~112 index**, dont les index metier existants, la recherche trigram, les index de hierarchie flexible `00019`, la matrice d'autorisations `00031` et les index fiscaux `church_unit_id` de `00035`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -1681,6 +1707,7 @@ supabase/migrations/00031_hierarchical_permission_matrix.sql
 supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql
 supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql
 supabase/migrations/00034_apply_hierarchy_permissions_accounting_scopes.sql
+supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1718,11 +1745,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_members_programs.sql` | 7 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_finance_reports.sql` | 9 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_accounting_scopes.sql` | 11 lignes avec `ok = true` |
+| `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels et `00034` pour les perimetres comptables.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables et `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1751,6 +1779,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les acces descendants aux lignes `membres`, `familles` et `programmes` doivent passer par les helpers RLS granulaires de `00032`; `user_has_church_unit_access(UUID)` reste un acces structurel general, pas une autorisation metier suffisante.
 - Les acces descendants aux finances operationnelles et aux rapports mensuels doivent passer par les helpers RLS granulaires de `00033`; la validation/rejet des mouvements financiers est aussi controlee par trigger.
 - Les acces descendants aux references comptables, ecritures, budgets, immobilisations et releves doivent passer par les helpers RLS granulaires de `00034`; la validation/cloture des ecritures est aussi controlee par trigger.
+- Les acces descendants aux dossiers fiscaux, balances importees, rapports financiers et exports doivent passer par les helpers RLS granulaires de `00035`; le workflow fiscal est aussi controle par trigger.
 
 ---
 
@@ -1758,6 +1787,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-16 | Agent IA | **Migration 00035** : Application effective de la matrice d'autorisations hierarchiques aux RLS `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances` et `imported_trial_balance_lines`. Ajout des helpers RLS `financial_statements`/`exports`, rattachement a `church_units`, controle du workflow fiscal, filtrage hierarchique des RPC de rapports financiers et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00034** : Application effective de la matrice d'autorisations hierarchiques aux RLS `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables` et `releves_bancaires`. Ajout des helpers RLS comptables, trigger de workflow pour validation/cloture des ecritures, correction du trigger de suppression des ecritures brouillon et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00033** : Application effective de la matrice d'autorisations hierarchiques aux RLS `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` et `rapports_mensuels_eab`. Ajout des helpers RLS finances/rapports, extension des regles rapports mensuels `validate/reject/consolidate/export`, trigger de workflow pour validation/rejet des mouvements, et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00032** : Application effective de la matrice d'autorisations hierarchiques aux RLS `membres`, `familles` et `programmes`. Ajout des helpers `user_has_direct_church_unit_access`, `user_has_church_unit_action_permission`, `user_can_access_*_scope`, conservation de l'acces direct et fallback legacy uniquement si `church_unit_id IS NULL`, avec test SQL E2E. |
