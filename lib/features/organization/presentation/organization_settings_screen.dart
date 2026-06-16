@@ -12,6 +12,7 @@ import 'package:eab/core/errors/app_exceptions.dart';
 import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
+import 'package:eab/features/organization/data/hierarchy_permission_models.dart';
 import 'package:eab/features/organization/data/logo_file_picker.dart';
 import 'package:eab/features/organization/data/picked_logo_file.dart';
 import 'package:eab/ui/ui.dart';
@@ -46,6 +47,14 @@ class _OrganizationSettingsScreenState
   String _inviteRole = 'tresorierAssemblee';
   String? _inviteChurchUnitId;
   bool _inviteCanManageChildren = false;
+  String? _permissionAncestorUnitId;
+  String? _permissionDescendantUnitId;
+  bool _permissionRequiresAcceptance = false;
+  bool _loadingPermissions = false;
+  bool _savingPermission = false;
+  bool _respondingPermission = false;
+  List<HierarchyPermission> _effectivePermissions = const [];
+  List<UnitPermissionOverride> _permissionOverrides = const [];
   bool _saving = false;
   bool _inviting = false;
   bool _uploadingLogo = false;
@@ -54,6 +63,14 @@ class _OrganizationSettingsScreenState
 
   static const _maxLogoBytes = 2 * 1024 * 1024;
   static const _allowedLogoExtensions = {'png', 'jpg', 'jpeg', 'webp', 'svg'};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadPermissionOverrides();
+    });
+  }
 
   @override
   void dispose() {
@@ -239,6 +256,112 @@ class _OrganizationSettingsScreenState
     }
   }
 
+  Future<void> _loadHierarchyPermissions() async {
+    final ancestorId = _permissionAncestorUnitId;
+    final descendantId = _permissionDescendantUnitId;
+    if (ancestorId == null || descendantId == null) {
+      context.showError(
+        const BusinessRuleException(
+          'Choisissez une unite superieure et une unite inferieure.',
+        ),
+      );
+      return;
+    }
+
+    setState(() => _loadingPermissions = true);
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      final permissions = await repo.fetchEffectiveHierarchyPermissions(
+        ancestorUnitId: ancestorId,
+        descendantUnitId: descendantId,
+      );
+      final overrides = await repo.fetchUnitPermissionOverrides();
+      if (mounted) {
+        setState(() {
+          _effectivePermissions = permissions;
+          _permissionOverrides = overrides;
+        });
+      }
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _loadingPermissions = false);
+    }
+  }
+
+  Future<void> _loadPermissionOverrides() async {
+    setState(() => _loadingPermissions = true);
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      final overrides = await repo.fetchUnitPermissionOverrides();
+      if (mounted) setState(() => _permissionOverrides = overrides);
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _loadingPermissions = false);
+    }
+  }
+
+  Future<void> _setHierarchyPermission(
+    HierarchyPermission permission,
+    bool allowed,
+  ) async {
+    final ancestorId = _permissionAncestorUnitId;
+    final descendantId = _permissionDescendantUnitId;
+    if (ancestorId == null || descendantId == null) return;
+
+    setState(() => _savingPermission = true);
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      await repo.setHierarchyPermissionOverride(
+        ancestorUnitId: ancestorId,
+        descendantUnitId: descendantId,
+        domainCode: permission.domainCode,
+        actionCode: permission.actionCode,
+        allowed: allowed,
+        requiresDescendantAcceptance: allowed && _permissionRequiresAcceptance,
+        reason: _permissionRequiresAcceptance
+            ? 'Accord demande depuis les parametres organisation.'
+            : 'Autorisation configuree depuis les parametres organisation.',
+      );
+      await _loadHierarchyPermissions();
+      if (mounted) {
+        context.showSuccess(
+          allowed ? 'Autorisation enregistree.' : 'Autorisation retiree.',
+        );
+      }
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _savingPermission = false);
+    }
+  }
+
+  Future<void> _respondPermissionOverride(
+    UnitPermissionOverride override,
+    bool accept,
+  ) async {
+    setState(() => _respondingPermission = true);
+    try {
+      final repo = ref.read(organizationRepositoryProvider);
+      await repo.respondHierarchyPermissionOverride(
+        overrideId: override.id,
+        accept: accept,
+        reason: accept
+            ? 'Accord valide depuis les parametres organisation.'
+            : 'Accord refuse depuis les parametres organisation.',
+      );
+      await _loadHierarchyPermissions();
+      if (mounted) {
+        context.showSuccess(accept ? 'Demande acceptee.' : 'Demande refusee.');
+      }
+    } catch (e) {
+      if (mounted) context.showError(e);
+    } finally {
+      if (mounted) setState(() => _respondingPermission = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final orgAsync = ref.watch(currentOrganizationProvider);
@@ -294,6 +417,11 @@ class _OrganizationSettingsScreenState
                           _inviteSection(
                             compact: compact,
                             orgId: org.id,
+                            churchUnits: churchUnitsAsync.value ?? const [],
+                          ),
+                          const SizedBox(height: AppSpacing.cardGap),
+                          _hierarchyPermissionsSection(
+                            compact: compact,
                             churchUnits: churchUnitsAsync.value ?? const [],
                           ),
                         ],
@@ -730,6 +858,236 @@ class _OrganizationSettingsScreenState
     );
   }
 
+  Widget _hierarchyPermissionsSection({
+    required bool compact,
+    required List<ChurchUnit> churchUnits,
+  }) {
+    final activeUnits = userScopeUnits(churchUnits);
+    final selectedAncestorId =
+        _permissionAncestorUnitId != null &&
+            activeUnits.any((unit) => unit.id == _permissionAncestorUnitId)
+        ? _permissionAncestorUnitId
+        : null;
+
+    final descendantUnits = selectedAncestorId == null
+        ? const <ChurchUnit>[]
+        : _descendantUnitsOf(activeUnits, selectedAncestorId);
+
+    final selectedDescendantId =
+        _permissionDescendantUnitId != null &&
+            descendantUnits.any(
+              (unit) => unit.id == _permissionDescendantUnitId,
+            )
+        ? _permissionDescendantUnitId
+        : null;
+
+    final displayedPermissions = selectedDescendantId == null
+        ? const <HierarchyPermission>[]
+        : _effectivePermissions;
+    final groupedPermissions = _groupPermissionsByDomain(displayedPermissions);
+
+    return SectionCard(
+      title: 'Autorisations hierarchiques',
+      actions: [
+        EabButton(
+          label: 'Actualiser',
+          icon: Icons.refresh,
+          variant: EabButtonVariant.ghost,
+          size: EabButtonSize.small,
+          isLoading: _loadingPermissions,
+          onPressed: _loadPermissionOverrides,
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Configurez ce que le niveau superieur peut voir ou faire chez un niveau inferieur.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: selectedAncestorId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Niveau superieur',
+                  border: OutlineInputBorder(),
+                ),
+                items: activeUnits
+                    .map(
+                      (unit) => DropdownMenuItem(
+                        value: unit.id,
+                        child: Text(
+                          _unitDisplayLabel(unit),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: activeUnits.isEmpty
+                    ? null
+                    : (value) => setState(() {
+                        _permissionAncestorUnitId = value;
+                        _permissionDescendantUnitId = null;
+                        _effectivePermissions = const [];
+                      }),
+              ),
+              DropdownButtonFormField<String>(
+                key: ValueKey(
+                  'permission-descendant-${selectedAncestorId ?? 'none'}'
+                  '-${selectedDescendantId ?? 'none'}',
+                ),
+                initialValue: selectedDescendantId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Niveau inferieur',
+                  border: OutlineInputBorder(),
+                ),
+                hint: Text(
+                  selectedAncestorId == null
+                      ? 'Choisir un niveau superieur'
+                      : descendantUnits.isEmpty
+                      ? 'Aucun descendant'
+                      : 'Choisir un niveau inferieur',
+                ),
+                items: descendantUnits
+                    .map(
+                      (unit) => DropdownMenuItem(
+                        value: unit.id,
+                        child: Text(
+                          _unitDisplayLabel(unit),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: descendantUnits.isEmpty
+                    ? null
+                    : (value) => setState(() {
+                        _permissionDescendantUnitId = value;
+                        _effectivePermissions = const [];
+                      }),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: compact ? double.infinity : 340,
+                child: SwitchListTile(
+                  value: _permissionRequiresAcceptance,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Demander l accord du niveau inferieur'),
+                  subtitle: const Text(
+                    'Les droits ajoutes attendront une acceptation.',
+                  ),
+                  onChanged: (value) =>
+                      setState(() => _permissionRequiresAcceptance = value),
+                ),
+              ),
+              EabButton(
+                label: 'Charger la matrice',
+                icon: Icons.rule_outlined,
+                variant: EabButtonVariant.primary,
+                fullWidth: compact,
+                isLoading: _loadingPermissions,
+                onPressed:
+                    selectedAncestorId == null || selectedDescendantId == null
+                    ? null
+                    : _loadHierarchyPermissions,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (displayedPermissions.isEmpty)
+            _PermissionHint(compact: compact)
+          else
+            Column(
+              children: [
+                for (final entry in groupedPermissions.entries) ...[
+                  _PermissionDomainBlock(
+                    title: entry.key,
+                    permissions: entry.value,
+                    saving: _savingPermission,
+                    onChanged: _setHierarchyPermission,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ],
+            ),
+          if (_permissionOverrides.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            _PermissionRequestsPanel(
+              overrides: _permissionOverrides,
+              unitLabelForId: (id) => _unitLabelById(activeUnits, id),
+              responding: _respondingPermission,
+              onAccept: (override) =>
+                  _respondPermissionOverride(override, true),
+              onReject: (override) =>
+                  _respondPermissionOverride(override, false),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<ChurchUnit> _descendantUnitsOf(
+    List<ChurchUnit> units,
+    String ancestorId,
+  ) {
+    final byParent = <String?, List<ChurchUnit>>{};
+    for (final unit in units) {
+      byParent.putIfAbsent(unit.parentId, () => []).add(unit);
+    }
+
+    final result = <ChurchUnit>[];
+    void collect(String parentId) {
+      for (final child in byParent[parentId] ?? const <ChurchUnit>[]) {
+        result.add(child);
+        collect(child.id);
+      }
+    }
+
+    collect(ancestorId);
+    result.sort((a, b) {
+      final level = a.levelOrder.compareTo(b.levelOrder);
+      if (level != 0) return level;
+      return a.nom.toLowerCase().compareTo(b.nom.toLowerCase());
+    });
+    return result;
+  }
+
+  Map<String, List<HierarchyPermission>> _groupPermissionsByDomain(
+    List<HierarchyPermission> permissions,
+  ) {
+    final grouped = <String, List<HierarchyPermission>>{};
+    for (final permission in permissions) {
+      grouped
+          .putIfAbsent(permission.domainLabel, () => <HierarchyPermission>[])
+          .add(permission);
+    }
+    return grouped;
+  }
+
+  String _unitDisplayLabel(ChurchUnit unit) {
+    return '${unit.typeLabel} - ${churchUnitLabel(unit)}';
+  }
+
+  String _unitLabelById(List<ChurchUnit> units, String unitId) {
+    final matches = units.where((unit) => unit.id == unitId);
+    if (matches.isEmpty) return 'Unite inconnue';
+    return _unitDisplayLabel(matches.first);
+  }
+
   Widget _colorField({
     required String label,
     required TextEditingController controller,
@@ -959,6 +1317,362 @@ class _OnboardingStepCard extends StatelessWidget {
       'hierarchy_details' =>
         'Ajoutez les niveaux et les unites depuis l ecran Structure.',
       _ => 'Completez cette information dans les parametres.',
+    };
+  }
+}
+
+class _PermissionHint extends StatelessWidget {
+  const _PermissionHint({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: colorScheme.primary),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              compact
+                  ? 'Choisissez deux unites puis chargez la matrice.'
+                  : 'Choisissez une unite superieure, une unite inferieure, puis chargez la matrice pour voir les droits disponibles.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionDomainBlock extends StatelessWidget {
+  const _PermissionDomainBlock({
+    required this.title,
+    required this.permissions,
+    required this.saving,
+    required this.onChanged,
+  });
+
+  final String title;
+  final List<HierarchyPermission> permissions;
+  final bool saving;
+  final Future<void> Function(HierarchyPermission permission, bool allowed)
+  onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.folder_copy_outlined, color: colorScheme.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: permissions
+                .map(
+                  (permission) => _PermissionActionTile(
+                    permission: permission,
+                    saving: saving,
+                    onChanged: onChanged,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionActionTile extends StatelessWidget {
+  const _PermissionActionTile({
+    required this.permission,
+    required this.saving,
+    required this.onChanged,
+  });
+
+  final HierarchyPermission permission;
+  final bool saving;
+  final Future<void> Function(HierarchyPermission permission, bool allowed)
+  onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor = permission.allowed
+        ? Colors.green.shade700
+        : colorScheme.onSurfaceVariant;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 300),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: permission.allowed
+              ? Colors.green.withValues(alpha: 0.08)
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: permission.allowed
+                ? Colors.green.withValues(alpha: 0.35)
+                : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    permission.actionLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _permissionStatusLabel(permission),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: statusColor),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: permission.allowed,
+              onChanged: saving
+                  ? null
+                  : (value) => onChanged(permission, value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _permissionStatusLabel(HierarchyPermission permission) {
+    if (permission.isPending) return 'En attente d accord';
+    if (permission.hasOverride) return 'Exception';
+    if (permission.allowed) return 'Regle active';
+    return 'Non autorise';
+  }
+}
+
+class _PermissionRequestsPanel extends StatelessWidget {
+  const _PermissionRequestsPanel({
+    required this.overrides,
+    required this.unitLabelForId,
+    required this.responding,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  final List<UnitPermissionOverride> overrides;
+  final String Function(String unitId) unitLabelForId;
+  final bool responding;
+  final Future<void> Function(UnitPermissionOverride override) onAccept;
+  final Future<void> Function(UnitPermissionOverride override) onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified_user_outlined, color: colorScheme.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Demandes d accord',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final override in overrides) ...[
+            _PermissionRequestTile(
+              permissionOverride: override,
+              ancestorLabel: unitLabelForId(override.ancestorUnitId),
+              descendantLabel: unitLabelForId(override.descendantUnitId),
+              responding: responding,
+              onAccept: onAccept,
+              onReject: onReject,
+            ),
+            if (override != overrides.last)
+              const SizedBox(height: AppSpacing.sm),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionRequestTile extends StatelessWidget {
+  const _PermissionRequestTile({
+    required this.permissionOverride,
+    required this.ancestorLabel,
+    required this.descendantLabel,
+    required this.responding,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  final UnitPermissionOverride permissionOverride;
+  final String ancestorLabel;
+  final String descendantLabel;
+  final bool responding;
+  final Future<void> Function(UnitPermissionOverride override) onAccept;
+  final Future<void> Function(UnitPermissionOverride override) onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor = switch (permissionOverride.acceptanceStatus) {
+      'accepted' => Colors.green.shade700,
+      'rejected' => colorScheme.error,
+      'revoked' => colorScheme.error,
+      'pending' => Colors.orange.shade800,
+      _ => colorScheme.onSurfaceVariant,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${permissionOverride.domainLabel} - ${permissionOverride.actionLabel}',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$ancestorLabel vers $descendantLabel',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (permissionOverride.reason?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 4),
+            Text(
+              permissionOverride.reason!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Chip(
+                label: Text(
+                  _overrideStatusLabel(permissionOverride.acceptanceStatus),
+                ),
+                labelStyle: TextStyle(color: statusColor),
+                backgroundColor: statusColor.withValues(alpha: 0.08),
+                side: BorderSide(color: statusColor.withValues(alpha: 0.28)),
+              ),
+              if (permissionOverride.isPending) ...[
+                EabButton(
+                  label: 'Accepter',
+                  icon: Icons.check,
+                  size: EabButtonSize.small,
+                  variant: EabButtonVariant.outline,
+                  isLoading: responding,
+                  onPressed: responding
+                      ? null
+                      : () => onAccept(permissionOverride),
+                ),
+                EabButton(
+                  label: 'Refuser',
+                  icon: Icons.close,
+                  size: EabButtonSize.small,
+                  variant: EabButtonVariant.ghost,
+                  onPressed: responding
+                      ? null
+                      : () => onReject(permissionOverride),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _overrideStatusLabel(String status) {
+    return switch (status) {
+      'pending' => 'En attente',
+      'accepted' => 'Accepte',
+      'rejected' => 'Refuse',
+      'revoked' => 'Revoque',
+      _ => 'Sans accord requis',
     };
   }
 }

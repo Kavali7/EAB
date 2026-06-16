@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'hierarchy_permission_models.dart';
 import 'organization_model.dart';
 
 class OrganizationRepository {
@@ -150,6 +151,101 @@ class OrganizationRepository {
     );
   }
 
+  Future<List<HierarchyPermission>> fetchEffectiveHierarchyPermissions({
+    required String ancestorUnitId,
+    required String descendantUnitId,
+  }) async {
+    try {
+      final result = await _dataService.client.rpc(
+        'get_effective_church_unit_permissions',
+        params: {
+          'p_ancestor_unit_id': ancestorUnitId,
+          'p_descendant_unit_id': descendantUnitId,
+        },
+      );
+      if (result is! List) return const [];
+      return result
+          .map(
+            (json) => HierarchyPermission.fromJson(
+              Map<String, dynamic>.from(json as Map),
+            ),
+          )
+          .toList();
+    } on PostgrestException catch (e) {
+      if (_isMissingHierarchyPermissionSchema(e)) return const [];
+      rethrow;
+    }
+  }
+
+  Future<String> setHierarchyPermissionOverride({
+    required String ancestorUnitId,
+    required String descendantUnitId,
+    required String domainCode,
+    required String actionCode,
+    required bool allowed,
+    required bool requiresDescendantAcceptance,
+    String? reason,
+  }) async {
+    final result = await _dataService.client.rpc(
+      'set_church_unit_permission_override',
+      params: {
+        'p_ancestor_unit_id': ancestorUnitId,
+        'p_descendant_unit_id': descendantUnitId,
+        'p_domain_code': domainCode,
+        'p_action_code': actionCode,
+        'p_allowed': allowed,
+        'p_requires_descendant_acceptance': requiresDescendantAcceptance,
+        'p_reason': _nullIfBlank(reason),
+      },
+    );
+    return result?.toString() ?? '';
+  }
+
+  Future<List<UnitPermissionOverride>> fetchUnitPermissionOverrides() async {
+    try {
+      final response = await _dataService.client
+          .from('church_unit_permission_overrides')
+          .select('''
+            id,
+            ancestor_unit_id,
+            descendant_unit_id,
+            allowed,
+            requires_descendant_acceptance,
+            acceptance_status,
+            reason,
+            domain:church_permission_domains(code,label),
+            action:church_permission_actions(code,label)
+          ''')
+          .eq('requires_descendant_acceptance', true)
+          .order('updated_at', ascending: false);
+
+      return (response as List)
+          .map(
+            (json) =>
+                UnitPermissionOverride.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    } on PostgrestException catch (e) {
+      if (_isMissingHierarchyPermissionSchema(e)) return const [];
+      rethrow;
+    }
+  }
+
+  Future<void> respondHierarchyPermissionOverride({
+    required String overrideId,
+    required bool accept,
+    String? reason,
+  }) async {
+    await _dataService.client.rpc(
+      'respond_church_unit_permission_override',
+      params: {
+        'p_override_id': overrideId,
+        'p_accept': accept,
+        'p_reason': _nullIfBlank(reason),
+      },
+    );
+  }
+
   /// Cree une organisation autonome pour un utilisateur sans tenant.
   Future<Map<String, dynamic>> createOrganizationOnboarding({
     required String name,
@@ -198,5 +294,14 @@ class OrganizationRepository {
         message.contains('does not exist') ||
         message.contains('resource was not found') ||
         message.contains('object not found');
+  }
+
+  bool _isMissingHierarchyPermissionSchema(PostgrestException error) {
+    final message = error.message.toLowerCase();
+    return error.code == 'PGRST202' ||
+        message.contains('get_effective_church_unit_permissions') ||
+        message.contains('church_unit_permission_overrides') ||
+        message.contains('church_hierarchy_permission_rules') ||
+        message.contains('permission schema');
   }
 }
