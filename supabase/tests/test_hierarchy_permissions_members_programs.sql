@@ -168,7 +168,13 @@ BEGIN
     'Utilisateur test permissions',
     'responsable_region',
     v_parent_unit_id
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    organization_id = EXCLUDED.organization_id,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role,
+    primary_church_unit_id = EXCLUDED.primary_church_unit_id,
+    updated_at = NOW();
 
   PERFORM set_config('request.jwt.claim.sub', v_user_id::text, true);
 
