@@ -33,29 +33,47 @@ COMMENT ON COLUMN imported_trial_balances.church_unit_id IS
 
 UPDATE fiscal_dossiers d
 SET church_unit_id = COALESCE(
-  creator.primary_church_unit_id,
-  root.id
+  (
+    SELECT creator.primary_church_unit_id
+    FROM profiles creator
+    WHERE creator.id = d.created_by
+      AND creator.organization_id = d.organization_id
+    LIMIT 1
+  ),
+  (
+    SELECT root.id
+    FROM church_units root
+    WHERE root.organization_id = d.organization_id
+      AND root.parent_id IS NULL
+      AND root.active = TRUE
+    ORDER BY root.created_at
+    LIMIT 1
+  )
 )
-FROM church_units root
-LEFT JOIN profiles creator
-  ON creator.id = d.created_by
- AND creator.organization_id = d.organization_id
 WHERE d.church_unit_id IS NULL
-  AND root.organization_id = d.organization_id
-  AND root.parent_id IS NULL;
+  AND d.organization_id IS NOT NULL;
 
 UPDATE imported_trial_balances i
 SET church_unit_id = COALESCE(
-  creator.primary_church_unit_id,
-  root.id
+  (
+    SELECT creator.primary_church_unit_id
+    FROM profiles creator
+    WHERE creator.id = i.created_by
+      AND creator.organization_id = i.organization_id
+    LIMIT 1
+  ),
+  (
+    SELECT root.id
+    FROM church_units root
+    WHERE root.organization_id = i.organization_id
+      AND root.parent_id IS NULL
+      AND root.active = TRUE
+    ORDER BY root.created_at
+    LIMIT 1
+  )
 )
-FROM church_units root
-LEFT JOIN profiles creator
-  ON creator.id = i.created_by
- AND creator.organization_id = i.organization_id
 WHERE i.church_unit_id IS NULL
-  AND root.organization_id = i.organization_id
-  AND root.parent_id IS NULL;
+  AND i.organization_id IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION fiscal_scope_contains_unit(
   p_scope_unit_id UUID,
