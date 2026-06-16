@@ -90,8 +90,9 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00027_onboarding_completion_and_eab_demo.sql`
    - `supabase/migrations/00028_ensure_storage_buckets.sql`
    - `supabase/migrations/00029_church_unit_capabilities_financial_accounts.sql`
+   - `supabase/migrations/00030_operational_financial_movements.sql`
 
-   Les migrations `00018` a `00029` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, puis ajoutent les capacites et moyens financiers configurables par unite. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+   Les migrations `00018` a `00030` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, ajoutent les capacites et moyens financiers configurables par unite, puis structurent les cotisations, promesses et mouvements financiers operationnels. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`
