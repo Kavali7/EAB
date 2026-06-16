@@ -7,8 +7,15 @@ import 'package:eab/features/church_units/application/church_units_provider.dart
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/operational_finance/application/operational_finance_providers.dart';
 import 'package:eab/features/operational_finance/data/operational_finance_models.dart';
+import 'package:eab/models/centre_analytique.dart';
+import 'package:eab/models/compte_comptable.dart';
+import 'package:eab/models/compta_enums.dart';
+import 'package:eab/models/journal_comptable.dart';
 import 'package:eab/models/member.dart';
+import 'package:eab/models/profil_utilisateur.dart';
 import 'package:eab/models/program.dart';
+import 'package:eab/models/tiers.dart';
+import 'package:eab/providers/accounting_providers.dart';
 import 'package:eab/providers/members_provider.dart';
 import 'package:eab/providers/programs_provider.dart';
 import 'package:eab/providers/user_profile_providers.dart';
@@ -35,6 +42,11 @@ class _OperationalFinanceScreenState
     final accountsAsync = ref.watch(churchUnitFinancialAccountsProvider);
     final programsAsync = ref.watch(programsProvider);
     final membersAsync = ref.watch(membersProvider);
+    final journalsAsync = ref.watch(journauxComptablesProvider);
+    final comptesAsync = ref.watch(comptesComptablesProvider);
+    final centresAsync = ref.watch(centresAnalytiquesProvider);
+    final tiersAsync = ref.watch(tiersProvider);
+    final currentProfile = ref.watch(profilUtilisateurCourantProvider);
     final activeUnitId = ref.watch(churchUnitActiveIdProvider);
 
     final isLoading =
@@ -71,6 +83,11 @@ class _OperationalFinanceScreenState
               accounts: accountsAsync.value ?? const [],
               programs: programsAsync.value ?? const [],
               members: membersAsync.value ?? const [],
+              journals: journalsAsync.value ?? const [],
+              comptes: comptesAsync.value ?? const [],
+              centres: centresAsync.value ?? const [],
+              tiers: tiersAsync.value ?? const [],
+              currentProfile: currentProfile,
               activeUnitId: activeUnitId,
             ),
     );
@@ -82,9 +99,18 @@ class _OperationalFinanceScreenState
     required List<ChurchUnitFinancialAccount> accounts,
     required List<Program> programs,
     required List<Member> members,
+    required List<JournalComptable> journals,
+    required List<CompteComptable> comptes,
+    required List<CentreAnalytique> centres,
+    required List<Tiers> tiers,
+    required ProfilUtilisateur? currentProfile,
     required String? activeUnitId,
   }) {
     final activeUnit = _findUnit(units, activeUnitId);
+    final canValidateMovements = _canValidateAccounting(
+      activeUnit,
+      currentProfile,
+    );
     final launchUnits = units.where((unit) => unit.canLaunchContributions).toList();
     final scopedUnitIds = _unitScopeIds(units, activeUnit);
     final scopedCampaigns = activeUnit == null
@@ -170,6 +196,11 @@ class _OperationalFinanceScreenState
                         movements: campaignMovements,
                         accounts: accounts,
                         members: members,
+                        journals: journals,
+                        comptes: comptes,
+                        centres: centres,
+                        tiers: tiers,
+                        canValidateMovements: canValidateMovements,
                         onCreatePledge: selectedCampaign == null
                             ? null
                             : () => _openPledgeForm(
@@ -190,6 +221,19 @@ class _OperationalFinanceScreenState
                                 selectedCampaign.statut == 'cloturee'
                             ? null
                             : () => _closeCampaign(selectedCampaign.id),
+                        onValidateMovement: canValidateMovements
+                            ? (movement) => _openValidationForm(
+                                  movement: movement,
+                                  accounts: accounts,
+                                  journals: journals,
+                                  comptes: comptes,
+                                  centres: centres,
+                                  tiers: tiers,
+                                )
+                            : null,
+                        onRejectMovement: canValidateMovements
+                            ? (movement) => _openRejectMovementDialog(movement)
+                            : null,
                       ),
                     ],
                   )
@@ -216,6 +260,11 @@ class _OperationalFinanceScreenState
                           movements: campaignMovements,
                           accounts: accounts,
                           members: members,
+                          journals: journals,
+                          comptes: comptes,
+                          centres: centres,
+                          tiers: tiers,
+                          canValidateMovements: canValidateMovements,
                           onCreatePledge: selectedCampaign == null
                               ? null
                               : () => _openPledgeForm(
@@ -236,6 +285,20 @@ class _OperationalFinanceScreenState
                                   selectedCampaign.statut == 'cloturee'
                               ? null
                               : () => _closeCampaign(selectedCampaign.id),
+                          onValidateMovement: canValidateMovements
+                              ? (movement) => _openValidationForm(
+                                    movement: movement,
+                                    accounts: accounts,
+                                    journals: journals,
+                                    comptes: comptes,
+                                    centres: centres,
+                                    tiers: tiers,
+                                  )
+                              : null,
+                          onRejectMovement: canValidateMovements
+                              ? (movement) =>
+                                    _openRejectMovementDialog(movement)
+                              : null,
                         ),
                       ),
                     ],
@@ -265,6 +328,23 @@ class _OperationalFinanceScreenState
       if (unit.id == id) return unit;
     }
     return units.isEmpty ? null : units.first;
+  }
+
+  bool _canValidateAccounting(
+    ChurchUnit? activeUnit,
+    ProfilUtilisateur? profile,
+  ) {
+    if (profile == null) return false;
+    if (activeUnit?.canValidateFinances == true ||
+        activeUnit?.canConsolidateFinances == true) {
+      return true;
+    }
+    return switch (profile.role) {
+      RoleUtilisateur.adminNational ||
+      RoleUtilisateur.responsableRegion ||
+      RoleUtilisateur.surintendantDistrict => true,
+      RoleUtilisateur.tresorierAssemblee => false,
+    };
   }
 
   Set<String> _unitScopeIds(List<ChurchUnit> units, ChurchUnit? activeUnit) {
@@ -338,6 +418,38 @@ class _OperationalFinanceScreenState
         members: members,
         selectedCampaignId: selectedCampaignId,
       ),
+    );
+  }
+
+  Future<void> _openValidationForm({
+    required FinancialMovement movement,
+    required List<ChurchUnitFinancialAccount> accounts,
+    required List<JournalComptable> journals,
+    required List<CompteComptable> comptes,
+    required List<CentreAnalytique> centres,
+    required List<Tiers> tiers,
+  }) async {
+    await EabDialog.show<void>(
+      context,
+      title: 'Validation comptable',
+      width: 760,
+      content: _MovementValidationForm(
+        movement: movement,
+        accounts: accounts,
+        journals: journals,
+        comptes: comptes,
+        centres: centres,
+        tiers: tiers,
+      ),
+    );
+  }
+
+  Future<void> _openRejectMovementDialog(FinancialMovement movement) async {
+    await EabDialog.show<void>(
+      context,
+      title: 'Rejeter le mouvement',
+      width: 560,
+      content: _RejectMovementForm(movement: movement),
     );
   }
 
@@ -739,9 +851,16 @@ class _CampaignDetailPanel extends StatelessWidget {
     required this.movements,
     required this.accounts,
     required this.members,
+    required this.journals,
+    required this.comptes,
+    required this.centres,
+    required this.tiers,
+    required this.canValidateMovements,
     required this.onCreatePledge,
     required this.onCreateMovement,
     required this.onCloseCampaign,
+    required this.onValidateMovement,
+    required this.onRejectMovement,
   });
 
   final FinancialCampaignSummary? campaign;
@@ -749,9 +868,16 @@ class _CampaignDetailPanel extends StatelessWidget {
   final List<FinancialMovement> movements;
   final List<ChurchUnitFinancialAccount> accounts;
   final List<Member> members;
+  final List<JournalComptable> journals;
+  final List<CompteComptable> comptes;
+  final List<CentreAnalytique> centres;
+  final List<Tiers> tiers;
+  final bool canValidateMovements;
   final VoidCallback? onCreatePledge;
   final VoidCallback? onCreateMovement;
   final VoidCallback? onCloseCampaign;
+  final ValueChanged<FinancialMovement>? onValidateMovement;
+  final ValueChanged<FinancialMovement>? onRejectMovement;
 
   @override
   Widget build(BuildContext context) {
@@ -870,6 +996,17 @@ class _CampaignDetailPanel extends StatelessWidget {
                         movement,
                         memberById,
                       ),
+                      canValidate:
+                          canValidateMovements &&
+                          movement.statut == 'soumis' &&
+                          journals.isNotEmpty &&
+                          comptes.isNotEmpty,
+                      onValidate: onValidateMovement == null
+                          ? null
+                          : () => onValidateMovement!(movement),
+                      onReject: onRejectMovement == null
+                          ? null
+                          : () => onRejectMovement!(movement),
                     ),
                 ],
               ),
@@ -904,11 +1041,17 @@ class _MovementTile extends StatelessWidget {
     required this.movement,
     required this.account,
     required this.contributor,
+    required this.canValidate,
+    required this.onValidate,
+    required this.onReject,
   });
 
   final FinancialMovement movement;
   final ChurchUnitFinancialAccount? account;
   final String contributor;
+  final bool canValidate;
+  final VoidCallback? onValidate;
+  final VoidCallback? onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -917,11 +1060,32 @@ class _MovementTile extends StatelessWidget {
     return _LineTile(
       icon: isOut ? Icons.north_east_outlined : Icons.south_west_outlined,
       title: movement.libelle,
-      subtitle:
-          '${dateFormatter.format(movement.dateMouvement)} | ${account?.label ?? 'Compte'} | $contributor',
+      subtitle: [
+        dateFormatter.format(movement.dateMouvement),
+        account?.label ?? 'Compte',
+        contributor,
+        _statusLabel(movement.statut),
+        if (movement.rejetMotif?.trim().isNotEmpty ?? false)
+          movement.rejetMotif!.trim(),
+      ].join(' | '),
       trailing:
           '${isOut ? '-' : '+'}${currencyFormatter.format(movement.montant)}',
       color: color,
+      actions: canValidate
+          ? [
+              IconButton(
+                tooltip: 'Valider en comptabilite',
+                onPressed: onValidate,
+                icon: const Icon(Icons.fact_check_outlined),
+              ),
+              IconButton(
+                tooltip: 'Rejeter',
+                onPressed: onReject,
+                color: AppColors.error,
+                icon: const Icon(Icons.block_outlined),
+              ),
+            ]
+          : null,
     );
   }
 }
@@ -933,6 +1097,7 @@ class _LineTile extends StatelessWidget {
     required this.subtitle,
     required this.trailing,
     required this.color,
+    this.actions,
   });
 
   final IconData icon;
@@ -940,6 +1105,7 @@ class _LineTile extends StatelessWidget {
   final String subtitle;
   final String trailing;
   final Color color;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -989,6 +1155,10 @@ class _LineTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.subtitle.copyWith(color: color),
           ),
+          if (actions != null) ...[
+            const SizedBox(width: AppSpacing.xs),
+            ...actions!,
+          ],
         ],
       ),
     );
@@ -1673,6 +1843,452 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+}
+
+class _MovementValidationForm extends ConsumerStatefulWidget {
+  const _MovementValidationForm({
+    required this.movement,
+    required this.accounts,
+    required this.journals,
+    required this.comptes,
+    required this.centres,
+    required this.tiers,
+  });
+
+  final FinancialMovement movement;
+  final List<ChurchUnitFinancialAccount> accounts;
+  final List<JournalComptable> journals;
+  final List<CompteComptable> comptes;
+  final List<CentreAnalytique> centres;
+  final List<Tiers> tiers;
+
+  @override
+  ConsumerState<_MovementValidationForm> createState() =>
+      _MovementValidationFormState();
+}
+
+class _MovementValidationFormState
+    extends ConsumerState<_MovementValidationForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _referenceController = TextEditingController();
+  late final TextEditingController _libelleController;
+  String? _journalId;
+  String? _treasuryAccountId;
+  String? _counterpartAccountId;
+  String? _centreId;
+  String? _tiersId;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _libelleController = TextEditingController(text: widget.movement.libelle);
+    _referenceController.text =
+        widget.movement.referenceExterne ??
+        'MVT-${widget.movement.id.substring(0, 8)}';
+    final account = _movementAccount;
+    _journalId = _defaultJournalId(account);
+    _treasuryAccountId =
+        account?.comptableAccountId ?? _defaultTreasuryAccountId(account);
+    _counterpartAccountId = _defaultCounterpartAccountId();
+    _centreId = _defaultCentreId();
+    _tiersId = widget.movement.tiersId;
+  }
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    _libelleController.dispose();
+    super.dispose();
+  }
+
+  ChurchUnitFinancialAccount? get _movementAccount {
+    for (final account in widget.accounts) {
+      if (account.id == widget.movement.financialAccountId) return account;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeJournals = widget.journals.where((j) => j.actif).toList();
+    final activeComptes = widget.comptes.where((c) => c.actif).toList();
+    final movement = widget.movement;
+    final isOut = movement.type == 'decaissement';
+
+    if (activeJournals.isEmpty || activeComptes.length < 2) {
+      return const _InlineEmpty(
+        message:
+            'Le plan comptable ou les journaux ne sont pas encore disponibles. Configurez-les avant de valider les mouvements.',
+      );
+    }
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ValidationSummary(movement: movement, account: _movementAccount),
+          const SizedBox(height: AppSpacing.lg),
+          DropdownButtonFormField<String>(
+            initialValue: _journalId,
+            decoration: const InputDecoration(labelText: 'Journal comptable'),
+            items: [
+              for (final journal in activeJournals)
+                DropdownMenuItem(
+                  value: journal.id,
+                  child: Text('${journal.code} - ${journal.intitule}'),
+                ),
+            ],
+            validator: (value) =>
+                value == null ? 'Selectionnez un journal.' : null,
+            onChanged: (value) => setState(() => _journalId = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String>(
+            initialValue: _treasuryAccountId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: isOut
+                  ? 'Compte de tresorerie a crediter'
+                  : 'Compte de tresorerie a debiter',
+            ),
+            items: [
+              for (final compte in activeComptes)
+                DropdownMenuItem(
+                  value: compte.id,
+                  child: Text('${compte.numero} - ${compte.intitule}'),
+                ),
+            ],
+            validator: (value) =>
+                value == null ? 'Selectionnez le compte de tresorerie.' : null,
+            onChanged: (value) => setState(() => _treasuryAccountId = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String>(
+            initialValue: _counterpartAccountId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: isOut
+                  ? 'Compte a debiter'
+                  : 'Compte produit / contrepartie a crediter',
+            ),
+            items: [
+              for (final compte in activeComptes)
+                DropdownMenuItem(
+                  value: compte.id,
+                  child: Text('${compte.numero} - ${compte.intitule}'),
+                ),
+            ],
+            validator: (value) {
+              if (value == null) return 'Selectionnez le compte de contrepartie.';
+              if (value == _treasuryAccountId) {
+                return 'La contrepartie doit etre differente.';
+              }
+              return null;
+            },
+            onChanged: (value) => setState(() => _counterpartAccountId = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String?>(
+            initialValue: _centreId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Centre analytique'),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Aucun centre'),
+              ),
+              for (final centre in widget.centres)
+                DropdownMenuItem<String?>(
+                  value: centre.id,
+                  child: Text('${centre.code} - ${centre.nom}'),
+                ),
+            ],
+            onChanged: (value) => setState(() => _centreId = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String?>(
+            initialValue: _tiersId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Tiers'),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Aucun tiers'),
+              ),
+              for (final tiers in widget.tiers)
+                DropdownMenuItem<String?>(
+                  value: tiers.id,
+                  child: Text(tiers.nom),
+                ),
+            ],
+            onChanged: (value) => setState(() => _tiersId = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextFormField(
+            controller: _referenceController,
+            decoration: const InputDecoration(
+              labelText: 'Reference piece',
+              hintText: 'Numero recu, reference MoMo ou piece interne.',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextFormField(
+            controller: _libelleController,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: 'Libelle comptable'),
+            validator: (value) =>
+                (value == null || value.trim().isEmpty) ? 'Libelle requis.' : null,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          EabButton(
+            label: 'Valider et generer l ecriture',
+            icon: Icons.fact_check_outlined,
+            isLoading: _saving,
+            fullWidth: true,
+            onPressed: _save,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _defaultJournalId(ChurchUnitFinancialAccount? account) {
+    if (widget.journals.isEmpty) return null;
+    TypeJournalComptable desired;
+    if (account?.type == 'bank') {
+      desired = TypeJournalComptable.banque;
+    } else if (account?.type == 'mobile_money') {
+      desired = TypeJournalComptable.banque;
+    } else {
+      desired = TypeJournalComptable.caisse;
+    }
+    for (final journal in widget.journals) {
+      if (journal.actif && journal.type == desired) return journal.id;
+    }
+    for (final journal in widget.journals) {
+      if (journal.actif) return journal.id;
+    }
+    return widget.journals.first.id;
+  }
+
+  String? _defaultTreasuryAccountId(ChurchUnitFinancialAccount? account) {
+    final prefixes = account?.type == 'bank'
+        ? const ['512']
+        : account?.type == 'mobile_money'
+        ? const ['52', '512', '531']
+        : const ['531', '57', '512'];
+    for (final prefix in prefixes) {
+      for (final compte in widget.comptes) {
+        if (compte.actif && compte.numero.startsWith(prefix)) return compte.id;
+      }
+    }
+    return widget.comptes.where((c) => c.actif).isEmpty
+        ? null
+        : widget.comptes.firstWhere((c) => c.actif).id;
+  }
+
+  String? _defaultCounterpartAccountId() {
+    final desiredNature = widget.movement.type == 'decaissement'
+        ? NatureCompte.charge
+        : NatureCompte.produit;
+    for (final compte in widget.comptes) {
+      if (compte.actif && compte.nature == desiredNature) return compte.id;
+    }
+    for (final compte in widget.comptes) {
+      if (compte.actif && compte.id != _treasuryAccountId) return compte.id;
+    }
+    return null;
+  }
+
+  String? _defaultCentreId() {
+    for (final centre in widget.centres) {
+      if (centre.churchUnitId == widget.movement.churchUnitId) return centre.id;
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(operationalFinanceProvider.notifier)
+          .validateMovementAsAccountingEntry(
+            movementId: widget.movement.id,
+            movementType: widget.movement.type,
+            churchUnitId: widget.movement.churchUnitId,
+            journalId: _journalId!,
+            treasuryAccountId: _treasuryAccountId!,
+            counterpartAccountId: _counterpartAccountId!,
+            date: widget.movement.dateMouvement,
+            libelle: _libelleController.text,
+            montant: widget.movement.montant,
+            referencePiece: _referenceController.text,
+            modePaiement: widget.movement.modePaiement,
+            centreAnalytiqueId: _centreId,
+            tiersId: _tiersId,
+          );
+      ref.invalidate(ecrituresComptablesProvider);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mouvement valide en comptabilite.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+class _RejectMovementForm extends ConsumerStatefulWidget {
+  const _RejectMovementForm({required this.movement});
+
+  final FinancialMovement movement;
+
+  @override
+  ConsumerState<_RejectMovementForm> createState() =>
+      _RejectMovementFormState();
+}
+
+class _RejectMovementFormState extends ConsumerState<_RejectMovementForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _reasonController = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.movement.libelle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.subtitle,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            currencyFormatter.format(widget.movement.montant),
+            style: AppTextStyles.bodySmall,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextFormField(
+            controller: _reasonController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Motif du rejet',
+              hintText: 'Piece manquante, montant incorrect, mauvais compte...',
+            ),
+            validator: (value) =>
+                (value == null || value.trim().isEmpty) ? 'Motif requis.' : null,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          EabButton(
+            label: 'Rejeter le mouvement',
+            icon: Icons.block_outlined,
+            variant: EabButtonVariant.danger,
+            fullWidth: true,
+            isLoading: _saving,
+            onPressed: _save,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(operationalFinanceProvider.notifier).rejectMovement(
+            movementId: widget.movement.id,
+            reason: _reasonController.text,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mouvement rejete.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+class _ValidationSummary extends StatelessWidget {
+  const _ValidationSummary({required this.movement, required this.account});
+
+  final FinancialMovement movement;
+  final ChurchUnitFinancialAccount? account;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOut = movement.type == 'decaissement';
+    final color = isOut ? AppColors.error : AppColors.success;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOut ? Icons.north_east_outlined : Icons.south_west_outlined,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  movement.libelle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.subtitle,
+                ),
+                Text(
+                  [
+                    _statusLabel(movement.type),
+                    dateFormatter.format(movement.dateMouvement),
+                    account?.label ?? 'Compte financier',
+                  ].join(' | '),
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            currencyFormatter.format(movement.montant),
+            style: AppTextStyles.heading3.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
   }
 }
 

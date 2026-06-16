@@ -141,6 +141,7 @@ class FinancialMovement {
     this.modePaiement,
     this.referenceExterne,
     this.pieceJustificativeUrl,
+    this.rejetMotif,
     this.ecritureId,
   });
 
@@ -162,6 +163,7 @@ class FinancialMovement {
   final String? referenceExterne;
   final String? pieceJustificativeUrl;
   final String statut;
+  final String? rejetMotif;
   final String? ecritureId;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -186,6 +188,7 @@ class FinancialMovement {
       referenceExterne: json['reference_externe'] as String?,
       pieceJustificativeUrl: json['piece_justificative_url'] as String?,
       statut: json['statut'] as String? ?? 'brouillon',
+      rejetMotif: json['rejet_motif'] as String?,
       ecritureId: json['ecriture_id'] as String?,
       createdAt: _dateValue(json['created_at']),
       updatedAt: _dateValue(json['updated_at']),

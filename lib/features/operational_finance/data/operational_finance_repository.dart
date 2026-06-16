@@ -164,6 +164,112 @@ class OperationalFinanceRepository {
         .eq('id', campaignId);
   }
 
+  Future<void> validateMovementAsAccountingEntry({
+    required String movementId,
+    required String movementType,
+    required String churchUnitId,
+    required String journalId,
+    required String treasuryAccountId,
+    required String counterpartAccountId,
+    required DateTime date,
+    required String libelle,
+    required double montant,
+    String? referencePiece,
+    String? modePaiement,
+    String? centreAnalytiqueId,
+    String? tiersId,
+  }) async {
+    final profile = await _profileContext();
+    String? entryId;
+    try {
+      final entry = await _client
+          .from('ecritures_comptables')
+          .insert({
+            'organization_id': profile.organizationId,
+            'church_unit_id': churchUnitId,
+            'id_journal': journalId,
+            'id_centre_analytique_principal': _blankToNull(centreAnalytiqueId),
+            'date': _dateOnly(date),
+            'reference_piece': _blankToNull(referencePiece),
+            'libelle': libelle.trim(),
+            'statut': 'validee',
+            'created_by': profile.profileId,
+            'validated_by': profile.profileId,
+            'validated_at': DateTime.now().toIso8601String(),
+          })
+          .select('id')
+          .single();
+
+      entryId = entry['id'] as String;
+      final isOut = movementType == 'decaissement';
+      final lineLibelle = libelle.trim();
+      final cleanMode = _blankToNull(modePaiement);
+      final cleanCentre = _blankToNull(centreAnalytiqueId);
+      final cleanTiers = _blankToNull(tiersId);
+
+      await _client.from('lignes_ecritures').insert([
+        {
+          'id_ecriture': entryId,
+          'id_compte_comptable': isOut
+              ? counterpartAccountId
+              : treasuryAccountId,
+          'id_centre_analytique': cleanCentre,
+          'id_tiers': cleanTiers,
+          'libelle': lineLibelle,
+          'debit': montant,
+          'credit': 0,
+          'mode_paiement': cleanMode,
+        },
+        {
+          'id_ecriture': entryId,
+          'id_compte_comptable': isOut
+              ? treasuryAccountId
+              : counterpartAccountId,
+          'id_centre_analytique': cleanCentre,
+          'id_tiers': cleanTiers,
+          'libelle': lineLibelle,
+          'debit': 0,
+          'credit': montant,
+          'mode_paiement': cleanMode,
+        },
+      ]);
+
+      await _client
+          .from('mouvements_financiers')
+          .update({
+            'statut': 'valide',
+            'validated_by': profile.profileId,
+            'validated_at': DateTime.now().toIso8601String(),
+            'ecriture_id': entryId,
+          })
+          .eq('id', movementId);
+    } catch (_) {
+      if (entryId != null) {
+        await _client
+            .from('ecritures_comptables')
+            .delete()
+            .eq('id', entryId);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> rejectMovement({
+    required String movementId,
+    required String reason,
+  }) async {
+    final profile = await _profileContext();
+    await _client
+        .from('mouvements_financiers')
+        .update({
+          'statut': 'rejete',
+          'rejet_motif': reason.trim(),
+          'validated_by': profile.profileId,
+          'validated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', movementId);
+  }
+
   Future<ProfileContext> _profileContext() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) {

@@ -130,4 +130,49 @@ class OperationalFinanceNotifier
     await repository.closeCampaign(campaignId);
     ref.invalidateSelf();
   }
+
+  Future<void> validateMovementAsAccountingEntry({
+    required String movementId,
+    required String movementType,
+    required String churchUnitId,
+    required String journalId,
+    required String treasuryAccountId,
+    required String counterpartAccountId,
+    required DateTime date,
+    required String libelle,
+    required double montant,
+    String? referencePiece,
+    String? modePaiement,
+    String? centreAnalytiqueId,
+    String? tiersId,
+  }) async {
+    final repository = ref.read(operationalFinanceRepositoryProvider);
+    if (repository == null) return;
+    await repository.validateMovementAsAccountingEntry(
+      movementId: movementId,
+      movementType: movementType,
+      churchUnitId: churchUnitId,
+      journalId: journalId,
+      treasuryAccountId: treasuryAccountId,
+      counterpartAccountId: counterpartAccountId,
+      date: date,
+      libelle: libelle,
+      montant: montant,
+      referencePiece: referencePiece,
+      modePaiement: modePaiement,
+      centreAnalytiqueId: centreAnalytiqueId,
+      tiersId: tiersId,
+    );
+    ref.invalidateSelf();
+  }
+
+  Future<void> rejectMovement({
+    required String movementId,
+    required String reason,
+  }) async {
+    final repository = ref.read(operationalFinanceRepositoryProvider);
+    if (repository == null) return;
+    await repository.rejectMovement(movementId: movementId, reason: reason);
+    ref.invalidateSelf();
+  }
 }
