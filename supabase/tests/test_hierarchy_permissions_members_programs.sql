@@ -184,7 +184,7 @@ BEGIN
   SELECT user_can_access_members_scope(v_child_unit_id, NULL, 'view_details')
   INTO v_child_member_view_before;
 
-  SELECT set_church_unit_permission_override(
+  PERFORM set_church_unit_permission_override(
     v_parent_unit_id,
     v_child_unit_id,
     'members',
@@ -203,7 +203,7 @@ BEGIN
   SELECT user_can_access_programs_scope(v_child_unit_id, NULL, 'create')
   INTO v_child_program_create;
 
-  SELECT set_church_unit_permission_override(
+  PERFORM set_church_unit_permission_override(
     v_parent_unit_id,
     v_child_unit_id,
     'programs',
