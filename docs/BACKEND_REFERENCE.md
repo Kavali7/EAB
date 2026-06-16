@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-15
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00030`
+- **Derniere mise a jour** : 2026-06-16
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00031`
 
 ---
 
@@ -279,7 +279,97 @@
 
 ---
 
-### 2.10 `organization_user_invitations`
+### 2.10 `church_permission_domains`
+
+> Domaines fonctionnels controlables entre niveaux : fideles, programmes, rapports, mouvements financiers, comptabilite, notifications, exports, parametres, etc.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | — | FK -> `organizations(id)` ON DELETE CASCADE |
+| `code` | TEXT | NON | — | Code technique stable (`members`, `programs`, `financial_movements`, etc.) |
+| `label` | TEXT | NON | — | Libelle visible dans les parametres |
+| `description` | TEXT | OUI | — | Explication courte du domaine |
+| `sort_order` | INTEGER | NON | `0` | Ordre d'affichage |
+| `active` | BOOLEAN | NON | `TRUE` | Domaine utilisable |
+| `system_default` | BOOLEAN | NON | `FALSE` | Domaine cree par le systeme |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Cycle de vie |
+
+**RLS** : active — **UNIQUE** : `(organization_id, code)`.
+
+---
+
+### 2.11 `church_permission_actions`
+
+> Actions controlables sur un domaine : voir la synthese, voir le detail, creer, modifier, valider, rejeter, exporter, consolider, notifier, configurer.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | — | FK -> `organizations(id)` ON DELETE CASCADE |
+| `code` | TEXT | NON | — | Code technique stable (`view_details`, `validate`, `export`, etc.) |
+| `label` | TEXT | NON | — | Libelle visible dans les parametres |
+| `description` | TEXT | OUI | — | Explication courte de l'action |
+| `sort_order` | INTEGER | NON | `0` | Ordre d'affichage |
+| `active` | BOOLEAN | NON | `TRUE` | Action utilisable |
+| `system_default` | BOOLEAN | NON | `FALSE` | Action creee par le systeme |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Cycle de vie |
+
+**RLS** : active — **UNIQUE** : `(organization_id, code)`.
+
+---
+
+### 2.12 `church_hierarchy_permission_rules`
+
+> Matrice par defaut entre un type de niveau superieur et un type de niveau inferieur. Exemple : un niveau national peut voir les syntheses financieres des districts, mais la validation peut etre limitee.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | — | FK -> `organizations(id)` ON DELETE CASCADE |
+| `ancestor_type_id` | UUID | NON | — | Type de niveau superieur |
+| `descendant_type_id` | UUID | NON | — | Type de niveau inferieur |
+| `domain_id` | UUID | NON | — | Domaine controle |
+| `action_id` | UUID | NON | — | Action controlee |
+| `allowed` | BOOLEAN | NON | `FALSE` | Autorisation par defaut |
+| `requires_descendant_acceptance` | BOOLEAN | NON | `FALSE` | L'autorisation exige une acceptation du niveau inferieur |
+| `inherited` | BOOLEAN | NON | `TRUE` | S'applique aux unites de ces types sauf exception |
+| `configured_by` | UUID | OUI | — | Profil ayant configure la regle |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Cycle de vie |
+
+**RLS** : active — **UNIQUE** : `(organization_id, ancestor_type_id, descendant_type_id, domain_id, action_id)`.
+
+---
+
+### 2.13 `church_unit_permission_overrides`
+
+> Exceptions concretes entre deux unites reelles de la hierarchie. Elles permettent de dire, par exemple, qu'une region precise peut voir un detail donne pour une assemblee precise, avec acceptation optionnelle de l'assemblee.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | — | FK -> `organizations(id)` ON DELETE CASCADE |
+| `ancestor_unit_id` | UUID | NON | — | Unite superieure |
+| `descendant_unit_id` | UUID | NON | — | Unite inferieure |
+| `domain_id` | UUID | NON | — | Domaine controle |
+| `action_id` | UUID | NON | — | Action controlee |
+| `allowed` | BOOLEAN | NON | `FALSE` | Autorisation explicite |
+| `requires_descendant_acceptance` | BOOLEAN | NON | `FALSE` | Exige acceptation du niveau inferieur |
+| `acceptance_status` | TEXT | NON | `'not_required'` | `not_required`, `pending`, `accepted`, `rejected`, `revoked` |
+| `configured_by` | UUID | OUI | — | Profil ayant demande l'exception |
+| `accepted_by` / `accepted_at` | UUID / TIMESTAMPTZ | OUI | — | Acceptation du niveau inferieur |
+| `reason` | TEXT | OUI | — | Motif lisible |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees libres |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | Cycle de vie |
+
+**RLS** : active — **UNIQUE** : `(organization_id, ancestor_unit_id, descendant_unit_id, domain_id, action_id)`.
+
+---
+
+### 2.14 `organization_user_invitations`
 
 > Invitations de sous-comptes rattachees a une organisation et, optionnellement, a un perimetre `church_units`.
 
@@ -301,7 +391,7 @@
 
 ---
 
-### 2.11 `familles`
+### 2.15 `familles`
 
 > Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Ce champ est synchronise avec `id_assemblee_locale` quand l'unite flexible pointe vers une assemblee legacy.
@@ -324,7 +414,7 @@
 
 ---
 
-### 2.12 `membres`
+### 2.16 `membres`
 
 > Migration `00020` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_member_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -363,7 +453,7 @@
 
 ---
 
-### 2.13 `programmes`
+### 2.17 `programmes`
 
 > Migration `00021` : ajout de `church_unit_id UUID REFERENCES church_units(id) ON DELETE SET NULL`.
 > Le trigger `sync_program_church_unit_scope()` garde la compatibilite avec `id_assemblee_locale` pendant la migration progressive.
@@ -997,6 +1087,20 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_unit_financial_accounts` | `church_unit_id` | `church_units(id)` | CASCADE |
 | `church_unit_financial_accounts` | `journal_id` | `journaux_comptables(id)` | SET NULL |
 | `church_unit_financial_accounts` | `comptable_account_id` | `comptes_comptables(id)` | SET NULL |
+| `church_permission_domains` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_permission_actions` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `ancestor_type_id` | `church_unit_types(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `descendant_type_id` | `church_unit_types(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `domain_id` | `church_permission_domains(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `action_id` | `church_permission_actions(id)` | CASCADE |
+| `church_hierarchy_permission_rules` | `configured_by` | `profiles(id)` | SET NULL |
+| `church_unit_permission_overrides` | `organization_id` | `organizations(id)` | CASCADE |
+| `church_unit_permission_overrides` | `ancestor_unit_id` | `church_units(id)` | CASCADE |
+| `church_unit_permission_overrides` | `descendant_unit_id` | `church_units(id)` | CASCADE |
+| `church_unit_permission_overrides` | `domain_id` | `church_permission_domains(id)` | CASCADE |
+| `church_unit_permission_overrides` | `action_id` | `church_permission_actions(id)` | CASCADE |
+| `church_unit_permission_overrides` | `configured_by` / `accepted_by` | `profiles(id)` | SET NULL |
 | `campagnes_financieres` | `organization_id` | `organizations(id)` | CASCADE |
 | `campagnes_financieres` | `church_unit_id` | `church_units(id)` | CASCADE |
 | `campagnes_financieres` | `programme_id` | `programmes(id)` | SET NULL |
@@ -1044,6 +1148,14 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_unit_financial_accounts` | CHECK | `type IN ('cash','bank','mobile_money')` |
 | `church_unit_financial_accounts` | CHECK | `length(trim(label)) > 0` et `length(trim(currency)) > 0` |
 | `church_unit_financial_accounts` | UNIQUE INDEX | `(organization_id, church_unit_id, lower(label))` si `active = TRUE` |
+| `church_permission_domains` | UNIQUE | `(organization_id, code)` |
+| `church_permission_domains` | CHECK | `code` en snake_case et `label` non vide |
+| `church_permission_actions` | UNIQUE | `(organization_id, code)` |
+| `church_permission_actions` | CHECK | `code` en snake_case et `label` non vide |
+| `church_hierarchy_permission_rules` | UNIQUE | `(organization_id, ancestor_type_id, descendant_type_id, domain_id, action_id)` |
+| `church_hierarchy_permission_rules` | CHECK | `ancestor_type_id <> descendant_type_id` et niveau superieur -> inferieur via trigger |
+| `church_unit_permission_overrides` | UNIQUE | `(organization_id, ancestor_unit_id, descendant_unit_id, domain_id, action_id)` |
+| `church_unit_permission_overrides` | CHECK | `ancestor_unit_id <> descendant_unit_id`, statut d'acceptation valide et ascendance verifiee par trigger |
 | `campagnes_financieres` | CHECK | type, statut, titre non vide, dates coherentes, objectif positif |
 | `promesses_financieres` | CHECK | montant positif, statut, contributeur obligatoire, echeance coherente |
 | `mouvements_financiers` | CHECK | montant positif, type, statut, libelle non vide, motif obligatoire si rejet |
@@ -1087,6 +1199,8 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_has_region_access(UUID)` | BOOLEAN | Vérifie accès à une région |
 | `user_has_district_access(UUID)` | BOOLEAN | Vérifie accès à un district |
 | `user_has_assemblee_access(UUID)` | BOOLEAN | Vérifie accès à une assemblée |
+| `is_church_unit_ancestor(UUID, UUID)` | BOOLEAN | Verifie qu'une unite est ancetre d'une autre |
+| `get_church_hierarchy_permission(UUID, UUID, TEXT, TEXT)` | BOOLEAN | Calcule l'autorisation effective superieur -> inferieur |
 
 ### Récapitulatif par table
 
@@ -1098,6 +1212,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `church_units` | Même org | Admin national | Hierarchie flexible |
 | `church_unit_user_scopes` | Même org | Admin national | Perimetres utilisateurs |
 | `church_unit_financial_accounts` | Org + `user_has_church_unit_access` | Admin national | Moyens financiers par unite |
+| `church_permission_domains` | Meme org | Admin national | Catalogue des domaines controlables |
+| `church_permission_actions` | Meme org | Admin national | Catalogue des actions controlables |
+| `church_hierarchy_permission_rules` | Meme org | Admin national | Matrice par defaut entre types de niveaux |
+| `church_unit_permission_overrides` | Org + unite superieure/inferieure accessible | Admin national ou unite superieure | Exceptions concretes avec acceptation optionnelle |
 | `organization_user_invitations` | Admin national propre org | Admin national propre org | Sous-comptes |
 | `regions_eglise` | Même org | Admin / Resp. région (propre) | Hiérarchique |
 | `districts_eglise` | Même org | Admin / Resp. région | Hiérarchique |
@@ -1156,6 +1274,12 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumulé |
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
 | `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
+| `is_church_unit_ancestor(UUID, UUID)` | SQL | STABLE | Verifie qu'une unite est ancetre d'une autre dans `church_units` |
+| `ensure_default_church_permission_catalog(UUID)` | plpgsql | DEFINER | Cree le catalogue domaines/actions et les regles par defaut pour une organisation |
+| `get_church_hierarchy_permission(UUID, UUID, TEXT, TEXT)` | plpgsql | DEFINER STABLE | Retourne l'autorisation effective superieur -> inferieur pour un domaine et une action |
+| `set_church_unit_permission_override(UUID, UUID, TEXT, TEXT, BOOLEAN, BOOLEAN, TEXT)` | plpgsql | DEFINER | Cree ou met a jour une exception concrete entre deux unites |
+| `respond_church_unit_permission_override(UUID, BOOLEAN, TEXT)` | plpgsql | DEFINER | Accepte ou rejette une exception qui exige l'accord du niveau inferieur |
+| `get_effective_church_unit_permissions(UUID, UUID)` | SQL | DEFINER STABLE | Liste la matrice effective entre deux unites pour l'interface de parametrage |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
 | `enforce_financial_campaign_scope()` | plpgsql | — | Verifie qu'une campagne reste dans une organisation/unite autorisee |
@@ -1223,9 +1347,17 @@ Migration `00030` ajoute :
 
 Ces triggers verrouillent la coherence organisation/unite/compte financier et mettent a jour le statut d'une promesse selon les encaissements soumis ou valides.
 
+Migration `00031` ajoute :
+
+- `validate_church_hierarchy_permission_rule_trigger` sur `church_hierarchy_permission_rules`
+- `validate_church_unit_permission_override_trigger` sur `church_unit_permission_overrides`
+- `seed_church_permissions_after_type_change_trigger` sur `church_unit_types`
+
+Ces triggers maintiennent la matrice d'autorisations coherente avec l'organisation, la hierarchie et les niveaux configurables.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
-Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (25 tables).
+Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
 
 ### Triggers métier
 
@@ -1239,6 +1371,9 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `enforce_financial_pledge_scope_trigger` | `promesses_financieres` | BEFORE INSERT/UPDATE | `enforce_financial_pledge_scope()` |
 | `enforce_financial_movement_scope_trigger` | `mouvements_financiers` | BEFORE INSERT/UPDATE | `enforce_financial_movement_scope()` |
 | `refresh_financial_pledge_status_after_movement` | `mouvements_financiers` | AFTER INSERT/UPDATE/DELETE | `refresh_financial_pledge_status_trigger()` |
+| `validate_church_hierarchy_permission_rule_trigger` | `church_hierarchy_permission_rules` | BEFORE INSERT/UPDATE | `validate_church_hierarchy_permission_rule()` |
+| `validate_church_unit_permission_override_trigger` | `church_unit_permission_overrides` | BEFORE INSERT/UPDATE | `validate_church_unit_permission_override()` |
+| `seed_church_permissions_after_type_change_trigger` | `church_unit_types` | AFTER INSERT/UPDATE | `seed_church_permissions_after_type_change()` |
 | `audit_membres_trigger` | `membres` | AFTER INSERT/UPDATE/DELETE | `audit_membres()` |
 | `audit_ecritures_trigger` | `ecritures_comptables` | AFTER INSERT/UPDATE/DELETE | `audit_ecritures()` |
 
@@ -1246,7 +1381,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~100 index**, dont les index metier existants, la recherche trigram et les index de hierarchie flexible `00019`.
+> **Total : ~110 index**, dont les index metier existants, la recherche trigram, les index de hierarchie flexible `00019` et la matrice d'autorisations `00031`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -1268,6 +1403,10 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_church_units_legacy_district` | `church_units` | `legacy_district_id` WHERE NOT NULL |
 | `idx_church_units_legacy_assemblee` | `church_units` | `legacy_assemblee_id` WHERE NOT NULL |
 | `idx_church_unit_financial_accounts_*` | `church_unit_financial_accounts` | `organization_id`, `church_unit_id`, `type`, unique actif `(organization_id, church_unit_id, lower(label))` |
+| `idx_church_permission_domains_*` | `church_permission_domains` | `organization_id`, unique `(organization_id, code)` |
+| `idx_church_permission_actions_*` | `church_permission_actions` | `organization_id`, unique `(organization_id, code)` |
+| `idx_church_hierarchy_permission_rules_*` | `church_hierarchy_permission_rules` | `organization_id`, types, unique matrice |
+| `idx_church_unit_permission_overrides_*` | `church_unit_permission_overrides` | `organization_id`, unites, unique exception |
 | `idx_org_user_invitations_*` | `organization_user_invitations` | `organization_id`, `email`, `primary_church_unit_id`, unique actif `(organization_id, email)` |
 | `idx_regions_organization` | `regions_eglise` | `organization_id` |
 | `idx_regions_code` | `regions_eglise` | `(organization_id, code)` |
@@ -1383,10 +1522,20 @@ erDiagram
     organizations ||--o{ organization_user_invitations : "invitations"
     organizations ||--o{ church_unit_types : "niveaux"
     organizations ||--o{ church_units : "unites"
+    organizations ||--o{ church_permission_domains : "domaines"
+    organizations ||--o{ church_permission_actions : "actions"
     church_unit_types ||--o{ church_units : "type"
+    church_unit_types ||--o{ church_hierarchy_permission_rules : "type superieur"
+    church_unit_types ||--o{ church_hierarchy_permission_rules : "type inferieur"
     church_units ||--o{ church_units : "sous-unites"
     church_units ||--o{ church_unit_user_scopes : "perimetres"
     church_units ||--o{ church_unit_financial_accounts : "comptes financiers"
+    church_units ||--o{ church_unit_permission_overrides : "autorisation superieure"
+    church_units ||--o{ church_unit_permission_overrides : "autorisation inferieure"
+    church_permission_domains ||--o{ church_hierarchy_permission_rules : "domaine"
+    church_permission_actions ||--o{ church_hierarchy_permission_rules : "action"
+    church_permission_domains ||--o{ church_unit_permission_overrides : "domaine"
+    church_permission_actions ||--o{ church_unit_permission_overrides : "action"
     church_units ||--o{ campagnes_financieres : "campagnes"
     church_units ||--o{ promesses_financieres : "promesses"
     church_units ||--o{ mouvements_financiers : "mouvements"
@@ -1483,6 +1632,7 @@ supabase/migrations/00027_onboarding_completion_and_eab_demo.sql
 supabase/migrations/00028_ensure_storage_buckets.sql
 supabase/migrations/00029_church_unit_capabilities_financial_accounts.sql
 supabase/migrations/00030_operational_financial_movements.sql
+supabase/migrations/00031_hierarchical_permission_matrix.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1516,11 +1666,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_user_invitations.sql` | Toutes les lignes avec `ok = true` |
 | `supabase/tests/test_organization_onboarding.sql` | 6 lignes avec `ok = true` |
 | `supabase/tests/test_operational_financial_movements.sql` | 4 lignes avec `ok = true` |
+| `supabase/tests/test_hierarchical_permission_matrix.sql` | 5 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables et `00030` pour les campagnes/promesses/mouvements operationnels.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels et `00031` pour la matrice d'autorisations hierarchiques.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1545,6 +1696,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les sous-comptes doivent passer par `organization_user_invitations` et `invite_user_to_org()`.
 - La creation d'une nouvelle eglise autonome doit passer par `create_organization_onboarding()`.
 - Les logos importes doivent etre stockes dans `organization-assets/{organization_id}/branding/`.
+- Les droits superieur -> inferieur doivent passer par `church_hierarchy_permission_rules`, `church_unit_permission_overrides` et les RPCs de la migration `00031`.
 
 ---
 
@@ -1552,6 +1704,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-16 | Agent IA | **Migration 00031** : Ajout de la matrice d'autorisations hierarchiques (`church_permission_domains`, `church_permission_actions`, `church_hierarchy_permission_rules`, `church_unit_permission_overrides`) avec catalogues par organisation, regles superieur -> inferieur, exceptions par unite, acceptation optionnelle du niveau inferieur et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00030** : Ajout de la couche finance operationnelle (`campagnes_financieres`, `promesses_financieres`, `mouvements_financiers`) pour cotisations, promesses, encaissements/decaissements simples, rattaches aux unites et aux comptes financiers, avec vue `v_campagnes_financieres_resume` et test SQL E2E. |
 | 2026-06-15 | Agent IA | **Migration 00029** : Ajout des capacites configurables sur `church_unit_types` (membres, programmes, cotisations, finances, notifications, descendants) et de `church_unit_financial_accounts` pour rattacher caisses, banques et Mobile Money aux unites autorisees. |
 | 2026-06-15 | Agent IA | **Migration 00028** : Creation idempotente des buckets Supabase Storage (`member-photos`, `documents`, `organization-assets`) et recreation des politiques `storage.objects` pour rendre la duplication du backend executable depuis les migrations seules. |
