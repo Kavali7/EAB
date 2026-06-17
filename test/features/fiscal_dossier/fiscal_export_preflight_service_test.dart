@@ -60,6 +60,40 @@ void main() {
       );
     });
 
+    test('bloque une periode dont la date de debut depasse la date de fin', () {
+      final report = FiscalExportPreflightEngine.build(
+        churchUnitId: 'unit-1',
+        dateDebut: DateTime.utc(2026, 12, 31),
+        dateFin: DateTime.utc(2026),
+        previousDateDebut: DateTime.utc(2025, 12, 31),
+        previousDateFin: DateTime.utc(2025),
+        balanceLines: const [
+          SyscebnlBalanceLine(
+            numero: '512',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 1000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '701',
+            intitule: 'Dimes',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 1000,
+          ),
+        ],
+        previousBalanceLines: const [],
+        adjustments: const [],
+      );
+
+      expect(report.canExport, isFalse);
+      expect(
+        report.issues.map((issue) => issue.code),
+        contains('invalid_period'),
+      );
+    });
+
     test('autorise une balance equilibree avec avertissement N-1', () {
       final report = FiscalExportPreflightEngine.build(
         churchUnitId: 'unit-1',

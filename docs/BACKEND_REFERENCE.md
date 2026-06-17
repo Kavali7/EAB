@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-16
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00035`
+- **Derniere mise a jour** : 2026-06-17
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00037`
 
 ---
 
@@ -1004,6 +1004,12 @@
 
 **RLS** : ✅ — depuis `00035`, acces par matrice hierarchique `financial_statements` sur `church_unit_id`. UPDATE bloque si `status IN ('locked','submitted')`. DELETE seulement si `status = 'draft'`.
 
+Depuis `00037`, les champs fiscaux `exercice.date_debut` et `exercice.date_fin`
+sont synchronises automatiquement depuis `exercices_comptables` lors de la
+creation ou du changement d'exercice d'un dossier fiscal. Les dossiers existants
+sont backfilles et les inversions annuelles evidentes `31/12 -> 01/01` sont
+corrigees pour eviter un export Excel fiscal avec periode invalide.
+
 ---
 
 ### 4bis.6 `fiscal_dossier_values`
@@ -1022,6 +1028,11 @@
 | `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
 **RLS** : ✅ — **UNIQUE** : `(dossier_id, field_key)` — **CHECK** : `source IN ('manual','computed','imported')`
+
+Les valeurs techniques `exercice.date_debut` et `exercice.date_fin` peuvent etre
+gerees par le backend avec `source = 'computed'`. Une valeur manuelle existante
+reste prioritaire, sauf correction limite d'une inversion annuelle evidente
+appliquee par la migration `00037`.
 
 ---
 
@@ -1326,6 +1337,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `sync_fiscal_dossier_church_unit_scope()` | plpgsql | DEFINER | Renseigne et valide le perimetre `church_unit_id` des dossiers fiscaux |
 | `sync_imported_trial_balance_church_unit_scope()` | plpgsql | DEFINER | Renseigne et valide le perimetre `church_unit_id` des balances importees |
 | `sync_fiscal_dossier_value_scope()` | plpgsql | DEFINER | Herite l'organisation du dossier fiscal et bloque les valeurs d'un dossier verrouille/soumis |
+| `sync_fiscal_dossier_exercice_date_values()` | plpgsql | DEFINER | Renseigne `exercice.date_debut` et `exercice.date_fin` depuis l'exercice comptable du dossier fiscal |
 | `sync_imported_trial_balance_line_scope()` | plpgsql | DEFINER | Herite l'organisation de la balance importee pour chaque ligne |
 | `enforce_fiscal_dossier_workflow_permission()` | plpgsql | — | Bloque les changements de statut fiscal si l'action matrice requise n'est pas autorisee |
 | `enforce_church_unit_financial_account_capability()` | plpgsql | — | Verifie qu'une unite peut posseder le type de compte financier demande |
@@ -1424,6 +1436,16 @@ Migration `00035` ajoute :
 
 Ces triggers rattachent les dossiers fiscaux et imports de balance a `church_units`, conservent l'organisation des lignes/valeurs depuis leur parent et imposent les actions matrice `update`, `validate` et `consolidate` au workflow fiscal.
 
+Migration `00037` ajoute :
+
+- `sync_fiscal_dossier_exercice_date_values_insert` sur `fiscal_dossiers`
+- `sync_fiscal_dossier_exercice_date_values_update` sur `fiscal_dossiers`
+
+Ces triggers creent ou mettent a jour les valeurs `exercice.date_debut` et
+`exercice.date_fin` d'un dossier fiscal a partir de l'exercice rattache, sans
+ecraser les valeurs manuelles valides. La migration backfille aussi les dossiers
+existants et corrige uniquement les inversions annuelles evidentes.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
@@ -1443,6 +1465,8 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `enforce_accounting_entry_workflow_permission_trigger` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `enforce_accounting_entry_workflow_permission()` |
 | `enforce_fiscal_dossier_workflow_permission_trigger` | `fiscal_dossiers` | BEFORE UPDATE/DELETE | `enforce_fiscal_dossier_workflow_permission()` |
 | `sync_fiscal_dossier_church_unit_scope_trigger` | `fiscal_dossiers` | BEFORE INSERT/UPDATE | `sync_fiscal_dossier_church_unit_scope()` |
+| `sync_fiscal_dossier_exercice_date_values_insert` | `fiscal_dossiers` | AFTER INSERT | `sync_fiscal_dossier_exercice_date_values()` |
+| `sync_fiscal_dossier_exercice_date_values_update` | `fiscal_dossiers` | AFTER UPDATE OF `exercice_id`, `status` | `sync_fiscal_dossier_exercice_date_values()` |
 | `sync_imported_trial_balance_church_unit_scope_trigger` | `imported_trial_balances` | BEFORE INSERT/UPDATE | `sync_imported_trial_balance_church_unit_scope()` |
 | `sync_fiscal_dossier_value_scope_trigger` | `fiscal_dossier_values` | BEFORE INSERT/UPDATE | `sync_fiscal_dossier_value_scope()` |
 | `sync_imported_trial_balance_line_scope_trigger` | `imported_trial_balance_lines` | BEFORE INSERT/UPDATE | `sync_imported_trial_balance_line_scope()` |
@@ -1713,6 +1737,8 @@ supabase/migrations/00032_apply_hierarchy_permissions_members_programs.sql
 supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql
 supabase/migrations/00034_apply_hierarchy_permissions_accounting_scopes.sql
 supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql
+supabase/migrations/00036_active_unit_financial_reports.sql
+supabase/migrations/00037_fiscal_dossier_exercice_dates.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1751,11 +1777,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_finance_reports.sql` | 9 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_accounting_scopes.sql` | 11 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
+| `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables et `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active et `00037` pour la synchronisation des dates d'exercice fiscal.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1785,6 +1812,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les acces descendants aux finances operationnelles et aux rapports mensuels doivent passer par les helpers RLS granulaires de `00033`; la validation/rejet des mouvements financiers est aussi controlee par trigger.
 - Les acces descendants aux references comptables, ecritures, budgets, immobilisations et releves doivent passer par les helpers RLS granulaires de `00034`; la validation/cloture des ecritures est aussi controlee par trigger.
 - Les acces descendants aux dossiers fiscaux, balances importees, rapports financiers et exports doivent passer par les helpers RLS granulaires de `00035`; le workflow fiscal est aussi controle par trigger.
+- Les exports fiscaux Excel doivent utiliser des dates d'exercice valides issues de `exercices_comptables` ou des champs `fiscal_dossier_values` synchronises par `00037`; une periode inversee doit rester bloquee par le preflight applicatif.
 
 ---
 
@@ -1792,6 +1820,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-17 | Agent IA | **Migration 00037** : Synchronisation automatique des champs `exercice.date_debut` et `exercice.date_fin` des dossiers fiscaux depuis l'exercice comptable, backfill des dossiers existants et correction limite des inversions annuelles evidentes pour proteger l'export Excel fiscal. |
 | 2026-06-17 | Agent IA | **Migration 00036** : Ajout des RPC `*_scoped` pour filtrer la balance, le compte de resultat, le bilan et le grand livre par unite active en plus des droits hierarchiques `financial_statements`. Ajout d'une note de conception pour l'export fiscal Excel base sur le modele officiel. |
 | 2026-06-16 | Agent IA | **Correctif 00035** : Remplacement du backfill initial des `church_unit_id` de `fiscal_dossiers` et `imported_trial_balances` par des sous-requetes correlees idempotentes, afin que la migration puisse etre relancee apres creation partielle des colonnes/index. |
 | 2026-06-16 | Agent IA | **Migration 00035** : Application effective de la matrice d'autorisations hierarchiques aux RLS `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances` et `imported_trial_balance_lines`. Ajout des helpers RLS `financial_statements`/`exports`, rattachement a `church_units`, controle du workflow fiscal, filtrage hierarchique des RPC de rapports financiers et test SQL E2E. |
