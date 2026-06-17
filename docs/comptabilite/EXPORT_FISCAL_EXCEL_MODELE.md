@@ -62,6 +62,8 @@ Couverture de securite ajoutee :
 - les cellules non encore mappees sur un compte SYSCEBNL sont forcees a `0` ;
 - les colonnes comparatives N-1 sont alimentees par la balance du meme perimetre sur la periode decalee d'un an ;
 - si aucune balance N-1 n'existe, les cellules comparatives restent a `0` et le controle avant export affiche un avertissement ;
+- les cellules numeriques non formulees des feuilles `PAGE DE GARDE`, `FICHE R1` a `FICHE R4` et `NOTE*` sont neutralisees pour supprimer les anciens chiffres d'exemple ;
+- les formules des fiches et notes sont conservees, mais leurs anciennes valeurs cachees sont supprimees pour forcer un recalcul propre a l'ouverture du classeur ;
 - les cellules de totaux, sous-totaux et nets restent des formules Excel du modele ;
 - le `TFT` conserve ses lignes de calcul, mais ses flux non calculables sans historique sont neutralises pour eviter les montants d'exemple.
 
@@ -141,6 +143,8 @@ Sortie locale non versionnee :
 
 Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele, affiche les cellules injectees principales et passe l'audit des libelles SYSCEBNL.
 
+Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises, par exemple `FICHE R1!AQ14` et `NOTE 6!B12`.
+
 ## Ajustements avant generation
 
 Le niveau autorise, generalement le plus haut niveau comptable, doit pouvoir effectuer des ajustements temporaires avant generation :
@@ -193,6 +197,7 @@ Il verifie avant generation :
 - existence ou non du comparatif N-1 du meme perimetre ;
 - application eventuelle des ajustements d'export ;
 - neutralisation des anciennes cellules du modele.
+- neutralisation des montants d'exemple dans les fiches et notes annexes.
 
 Le bouton `Controles` affiche le rapport dans le dossier fiscal. Le bouton `Excel` execute aussi ce controle : si une anomalie bloquante existe, le rapport est affiche et l'export est refuse.
 

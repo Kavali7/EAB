@@ -121,6 +121,34 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test('neutralise les montants exemples des fiches et notes annexes', () {
+      final output = FiscalExcelTemplateWriter.write(
+        templateBytes: _buildMiniWorkbook(),
+        mapping: const SyscebnlFiscalExcelMapping(values: [], formulas: []),
+        neutralizeNumericSheetPatterns: [
+          RegExp(r'^FICHE R[1-4]$', caseSensitive: false),
+          RegExp(r'^NOTES? \d+[A-Z]?(?: bis)?$', caseSensitive: false),
+        ],
+      );
+
+      final archive = ZipDecoder().decodeBytes(output);
+      final fiche = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet5.xml'),
+      );
+      final note = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet6.xml'),
+      );
+
+      expect(_cellValue(fiche, 'AQ14'), '0');
+      expect(_cellStyle(fiche, 'AQ14'), '9');
+      expect(_cellFormula(fiche, 'AQ15'), 'SUM(AQ14:AQ14)');
+      expect(_cellValue(fiche, 'AQ15'), isNull);
+      expect(_cellValue(note, 'B12'), '0');
+      expect(_cellValue(note, 'C12'), '0');
+      expect(_cellFormula(note, 'D12'), 'SUM(B12:B12)');
+      expect(_cellValue(note, 'D12'), isNull);
+    });
   });
 }
 
@@ -140,6 +168,8 @@ Uint8List _buildMiniWorkbook() {
     <sheet name="PASSIF" sheetId="2" r:id="rId2"/>
     <sheet name="RESULTAT" sheetId="3" r:id="rId3"/>
     <sheet name="TFT" sheetId="4" r:id="rId4"/>
+    <sheet name="FICHE R1 " sheetId="5" r:id="rId5"/>
+    <sheet name="NOTE 6" sheetId="6" r:id="rId6"/>
   </sheets>
   <definedNames>
     <definedName name="_soNom">"Ancien"</definedName>
@@ -156,6 +186,8 @@ Uint8List _buildMiniWorkbook() {
   <Relationship Id="rId2" Type="worksheet" Target="worksheets/sheet2.xml"/>
   <Relationship Id="rId3" Type="worksheet" Target="worksheets/sheet3.xml"/>
   <Relationship Id="rId4" Type="worksheet" Target="worksheets/sheet4.xml"/>
+  <Relationship Id="rId5" Type="worksheet" Target="worksheets/sheet5.xml"/>
+  <Relationship Id="rId6" Type="worksheet" Target="worksheets/sheet6.xml"/>
 </Relationships>
 '''),
     )
@@ -163,6 +195,18 @@ Uint8List _buildMiniWorkbook() {
     ..addFile(ArchiveFile.string('xl/worksheets/sheet2.xml', _worksheetXml()))
     ..addFile(ArchiveFile.string('xl/worksheets/sheet3.xml', _worksheetXml()))
     ..addFile(ArchiveFile.string('xl/worksheets/sheet4.xml', _worksheetXml()))
+    ..addFile(
+      ArchiveFile.string(
+        'xl/worksheets/sheet5.xml',
+        _annexWorksheetXml('AQ14', 'AQ15', '125000'),
+      ),
+    )
+    ..addFile(
+      ArchiveFile.string(
+        'xl/worksheets/sheet6.xml',
+        _annexWorksheetXml('B12', 'D12', '52704386', secondCellRef: 'C12'),
+      ),
+    )
     ..addFile(
       ArchiveFile.string(
         'xl/sharedStrings.xml',
@@ -177,6 +221,27 @@ Uint8List _buildMiniWorkbook() {
     );
 
   return ZipEncoder().encodeBytes(archive);
+}
+
+String _annexWorksheetXml(
+  String sourceCellRef,
+  String formulaCellRef,
+  String sourceValue, {
+  String? secondCellRef,
+}) {
+  final row = RegExp(r'\d+').firstMatch(sourceCellRef)!.group(0)!;
+  final formulaRow = RegExp(r'\d+').firstMatch(formulaCellRef)!.group(0)!;
+  final secondCell = secondCellRef == null
+      ? ''
+      : '<c r="$secondCellRef"><v>42</v></c>';
+  return '''
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="$row"><c r="$sourceCellRef" s="9"><v>$sourceValue</v></c>$secondCell</row>
+    <row r="$formulaRow"><c r="$formulaCellRef"><f>SUM($sourceCellRef:$sourceCellRef)</f><v>125000</v></c></row>
+  </sheetData>
+</worksheet>
+''';
 }
 
 String _worksheetXml() {

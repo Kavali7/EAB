@@ -23,6 +23,7 @@ class FiscalExcelTemplateWriter {
     Map<String, String> definedNames = const {},
     Map<String, String> textReplacements = const {},
     List<RegExp> forbiddenTextPatterns = const [],
+    List<RegExp> neutralizeNumericSheetPatterns = const [],
   }) {
     final archive = ZipDecoder().decodeBytes(templateBytes);
     final files = {for (final file in archive.files) file.name: file};
@@ -55,7 +56,18 @@ class FiscalExcelTemplateWriter {
       formulasBySheet.putIfAbsent(formula.sheet, () => []).add(formula);
     }
 
-    for (final sheetName in {...valuesBySheet.keys, ...formulasBySheet.keys}) {
+    final neutralizedSheetNames = sheetPaths.keys
+        .where(
+          (sheetName) =>
+              _matchesSheetPattern(sheetName, neutralizeNumericSheetPatterns),
+        )
+        .toSet();
+
+    for (final sheetName in {
+      ...neutralizedSheetNames,
+      ...valuesBySheet.keys,
+      ...formulasBySheet.keys,
+    }) {
       final sheetPath = sheetPaths[sheetName];
       if (sheetPath == null) {
         throw FormatException('Feuille Excel introuvable: $sheetName');
@@ -65,6 +77,9 @@ class FiscalExcelTemplateWriter {
         throw FormatException('Fichier de feuille introuvable: $sheetPath');
       }
       final sheetDoc = XmlDocument.parse(_readText(sheetFile));
+      if (neutralizedSheetNames.contains(sheetName)) {
+        _neutralizeNumericConstants(sheetDoc);
+      }
       for (final value in valuesBySheet[sheetName] ?? const []) {
         _setNumericCell(sheetDoc, value.cell, value.value);
       }
@@ -126,6 +141,11 @@ class FiscalExcelTemplateWriter {
       sheetPaths[name] = target;
     }
     return sheetPaths;
+  }
+
+  static bool _matchesSheetPattern(String sheetName, List<RegExp> patterns) {
+    final normalized = sheetName.trim();
+    return patterns.any((pattern) => pattern.hasMatch(normalized));
   }
 
   static String? _relationshipId(XmlElement element) {
@@ -236,6 +256,30 @@ class FiscalExcelTemplateWriter {
         XmlText(formula.replaceFirst(RegExp(r'^='), '')),
       ]),
     );
+  }
+
+  static void _neutralizeNumericConstants(XmlDocument sheetDoc) {
+    for (final cell in sheetDoc.findAllElements('c')) {
+      final hasFormula = cell.findElements('f').isNotEmpty;
+      if (hasFormula) {
+        cell.children.removeWhere(
+          (node) => node is XmlElement && node.name.local == 'v',
+        );
+        continue;
+      }
+
+      final type = cell.getAttribute('t');
+      if (type != null && type != 'n') continue;
+
+      final valueElement = cell.findElements('v').firstOrNull;
+      if (valueElement == null) continue;
+      if (double.tryParse(valueElement.innerText.trim()) == null) continue;
+
+      _removeAttribute(cell, 't');
+      valueElement.children
+        ..clear()
+        ..add(XmlText('0'));
+    }
   }
 
   static XmlElement _ensureCell(XmlDocument sheetDoc, String cellRef) {

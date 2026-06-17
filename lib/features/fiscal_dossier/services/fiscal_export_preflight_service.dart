@@ -229,6 +229,16 @@ class FiscalExportPreflightEngine {
       );
     }
 
+    issues.add(
+      const FiscalExportPreflightIssue(
+        code: 'annex_examples_neutralized',
+        severity: FiscalPreflightSeverity.info,
+        title: 'Annexes protegees',
+        detail:
+            'Les montants d exemple des fiches et notes annexes du modele seront neutralises avant generation.',
+      ),
+    );
+
     return FiscalExportPreflightReport(
       dateDebut: dateDebut,
       dateFin: dateFin,

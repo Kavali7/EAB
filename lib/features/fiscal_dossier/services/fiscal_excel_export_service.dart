@@ -135,6 +135,8 @@ class FiscalExcelExportService {
       ),
       textReplacements: syscebnlFiscalExcelTextReplacements,
       forbiddenTextPatterns: syscebnlFiscalExcelForbiddenPatterns,
+      neutralizeNumericSheetPatterns:
+          syscebnlFiscalExcelNeutralizedSheetPatterns,
     );
 
     return FiscalExcelExport(

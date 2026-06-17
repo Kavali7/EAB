@@ -43,6 +43,7 @@ void main() {
     },
     textReplacements: syscebnlFiscalExcelTextReplacements,
     forbiddenTextPatterns: syscebnlFiscalExcelForbiddenPatterns,
+    neutralizeNumericSheetPatterns: syscebnlFiscalExcelNeutralizedSheetPatterns,
   );
   output.writeAsBytesSync(bytes);
 
@@ -75,6 +76,12 @@ void main() {
     _entryText(outputArchive, sheetPaths['RESULTAT']!),
   );
   final tft = XmlDocument.parse(_entryText(outputArchive, sheetPaths['TFT']!));
+  final ficheR1 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'FICHE R1')!),
+  );
+  final note6 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 6')!),
+  );
 
   stdout.writeln('Prototype genere: ${output.path}');
   stdout.writeln('Feuilles conservees: ${_sheetCount(workbook)}');
@@ -92,6 +99,8 @@ void main() {
   stdout.writeln('TFT!H17=${_cellValue(tft, 'H17')}');
   stdout.writeln('TFT!I14=${_cellFormula(tft, 'I14')}');
   stdout.writeln('TFT!I40=${_cellFormula(tft, 'I40')}');
+  stdout.writeln('FICHE R1!AQ14=${_cellValue(ficheR1, 'AQ14')}');
+  stdout.writeln('NOTE 6!B12=${_cellValue(note6, 'B12')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
@@ -343,6 +352,13 @@ Map<String, String> _sheetPaths(Archive archive, XmlDocument workbook) {
     }
   }
   return paths;
+}
+
+String? _sheetPathByTrim(Map<String, String> paths, String name) {
+  for (final entry in paths.entries) {
+    if (entry.key.trim() == name) return entry.value;
+  }
+  return null;
 }
 
 int _sheetCount(XmlDocument workbook) {
