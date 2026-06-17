@@ -71,14 +71,18 @@ void main() {
   final resultat = XmlDocument.parse(
     _entryText(outputArchive, sheetPaths['RESULTAT']!),
   );
+  final tft = XmlDocument.parse(_entryText(outputArchive, sheetPaths['TFT']!));
 
   stdout.writeln('Prototype genere: ${output.path}');
   stdout.writeln('Feuilles conservees: ${_sheetCount(workbook)}');
   stdout.writeln('Entrees zip conservees: ${outputArchive.files.length}');
   stdout.writeln('ACTIF!D16=${_cellValue(actif, 'D16')}');
   stdout.writeln('ACTIF!E18=${_cellValue(actif, 'E18')}');
+  stdout.writeln('ACTIF!D22=${_cellValue(actif, 'D22')}');
   stdout.writeln('PASSIF!D19=${_cellFormula(passif, 'D19')}');
   stdout.writeln('RESULTAT!E20=${_cellValue(resultat, 'E20')}');
+  stdout.writeln('RESULTAT!E49=${_cellValue(resultat, 'E49')}');
+  stdout.writeln('TFT!I40=${_cellValue(tft, 'I40')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 

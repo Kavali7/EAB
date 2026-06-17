@@ -56,6 +56,16 @@ Premiere couverture du mapping :
 | `RESULTAT` | `E44`, `E46` | Produits et charges hors activites ordinaires classe 8 |
 | `TFT` | `H14` | Formule de capacite d'autofinancement : resultat net + dotations - reprises |
 
+Couverture de securite ajoutee :
+
+- toutes les cellules sources numeriques des feuilles `ACTIF`, `PASSIF`, `RESULTAT` et `TFT` sont ecrasees par le generateur ;
+- les cellules non encore mappees sur un compte SYSCEBNL sont forcees a `0` ;
+- les colonnes comparatives N-1 sont forcees a `0` tant qu'une vraie balance comparative N-1 n'est pas branchee ;
+- les cellules de totaux, sous-totaux et nets restent des formules Excel du modele ;
+- le `TFT` conserve ses lignes de calcul, mais ses flux non calculables sans historique sont neutralises pour eviter les montants d'exemple.
+
+Cette regle evite qu'un montant du fichier exemple commercial survive dans un dossier fiscal d'eglise.
+
 Les totaux, sous-totaux et nets du classeur doivent rester des formules Excel. Le generateur ne doit ecrire que les cellules sources, sauf lorsqu'une formule doit explicitement remplacer une valeur manuelle du modele.
 
 Un test verrouille cette logique :
