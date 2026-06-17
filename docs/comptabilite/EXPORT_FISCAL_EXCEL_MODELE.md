@@ -66,6 +66,43 @@ Points couverts par le test :
 - les produits classe 7 et charges classe 6 alimentent le resultat selon une logique SYSCEBNL ;
 - le resultat net du passif est repris depuis la feuille `RESULTAT`.
 
+## Generation technique du classeur
+
+Le prototype de generation utilise une ecriture OOXML minimale :
+
+`lib/features/fiscal_dossier/services/fiscal_excel_template_writer.dart`
+
+Le fichier `.xlsx` est traite comme une archive zip. Le writer copie toutes les entrees du modele et remplace seulement :
+
+- `xl/workbook.xml` pour les noms Excel globaux et le recalcul des formules ;
+- les XML des feuilles ciblees pour les cellules sources et formules SYSCEBNL.
+
+Cette approche evite de recreer le classeur avec une librairie tableur qui pourrait perdre les dessins, styles, mises en page ou objets non supportes. Les parties non modifiees, y compris les dessins et relations, restent dans l'archive.
+
+Test associe :
+
+`test/features/fiscal_dossier/fiscal_excel_template_writer_test.dart`
+
+Le test verifie :
+
+- l'ecriture de valeurs numeriques ;
+- l'ecriture de formules sans le `=` initial dans le XML Excel ;
+- la conservation du style d'une cellule existante ;
+- le remplacement des noms Excel globaux ;
+- la conservation d'une partie dessin non modifiee.
+
+Prototype manuel sur le modele local :
+
+```bash
+dart run tool/prototype_fiscal_excel_export.dart
+```
+
+Sortie locale non versionnee :
+
+`build/prototypes/dossier_fiscal_syscebnl_prototype.xlsx`
+
+Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele et affiche les cellules injectees principales.
+
 ## Ajustements avant generation
 
 Le niveau autorise, generalement le plus haut niveau comptable, doit pouvoir effectuer des ajustements temporaires avant generation :

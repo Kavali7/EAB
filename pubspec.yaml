@@ -42,9 +42,11 @@ dependencies:
   responsive_framework: ^1.5.1
   fl_chart: ^1.1.1
   supabase_flutter: ^2.8.0
+  archive: ^4.0.9
   pdf: ^3.11.2
   printing: ^5.13.4
   csv: ^6.0.0
+  xml: ^6.6.1
   google_fonts: ^6.2.1
   sentry_flutter: ^8.13.0
 
