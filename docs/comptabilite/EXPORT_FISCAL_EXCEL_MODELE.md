@@ -173,6 +173,25 @@ Garde-fous obligatoires :
 
 Ainsi, un ajustement agit comme une piece d'export controlee : il affecte automatiquement les comptes et cellules dependantes via le mapping SYSCEBNL, mais il ne touche pas aux ecritures source.
 
+## Controle avant export
+
+Le rapport de controle avant export est porte par :
+
+`lib/features/fiscal_dossier/services/fiscal_export_preflight_service.dart`
+
+Il verifie avant generation :
+
+- presence d'un perimetre fiscal explicite ;
+- coherence de la periode ;
+- presence d'une balance pour le perimetre et la periode ;
+- equilibre debit/credit apres ajustements ;
+- presence d'au moins une cellule SYSCEBNL principale alimentee ;
+- existence ou non du comparatif N-1 ;
+- application eventuelle des ajustements d'export ;
+- neutralisation des anciennes cellules du modele.
+
+Le bouton `Controles` affiche le rapport dans le dossier fiscal. Le bouton `Excel` execute aussi ce controle : si une anomalie bloquante existe, le rapport est affiche et l'export est refuse.
+
 ## Implication pour le developpement
 
 La suite doit etre construite en trois niveaux :

@@ -8,6 +8,7 @@ import 'package:eab/features/etats_financiers/application/reports_providers.dart
 import 'package:eab/features/fiscal_dossier/data/fiscal_dossier_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_excel_export_service.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_export_preflight_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Repository provider
@@ -22,6 +23,11 @@ final fiscalExcelExportServiceProvider = Provider<FiscalExcelExportService>((
 ) {
   return FiscalExcelExportService(ref.watch(reportsRepositoryProvider));
 });
+
+final fiscalExportPreflightServiceProvider =
+    Provider<FiscalExportPreflightService>((ref) {
+      return FiscalExportPreflightService(ref.watch(reportsRepositoryProvider));
+    });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Templates
