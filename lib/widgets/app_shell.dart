@@ -78,9 +78,20 @@ class AppShell extends ConsumerWidget {
       churchUnitsAutorisees,
       churchUnitActiveId,
     );
-    if ((churchUnitActiveId == null ||
-            !churchUnitsAutorisees.any((u) => u.id == churchUnitActiveId)) &&
-        churchUnitsAutorisees.isNotEmpty) {
+    final hasValidActiveChurchUnit =
+        churchUnitActiveId != null &&
+        churchUnitsAutorisees.any((u) => u.id == churchUnitActiveId);
+    final mustSelectChurchUnit =
+        profilCourant != null &&
+        !churchUnitsAsync.isLoading &&
+        churchUnitsAutorisees.isNotEmpty &&
+        !hasValidActiveChurchUnit;
+    final mustSyncLegacyAssemblee =
+        selectedChurchUnit != null &&
+        selectedChurchUnit.legacyAssembleeId != null &&
+        assembleeActiveId != selectedChurchUnit.legacyAssembleeId;
+
+    if (mustSelectChurchUnit) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final defaultUnit = churchUnitsAutorisees.first;
         ref
@@ -90,18 +101,11 @@ class AppShell extends ConsumerWidget {
             .read(assembleeActiveIdProvider.notifier)
             .setAssemblee(defaultUnit.legacyAssembleeId);
       });
-    } else if (selectedChurchUnit != null &&
-        assembleeActiveId != selectedChurchUnit.legacyAssembleeId) {
+    } else if (mustSyncLegacyAssemblee) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(assembleeActiveIdProvider.notifier)
             .setAssemblee(selectedChurchUnit.legacyAssembleeId);
-      });
-    } else if (assembleeActiveId == null && assembleesAutorisees.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref
-            .read(assembleeActiveIdProvider.notifier)
-            .setAssemblee(assembleesAutorisees.first.id);
       });
     }
 
@@ -112,6 +116,13 @@ class AppShell extends ConsumerWidget {
     final isWide = MediaQuery.of(context).size.width >= 1100;
     final effectiveShowBackButton = showBackButton || currentRoute != '/';
     final effectiveBackRoute = backRoute ?? '/';
+    final isContextResolving =
+        (profilCourant == null && profilsAsync.isLoading) ||
+        (profilCourant != null &&
+            churchUnitsAsync.isLoading &&
+            churchUnitActiveId == null) ||
+        mustSelectChurchUnit ||
+        mustSyncLegacyAssemblee;
 
     return CallbackShortcuts(
       bindings: {
@@ -180,7 +191,9 @@ class AppShell extends ConsumerWidget {
                       child: Container(
                         width: double.infinity,
                         color: AppColors.background,
-                        child: body,
+                        child: isContextResolving
+                            ? const _ContextResolvingView()
+                            : body,
                       ),
                     ),
                   ],
@@ -199,17 +212,20 @@ class AppShell extends ConsumerWidget {
     String? activeId,
   ) {
     if (assemblees.isEmpty) return null;
-    if (activeId == null) return assemblees.first;
-    return assemblees.firstWhere(
-      (a) => a.id == activeId,
-      orElse: () => assemblees.first,
-    );
+    if (activeId == null) return null;
+    for (final assemblee in assemblees) {
+      if (assemblee.id == activeId) return assemblee;
+    }
+    return null;
   }
 
   ChurchUnit? _selectedChurchUnit(List<ChurchUnit> units, String? activeId) {
     if (units.isEmpty) return null;
-    if (activeId == null) return units.first;
-    return units.firstWhere((u) => u.id == activeId, orElse: () => units.first);
+    if (activeId == null) return null;
+    for (final unit in units) {
+      if (unit.id == activeId) return unit;
+    }
+    return null;
   }
 
   List<ChurchUnit> _churchUnitsAutorisees(
@@ -329,6 +345,21 @@ class AppShell extends ConsumerWidget {
       case RoleUtilisateur.tresorierAssemblee:
         return false;
     }
+  }
+}
+
+class _ContextResolvingView extends StatelessWidget {
+  const _ContextResolvingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 32,
+        height: 32,
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
+    );
   }
 }
 

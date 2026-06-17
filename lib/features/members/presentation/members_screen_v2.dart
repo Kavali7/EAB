@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/church_unit_scope.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/member.dart';
@@ -73,6 +74,7 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
 
     final members = membersAsync.value ?? [];
     final families = familiesAsync.value ?? [];
@@ -81,6 +83,11 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
     final assembleeById = {for (final a in assemblees) a.id: a};
     final churchUnitById = {for (final unit in churchUnits) unit.id: unit};
     final familyById = {for (final f in families) f.id: f};
+    final scope = ChurchUnitScope.fromActiveContext(
+      units: churchUnits,
+      activeChurchUnitId: churchUnitActiveId,
+      activeAssembleeId: assembleeActiveId,
+    );
 
     final filtered = members.where((m) {
       final query = _query.trim().toLowerCase();
@@ -92,9 +99,10 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
       if (_statutFilter != null && m.statut != _statutFilter) return false;
       if (_onlyChildren && !_isChild(m)) return false;
       if (_onlyOfficers && !m.estOfficier) return false;
-      if (assembleeActiveId != null &&
-          m.idAssembleeLocale != assembleeActiveId &&
-          !_memberMatchesLegacyAssembly(m, churchUnitById, assembleeActiveId)) {
+      if (!scope.contains(
+        churchUnitId: m.churchUnitId,
+        legacyAssembleeId: m.idAssembleeLocale,
+      )) {
         return false;
       }
       return true;
@@ -134,7 +142,7 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
                     stats: [
                       _MemberStat(
                         label: 'Actifs',
-                        value: '$activeMale H / $activeFemale F',
+                        value: 'H: $activeMale | F: $activeFemale',
                         helper: 'Total ${active.length}',
                         icon: Icons.verified_user_outlined,
                         color: AppColors.primary,
@@ -213,17 +221,6 @@ class _MembersScreenV2State extends ConsumerState<MembersScreenV2> {
         ),
       ),
     );
-  }
-
-  bool _memberMatchesLegacyAssembly(
-    Member member,
-    Map<String, ChurchUnit> churchUnitById,
-    String assembleeId,
-  ) {
-    final unit = member.churchUnitId == null
-        ? null
-        : churchUnitById[member.churchUnitId!];
-    return unit?.legacyAssembleeId == assembleeId;
   }
 
   Future<void> _confirmDelete(Member member) async {

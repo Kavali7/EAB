@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:eab/core/theme.dart';
-import 'package:eab/providers/user_profile_providers.dart';
+import 'package:eab/features/organization/application/organization_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 
@@ -20,8 +20,10 @@ class DashboardFinanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profil = ref.watch(profilUtilisateurCourantProvider);
-    if (profil == null) {
+    final orgAsync = ref.watch(currentOrganizationProvider);
+    final org = orgAsync.value;
+    final orgId = org?.id;
+    if (orgAsync.isLoading || orgId == null || orgId.isEmpty) {
       return const AppShell(
         title: 'Dashboard financier',
         currentRoute: '/dashboard-finance',
@@ -29,7 +31,6 @@ class DashboardFinanceScreen extends ConsumerWidget {
       );
     }
 
-    final orgId = profil.id;
     final kpisAsync = ref.watch(financeKpisProvider(orgId));
     final evoAsync = ref.watch(financeEvolutionProvider(orgId));
     final repAsync = ref.watch(financeRepartitionProvider(orgId));

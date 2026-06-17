@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/church_unit_scope.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/exercices/application/exercices_providers.dart';
 import 'package:eab/models/ecriture_comptable.dart';
 import 'package:eab/models/program.dart';
@@ -28,32 +30,50 @@ class DashboardScreenV2 extends ConsumerWidget {
     final programsAsync = ref.watch(programsProvider);
     final ecrituresAsync = ref.watch(ecrituresComptablesProvider);
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
 
     final members = membersAsync.value ?? [];
     final programs = programsAsync.value ?? [];
     final ecritures = ecrituresAsync.value ?? [];
+    final churchUnits = churchUnitsAsync.value ?? [];
     final isLoading =
         membersAsync.isLoading ||
         programsAsync.isLoading ||
         ecrituresAsync.isLoading ||
-        assembleesAsync.isLoading;
+        assembleesAsync.isLoading ||
+        churchUnitsAsync.isLoading;
+    final scope = ChurchUnitScope.fromActiveContext(
+      units: churchUnits,
+      activeChurchUnitId: churchUnitActiveId,
+      activeAssembleeId: assembleeActiveId,
+    );
 
-    final filteredMembers = assembleeActiveId == null
-        ? members
-        : members
-              .where((m) => m.idAssembleeLocale == assembleeActiveId)
-              .toList();
-    final filteredPrograms = assembleeActiveId == null
-        ? programs
-        : programs
-              .where((p) => p.idAssembleeLocale == assembleeActiveId)
-              .toList();
-    final filteredEcritures = assembleeActiveId == null
-        ? ecritures
-        : ecritures
-              .where((e) => e.idAssembleeLocale == assembleeActiveId)
-              .toList();
+    final filteredMembers = members
+        .where(
+          (m) => scope.contains(
+            churchUnitId: m.churchUnitId,
+            legacyAssembleeId: m.idAssembleeLocale,
+          ),
+        )
+        .toList();
+    final filteredPrograms = programs
+        .where(
+          (p) => scope.contains(
+            churchUnitId: p.churchUnitId,
+            legacyAssembleeId: p.idAssembleeLocale,
+          ),
+        )
+        .toList();
+    final filteredEcritures = ecritures
+        .where(
+          (e) => scope.contains(
+            churchUnitId: e.churchUnitId,
+            legacyAssembleeId: e.idAssembleeLocale,
+          ),
+        )
+        .toList();
 
     double totalIncome = 0;
     double totalExpense = 0;
@@ -144,7 +164,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                           children: [
                             KpiCard(
                               title: 'Fideles',
-                              value: '$maleCount H / $femaleCount F',
+                              value: 'H: $maleCount | F: $femaleCount',
                               subtitle:
                                   'Total ${filteredMembers.length} | Baptises $baptized',
                               icon: Icons.people_alt_outlined,

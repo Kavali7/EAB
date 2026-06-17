@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/church_unit_scope.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/models/program.dart';
@@ -55,21 +56,24 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
+    final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
 
     final programs = programsAsync.value ?? [];
     final assemblees = assembleesAsync.value ?? [];
     final churchUnits = churchUnitsAsync.value ?? [];
     final assembleeById = {for (final a in assemblees) a.id: a};
     final churchUnitById = {for (final unit in churchUnits) unit.id: unit};
+    final scope = ChurchUnitScope.fromActiveContext(
+      units: churchUnits,
+      activeChurchUnitId: churchUnitActiveId,
+      activeAssembleeId: assembleeActiveId,
+    );
 
     final filtered = programs.where((program) {
-      if (assembleeActiveId != null &&
-          program.idAssembleeLocale != assembleeActiveId &&
-          !_programMatchesLegacyAssembly(
-            program,
-            churchUnitById,
-            assembleeActiveId,
-          )) {
+      if (!scope.contains(
+        churchUnitId: program.churchUnitId,
+        legacyAssembleeId: program.idAssembleeLocale,
+      )) {
         return false;
       }
 
@@ -632,17 +636,6 @@ class _ProgramsScreenV2State extends ConsumerState<ProgramsScreenV2> {
     if (confirm == true) {
       await ref.read(programsProvider.notifier).removeProgram(program.id);
     }
-  }
-
-  bool _programMatchesLegacyAssembly(
-    Program program,
-    Map<String, ChurchUnit> churchUnitById,
-    String assembleeId,
-  ) {
-    final unit = program.churchUnitId == null
-        ? null
-        : churchUnitById[program.churchUnitId!];
-    return unit?.legacyAssembleeId == assembleeId;
   }
 
   String _unitName(
