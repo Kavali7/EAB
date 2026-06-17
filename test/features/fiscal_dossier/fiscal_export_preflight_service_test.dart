@@ -11,9 +11,11 @@ void main() {
         churchUnitId: null,
         dateDebut: DateTime.utc(2026),
         dateFin: DateTime.utc(2026, 12, 31),
+        previousDateDebut: DateTime.utc(2025),
+        previousDateFin: DateTime.utc(2025, 12, 31),
         balanceLines: const [],
+        previousBalanceLines: const [],
         adjustments: const [],
-        values: const {},
       );
 
       expect(report.canExport, isFalse);
@@ -29,6 +31,8 @@ void main() {
         churchUnitId: 'unit-1',
         dateDebut: DateTime.utc(2026),
         dateFin: DateTime.utc(2026, 12, 31),
+        previousDateDebut: DateTime.utc(2025),
+        previousDateFin: DateTime.utc(2025, 12, 31),
         balanceLines: const [
           SyscebnlBalanceLine(
             numero: '512',
@@ -45,8 +49,8 @@ void main() {
             totalCredit: 900,
           ),
         ],
+        previousBalanceLines: const [],
         adjustments: const [],
-        values: const {},
       );
 
       expect(report.canExport, isFalse);
@@ -61,6 +65,8 @@ void main() {
         churchUnitId: 'unit-1',
         dateDebut: DateTime.utc(2026),
         dateFin: DateTime.utc(2026, 12, 31),
+        previousDateDebut: DateTime.utc(2025),
+        previousDateFin: DateTime.utc(2025, 12, 31),
         balanceLines: const [
           SyscebnlBalanceLine(
             numero: '512',
@@ -77,6 +83,7 @@ void main() {
             totalCredit: 1000,
           ),
         ],
+        previousBalanceLines: const [],
         adjustments: [
           FiscalExportAdjustment.balancedEntry(
             id: 'adj-1',
@@ -89,7 +96,6 @@ void main() {
             amount: 100,
           ),
         ],
-        values: const {},
       );
 
       expect(report.canExport, isTrue);
@@ -104,6 +110,60 @@ void main() {
       expect(
         report.issues.map((issue) => issue.code),
         contains('adjustments_present'),
+      );
+    });
+
+    test('signale un comparatif N-1 charge quand la balance existe', () {
+      final report = FiscalExportPreflightEngine.build(
+        churchUnitId: 'unit-1',
+        dateDebut: DateTime.utc(2026),
+        dateFin: DateTime.utc(2026, 12, 31),
+        previousDateDebut: DateTime.utc(2025),
+        previousDateFin: DateTime.utc(2025, 12, 31),
+        balanceLines: const [
+          SyscebnlBalanceLine(
+            numero: '512',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 1000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '701',
+            intitule: 'Dimes',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 1000,
+          ),
+        ],
+        previousBalanceLines: const [
+          SyscebnlBalanceLine(
+            numero: '512',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 800,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '701',
+            intitule: 'Dimes',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 800,
+          ),
+        ],
+        adjustments: const [],
+      );
+
+      expect(report.canExport, isTrue);
+      expect(report.previousBalanceLineCount, 2);
+      expect(
+        report.issues.map((issue) => issue.code),
+        contains('previous_year_loaded'),
+      );
+      expect(
+        report.issues.map((issue) => issue.code),
+        isNot(contains('missing_previous_year')),
       );
     });
   });

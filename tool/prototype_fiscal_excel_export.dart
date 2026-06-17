@@ -25,7 +25,10 @@ void main() {
     '${outputDir.path}/dossier_fiscal_syscebnl_prototype_${DateTime.now().millisecondsSinceEpoch}.xlsx',
   );
 
-  final mapping = SyscebnlFiscalExcelMapper.fromBalance(_sampleBalance());
+  final mapping = SyscebnlFiscalExcelMapper.fromBalance(
+    _sampleBalance(),
+    previousLines: _samplePreviousBalance(),
+  );
   final bytes = FiscalExcelTemplateWriter.write(
     templateBytes: model.readAsBytesSync(),
     mapping: mapping,
@@ -79,10 +82,16 @@ void main() {
   stdout.writeln('ACTIF!D16=${_cellValue(actif, 'D16')}');
   stdout.writeln('ACTIF!E18=${_cellValue(actif, 'E18')}');
   stdout.writeln('ACTIF!D22=${_cellValue(actif, 'D22')}');
+  stdout.writeln('ACTIF!G37=${_cellValue(actif, 'G37')}');
   stdout.writeln('PASSIF!D19=${_cellFormula(passif, 'D19')}');
+  stdout.writeln('PASSIF!E19=${_cellFormula(passif, 'E19')}');
   stdout.writeln('RESULTAT!E20=${_cellValue(resultat, 'E20')}');
+  stdout.writeln('RESULTAT!F20=${_cellValue(resultat, 'F20')}');
   stdout.writeln('RESULTAT!E49=${_cellValue(resultat, 'E49')}');
-  stdout.writeln('TFT!I40=${_cellValue(tft, 'I40')}');
+  stdout.writeln('TFT!H11=${_cellValue(tft, 'H11')}');
+  stdout.writeln('TFT!H17=${_cellValue(tft, 'H17')}');
+  stdout.writeln('TFT!I14=${_cellFormula(tft, 'I14')}');
+  stdout.writeln('TFT!I40=${_cellFormula(tft, 'I40')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
@@ -191,6 +200,116 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       intitule: 'Dotations aux amortissements',
       nature: 'charge',
       totalDebit: 420000,
+      totalCredit: 0,
+    ),
+  ];
+}
+
+List<SyscebnlBalanceLine> _samplePreviousBalance() {
+  return const [
+    SyscebnlBalanceLine(
+      numero: '21',
+      intitule: 'Terrains',
+      nature: 'actif',
+      totalDebit: 1000000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '213',
+      intitule: 'Batiments',
+      nature: 'actif',
+      totalDebit: 14500000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '2813',
+      intitule: 'Amortissement batiments',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 1400000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '2183',
+      intitule: 'Mobilier',
+      nature: 'actif',
+      totalDebit: 600000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '28183',
+      intitule: 'Amortissement mobilier',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 80000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '411',
+      intitule: 'Membres / adherents',
+      nature: 'actif',
+      totalDebit: 240000,
+      totalCredit: 20000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '5121',
+      intitule: 'Banque principale',
+      nature: 'actif',
+      totalDebit: 1850000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '531',
+      intitule: 'Caisse',
+      nature: 'actif',
+      totalDebit: 350000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '401',
+      intitule: 'Fournisseurs',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 500000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '701',
+      intitule: 'Dimes',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 5000000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '702',
+      intitule: 'Offrandes',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 2800000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '613',
+      intitule: 'Loyers et locations',
+      nature: 'charge',
+      totalDebit: 600000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '624',
+      intitule: 'Transports',
+      nature: 'charge',
+      totalDebit: 220000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '645',
+      intitule: 'Indemnites et aides',
+      nature: 'charge',
+      totalDebit: 450000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '6811',
+      intitule: 'Dotations aux amortissements',
+      nature: 'charge',
+      totalDebit: 360000,
       totalCredit: 0,
     ),
   ];

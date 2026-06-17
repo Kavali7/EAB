@@ -60,7 +60,8 @@ Couverture de securite ajoutee :
 
 - toutes les cellules sources numeriques des feuilles `ACTIF`, `PASSIF`, `RESULTAT` et `TFT` sont ecrasees par le generateur ;
 - les cellules non encore mappees sur un compte SYSCEBNL sont forcees a `0` ;
-- les colonnes comparatives N-1 sont forcees a `0` tant qu'une vraie balance comparative N-1 n'est pas branchee ;
+- les colonnes comparatives N-1 sont alimentees par la balance du meme perimetre sur la periode decalee d'un an ;
+- si aucune balance N-1 n'existe, les cellules comparatives restent a `0` et le controle avant export affiche un avertissement ;
 - les cellules de totaux, sous-totaux et nets restent des formules Excel du modele ;
 - le `TFT` conserve ses lignes de calcul, mais ses flux non calculables sans historique sont neutralises pour eviter les montants d'exemple.
 
@@ -117,6 +118,7 @@ Regles verrouillees :
 
 - l'export refuse tout dossier sans `church_unit_id` ;
 - la balance est lue via `report_balance_generale_scoped`, avec `organization_id`, `church_unit_id`, `date_debut` et `date_fin` du dossier ;
+- la balance comparative N-1 est lue avec le meme `organization_id` et le meme `church_unit_id`, sur les dates decalees d'un an ;
 - le fichier Excel est genere depuis l'asset `assets/templates/fiscal_syscebnl_template.xlsx` ;
 - les noms Excel globaux portent l'organisation, le sigle, le NIF, la devise, l'exercice et le perimetre ;
 - le fichier est refuse si une occurrence interdite reste presente apres nettoyage.
@@ -173,6 +175,8 @@ Garde-fous obligatoires :
 
 Ainsi, un ajustement agit comme une piece d'export controlee : il affecte automatiquement les comptes et cellules dependantes via le mapping SYSCEBNL, mais il ne touche pas aux ecritures source.
 
+Les ajustements s'appliquent uniquement a l'exercice exporte. La balance N-1 reste une lecture historique du meme perimetre, sans ajustement temporaire, pour eviter de melanger les corrections de presentation de l'exercice courant avec les donnees comparatives deja cloturees.
+
 ## Controle avant export
 
 Le rapport de controle avant export est porte par :
@@ -186,7 +190,7 @@ Il verifie avant generation :
 - presence d'une balance pour le perimetre et la periode ;
 - equilibre debit/credit apres ajustements ;
 - presence d'au moins une cellule SYSCEBNL principale alimentee ;
-- existence ou non du comparatif N-1 ;
+- existence ou non du comparatif N-1 du meme perimetre ;
 - application eventuelle des ajustements d'export ;
 - neutralisation des anciennes cellules du modele.
 

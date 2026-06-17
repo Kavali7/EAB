@@ -24,7 +24,10 @@ class FiscalExportPreflightReport {
   const FiscalExportPreflightReport({
     required this.dateDebut,
     required this.dateFin,
+    required this.previousDateDebut,
+    required this.previousDateFin,
     required this.balanceLineCount,
+    required this.previousBalanceLineCount,
     required this.adjustmentCount,
     required this.adjustmentLineCount,
     required this.totalDebit,
@@ -37,7 +40,10 @@ class FiscalExportPreflightReport {
 
   final DateTime dateDebut;
   final DateTime dateFin;
+  final DateTime previousDateDebut;
+  final DateTime previousDateFin;
   final int balanceLineCount;
+  final int previousBalanceLineCount;
   final int adjustmentCount;
   final int adjustmentLineCount;
   final double totalDebit;
@@ -67,9 +73,11 @@ class FiscalExportPreflightEngine {
     required String? churchUnitId,
     required DateTime dateDebut,
     required DateTime dateFin,
+    required DateTime previousDateDebut,
+    required DateTime previousDateFin,
     required List<SyscebnlBalanceLine> balanceLines,
+    required List<SyscebnlBalanceLine> previousBalanceLines,
     required List<FiscalExportAdjustment> adjustments,
-    required Map<String, dynamic> values,
   }) {
     final issues = <FiscalExportPreflightIssue>[];
 
@@ -110,6 +118,7 @@ class FiscalExportPreflightEngine {
     }
 
     FiscalExportAdjustmentResult? adjustedBalance;
+    FiscalExportAdjustmentResult? previousAdjustedBalance;
     try {
       adjustedBalance = FiscalExportAdjustmentEngine.apply(
         balanceLines: balanceLines,
@@ -126,8 +135,32 @@ class FiscalExportPreflightEngine {
       );
     }
 
+    if (previousBalanceLines.isNotEmpty) {
+      try {
+        previousAdjustedBalance = FiscalExportAdjustmentEngine.apply(
+          balanceLines: previousBalanceLines,
+          adjustments: const [],
+        );
+      } catch (error) {
+        issues.add(
+          FiscalExportPreflightIssue(
+            code: 'previous_balance_error',
+            severity: FiscalPreflightSeverity.blocking,
+            title: 'Balance N-1 incoherente',
+            detail:
+                'La balance comparative N-1 existe mais elle n est pas exploitable : $error',
+          ),
+        );
+      }
+    }
+
     final lines = adjustedBalance?.lines ?? balanceLines;
-    final mapping = SyscebnlFiscalExcelMapper.fromBalance(lines);
+    final previousLines =
+        previousAdjustedBalance?.lines ?? previousBalanceLines;
+    final mapping = SyscebnlFiscalExcelMapper.fromBalance(
+      lines,
+      previousLines: previousLines,
+    );
     final neutralizedCells = mapping.values
         .where((value) => value.fieldKey.endsWith('.zero'))
         .length;
@@ -150,14 +183,24 @@ class FiscalExportPreflightEngine {
       );
     }
 
-    if (!_hasPreviousYear(values)) {
+    if (previousBalanceLines.isEmpty) {
       issues.add(
-        const FiscalExportPreflightIssue(
+        FiscalExportPreflightIssue(
           code: 'missing_previous_year',
           severity: FiscalPreflightSeverity.warning,
           title: 'Comparatif N-1 absent',
           detail:
-              'Les colonnes comparatives N-1 sont neutralisees a zero tant que les donnees N-1 ne sont pas branchees.',
+              'Aucune balance N-1 trouvee pour la periode ${_formatDate(previousDateDebut)} - ${_formatDate(previousDateFin)}. Les colonnes comparatives N-1 restent a zero.',
+        ),
+      );
+    } else {
+      issues.add(
+        FiscalExportPreflightIssue(
+          code: 'previous_year_loaded',
+          severity: FiscalPreflightSeverity.info,
+          title: 'Comparatif N-1 charge',
+          detail:
+              '${previousBalanceLines.length} ligne(s) de balance N-1 chargee(s) pour la periode ${_formatDate(previousDateDebut)} - ${_formatDate(previousDateFin)}.',
         ),
       );
     }
@@ -189,7 +232,10 @@ class FiscalExportPreflightEngine {
     return FiscalExportPreflightReport(
       dateDebut: dateDebut,
       dateFin: dateFin,
+      previousDateDebut: previousDateDebut,
+      previousDateFin: previousDateFin,
       balanceLineCount: balanceLines.length,
+      previousBalanceLineCount: previousBalanceLines.length,
       adjustmentCount: adjustedBalance?.adjustmentCount ?? adjustments.length,
       adjustmentLineCount: adjustedBalance?.adjustmentLineCount ?? 0,
       totalDebit: adjustedBalance?.totalDebit ?? _totalDebit(balanceLines),
@@ -198,17 +244,6 @@ class FiscalExportPreflightEngine {
       neutralizedCellCount: neutralizedCells,
       nonZeroInjectedCellCount: nonZeroInjectedCells,
       issues: issues,
-    );
-  }
-
-  static bool _hasPreviousYear(Map<String, dynamic> values) {
-    final explicit = values['export.previous_year_available'];
-    if (explicit == true || explicit == 'true') return true;
-    return values.keys.any(
-      (key) =>
-          key.startsWith('n1.') ||
-          key.startsWith('previous.') ||
-          key == 'exercice.date_fin_n1',
     );
   }
 
@@ -221,6 +256,12 @@ class FiscalExportPreflightEngine {
   }
 
   static double _round(double value) => (value * 100).roundToDouble() / 100;
+
+  static String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
 }
 
 class FiscalExportPreflightService {
@@ -239,6 +280,7 @@ class FiscalExportPreflightService {
         _dateValue(values['exercice.date_debut']) ??
         DateTime(dateFin.year, 1, 1);
     final churchUnitId = dossier.churchUnitId;
+    final previousPeriod = _previousPeriod(dateDebut, dateFin);
     final balance = churchUnitId == null || churchUnitId.trim().isEmpty
         ? const <LigneBalance>[]
         : await _reportsRepository.fetchBalanceGenerale(
@@ -247,16 +289,28 @@ class FiscalExportPreflightService {
             dateDebut: dateDebut,
             dateFin: dateFin,
           );
+    final previousBalance = churchUnitId == null || churchUnitId.trim().isEmpty
+        ? const <LigneBalance>[]
+        : await _reportsRepository.fetchBalanceGenerale(
+            dossier.organizationId,
+            churchUnitId: churchUnitId,
+            dateDebut: previousPeriod.start,
+            dateFin: previousPeriod.end,
+          );
 
     return FiscalExportPreflightEngine.build(
       churchUnitId: churchUnitId,
       dateDebut: dateDebut,
       dateFin: dateFin,
+      previousDateDebut: previousPeriod.start,
+      previousDateFin: previousPeriod.end,
       balanceLines: balance.map(_toSyscebnlLine).toList(growable: false),
+      previousBalanceLines: previousBalance
+          .map(_toSyscebnlLine)
+          .toList(growable: false),
       adjustments: FiscalExportAdjustmentCodec.decode(
         values[FiscalExportAdjustmentCodec.fieldKey],
       ),
-      values: values,
     );
   }
 
@@ -298,9 +352,32 @@ class FiscalExportPreflightService {
     return DateTime(year, 12, 31);
   }
 
+  static _FiscalPeriod _previousPeriod(DateTime start, DateTime end) {
+    return _FiscalPeriod(_shiftOneYearBack(start), _shiftOneYearBack(end));
+  }
+
+  static DateTime _shiftOneYearBack(DateTime date) {
+    final targetYear = date.year - 1;
+    final day = date.day
+        .clamp(1, _lastDayOfMonth(targetYear, date.month))
+        .toInt();
+    return DateTime(targetYear, date.month, day);
+  }
+
+  static int _lastDayOfMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
+
   static String? _stringValue(dynamic value) {
     if (value == null) return null;
     if (value is String) return value.trim();
     return value.toString().trim();
   }
+}
+
+class _FiscalPeriod {
+  const _FiscalPeriod(this.start, this.end);
+
+  final DateTime start;
+  final DateTime end;
 }

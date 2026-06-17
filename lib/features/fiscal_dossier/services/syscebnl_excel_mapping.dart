@@ -98,8 +98,9 @@ class SyscebnlFiscalExcelMapper {
   const SyscebnlFiscalExcelMapper._();
 
   static SyscebnlFiscalExcelMapping fromBalance(
-    List<SyscebnlBalanceLine> lines,
-  ) {
+    List<SyscebnlBalanceLine> lines, {
+    List<SyscebnlBalanceLine> previousLines = const [],
+  }) {
     final valuesByAddress = <String, FiscalExcelCellValue>{};
     void put(FiscalExcelCellValue value) {
       valuesByAddress[value.address] = value;
@@ -201,6 +202,16 @@ class SyscebnlFiscalExcelMapper {
         _debitBySelector(
           lines,
           const _AccountSelector(prefixes: ['214', '215', '216', '217']),
+        ),
+      ),
+      _value(
+        'ACTIF',
+        'E20',
+        'excel.actif.amenagements.amortissements',
+        'Amortissements amenagements, agencements et installations',
+        _creditBySelector(
+          lines,
+          const _AccountSelector(prefixes: ['2814', '2815', '2816', '2817']),
         ),
       ),
       _value(
@@ -311,7 +322,7 @@ class SyscebnlFiscalExcelMapper {
         'D36',
         'excel.actif.valeurs_encaisser.brut',
         'Valeurs a encaisser',
-        _debitBySelector(lines, const _AccountSelector(prefixes: ['51'])),
+        _debitBySelector(lines, const _AccountSelector(prefixes: ['511'])),
       ),
       _value(
         'ACTIF',
@@ -322,7 +333,7 @@ class SyscebnlFiscalExcelMapper {
           lines,
           const _AccountSelector(
             prefixes: ['5'],
-            excludePrefixes: ['50', '51'],
+            excludePrefixes: ['50', '511'],
             nature: 'actif',
           ),
         ),
@@ -599,6 +610,9 @@ class SyscebnlFiscalExcelMapper {
     for (final value in mappedValues) {
       put(value);
     }
+    for (final value in _comparativeValues(lines, previousLines)) {
+      put(value);
+    }
     final values = valuesByAddress.values.toList(growable: false);
 
     final formulas = <FiscalExcelFormula>[
@@ -609,10 +623,22 @@ class SyscebnlFiscalExcelMapper {
         label: 'Resultat net de l exercice',
       ),
       const FiscalExcelFormula(
+        sheet: 'PASSIF',
+        cell: 'E19',
+        formula: '=RESULTAT!F50',
+        label: 'Resultat net de l exercice precedent',
+      ),
+      const FiscalExcelFormula(
         sheet: 'TFT',
         cell: 'H14',
         formula: '=RESULTAT!E50+RESULTAT!E34-RESULTAT!E33-RESULTAT!E37',
         label: 'Capacite d autofinancement globale SYSCEBNL',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
+        cell: 'I14',
+        formula: '=RESULTAT!F50+RESULTAT!F34-RESULTAT!F33-RESULTAT!F37',
+        label: 'Capacite d autofinancement globale SYSCEBNL N-1',
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
@@ -622,9 +648,21 @@ class SyscebnlFiscalExcelMapper {
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
+        cell: 'I19',
+        formula: '=I15+I16+I17-I18',
+        label: 'Variation du besoin de financement operationnel N-1',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
         cell: 'H20',
         formula: '=H14-H15-H16-H17+H18',
         label: 'Flux de tresorerie operationnels',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
+        cell: 'I20',
+        formula: '=I14-I15-I16-I17+I18',
+        label: 'Flux de tresorerie operationnels N-1',
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
@@ -634,9 +672,21 @@ class SyscebnlFiscalExcelMapper {
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
+        cell: 'I27',
+        formula: '=-I22-I23-I24+I25+I26',
+        label: 'Flux d investissement N-1',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
         cell: 'H33',
         formula: '=H29+H30-H31-H32',
         label: 'Flux des capitaux propres',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
+        cell: 'I33',
+        formula: '=I29+I30-I31-I32',
+        label: 'Flux des capitaux propres N-1',
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
@@ -646,9 +696,21 @@ class SyscebnlFiscalExcelMapper {
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
+        cell: 'I38',
+        formula: '=I35+I36-I37',
+        label: 'Flux des capitaux etrangers N-1',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
         cell: 'H39',
         formula: '=H33+H38',
         label: 'Flux de financement',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
+        cell: 'I39',
+        formula: '=I33+I38',
+        label: 'Flux de financement N-1',
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
@@ -658,13 +720,558 @@ class SyscebnlFiscalExcelMapper {
       ),
       const FiscalExcelFormula(
         sheet: 'TFT',
+        cell: 'I40',
+        formula: '=I20+I27+I39',
+        label: 'Variation de tresorerie nette N-1',
+      ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
         cell: 'H41',
         formula: '=H11+H40',
         label: 'Tresorerie nette de cloture',
       ),
+      const FiscalExcelFormula(
+        sheet: 'TFT',
+        cell: 'I41',
+        formula: '=I11+I40',
+        label: 'Tresorerie nette de cloture N-1',
+      ),
     ];
 
     return SyscebnlFiscalExcelMapping(values: values, formulas: formulas);
+  }
+
+  static Iterable<FiscalExcelCellValue> _comparativeValues(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    if (previousLines.isEmpty) return;
+
+    yield _value(
+      'ACTIF',
+      'G11',
+      'excel.n1.actif.incorporel.developpement.net',
+      'Frais de developpement et de prospection N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['201']),
+        const _AccountSelector(prefixes: ['2801']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G12',
+      'excel.n1.actif.incorporel.logiciels.net',
+      'Logiciels, licences et droits similaires N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['205']),
+        const _AccountSelector(prefixes: ['2805']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G14',
+      'excel.n1.actif.incorporel.autres.net',
+      'Autres immobilisations incorporelles N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['20'],
+          excludePrefixes: ['201', '205', '28'],
+        ),
+        const _AccountSelector(
+          prefixes: ['280'],
+          excludePrefixes: ['2801', '2805'],
+        ),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G16',
+      'excel.n1.actif.terrains.net',
+      'Terrains N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['21'],
+          excludePrefixes: ['213', '214', '215', '216', '217', '218', '28'],
+        ),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G18',
+      'excel.n1.actif.batiments.net',
+      'Batiments N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['213']),
+        const _AccountSelector(prefixes: ['2813']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G20',
+      'excel.n1.actif.amenagements.net',
+      'Amenagements, agencements et installations N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['214', '215', '216', '217']),
+        const _AccountSelector(prefixes: ['2814', '2815', '2816', '2817']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G21',
+      'excel.n1.actif.materiel_mobilier.net',
+      'Materiel, mobilier et actifs assimilables N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['218']),
+        const _AccountSelector(prefixes: ['2818']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G22',
+      'excel.n1.actif.transport.net',
+      'Materiel de transport N-1',
+      _netBySelectors(
+        previousLines,
+        const _AccountSelector(prefixes: ['244', '245']),
+        const _AccountSelector(prefixes: ['2844', '2845', '28182']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G23',
+      'excel.n1.actif.avances_immobilisations.net',
+      'Avances et acomptes sur immobilisations N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['238']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G25',
+      'excel.n1.actif.titres_participation.net',
+      'Titres de participation N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['26'])),
+    );
+    yield _value(
+      'ACTIF',
+      'G26',
+      'excel.n1.actif.autres_immobilisations_financieres.net',
+      'Autres immobilisations financieres N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['27'])),
+    );
+    yield _value(
+      'ACTIF',
+      'G29',
+      'excel.n1.actif.stocks.net',
+      'Stocks et en-cours N-1',
+      _stockValue(previousLines),
+    );
+    yield _value(
+      'ACTIF',
+      'G31',
+      'excel.n1.actif.avances_fournisseurs.net',
+      'Fournisseurs avances versees N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['409']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G32',
+      'excel.n1.actif.creances_membres.net',
+      'Creances membres, adherents et tiers debiteurs N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['4'],
+          excludePrefixes: ['409', '45', '46', '47', '48'],
+          nature: 'actif',
+        ),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G33',
+      'excel.n1.actif.autres_creances.net',
+      'Autres creances N-1',
+      _otherReceivables(previousLines),
+    );
+    yield _value(
+      'ACTIF',
+      'G35',
+      'excel.n1.actif.titres_placement.net',
+      'Titres de placement N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['50'])),
+    );
+    yield _value(
+      'ACTIF',
+      'G36',
+      'excel.n1.actif.valeurs_encaisser.net',
+      'Valeurs a encaisser N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['511']),
+      ),
+    );
+    yield _value(
+      'ACTIF',
+      'G37',
+      'excel.n1.actif.tresorerie.net',
+      'Banques, caisses, mobile money et assimiles N-1',
+      _treasuryActive(previousLines),
+    );
+
+    yield _value(
+      'PASSIF',
+      'E12',
+      'excel.n1.passif.fonds_associatifs',
+      'Fonds associatifs, dotations et ressources durables N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['10']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E16',
+      'excel.n1.passif.reserves_indisponibles',
+      'Reserves indisponibles N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['106']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E17',
+      'excel.n1.passif.reserves_libres',
+      'Reserves libres N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['11']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E18',
+      'excel.n1.passif.report_a_nouveau',
+      'Report a nouveau N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['12']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E20',
+      'excel.n1.passif.subventions_investissement',
+      'Subventions d investissement N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['14']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E21',
+      'excel.n1.passif.provisions_reglementees',
+      'Provisions reglementees N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['15']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E23',
+      'excel.n1.passif.emprunts_dettes_financieres',
+      'Emprunts et dettes financieres diverses N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['16']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E25',
+      'excel.n1.passif.provisions_risques_charges',
+      'Provisions pour risques et charges N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['19']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E29',
+      'excel.n1.passif.avances_recues',
+      'Avances recues N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['419']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E30',
+      'excel.n1.passif.fournisseurs',
+      'Fournisseurs et comptes rattaches N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['40']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E31',
+      'excel.n1.passif.dettes_fiscales_sociales',
+      'Dettes fiscales, sociales et assimilables N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['42', '43', '44']),
+      ),
+    );
+    yield _value(
+      'PASSIF',
+      'E32',
+      'excel.n1.passif.autres_dettes',
+      'Autres dettes et tiers crediteurs N-1',
+      _otherDebts(previousLines),
+    );
+    yield _value(
+      'PASSIF',
+      'E36',
+      'excel.n1.passif.tresorerie_passive',
+      'Decouverts et tresorerie passive N-1',
+      _treasuryPassive(previousLines),
+    );
+
+    yield _value(
+      'RESULTAT',
+      'F19',
+      'excel.n1.resultat.subventions_exploitation',
+      'Subventions d exploitation N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['74']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F20',
+      'excel.n1.resultat.ressources_eglise',
+      'Dimes, offrandes, dons, cotisations et autres produits N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['7'],
+          excludePrefixes: ['74', '77', '78', '79'],
+        ),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F21',
+      'excel.n1.resultat.transferts_charges_exploitation',
+      'Transferts de charges d exploitation N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['78']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F22',
+      'excel.n1.resultat.achats_matieres',
+      'Achats de matieres premieres et fournitures liees N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['601']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F24',
+      'excel.n1.resultat.autres_achats',
+      'Autres achats N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['60'], excludePrefixes: ['601']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F26',
+      'excel.n1.resultat.transports',
+      'Transports N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['624']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F27',
+      'excel.n1.resultat.services_exterieurs',
+      'Services exterieurs N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['61', '62'],
+          excludePrefixes: ['624'],
+        ),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F28',
+      'excel.n1.resultat.impots_taxes',
+      'Impots et taxes N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['63'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F29',
+      'excel.n1.resultat.autres_charges',
+      'Autres charges de gestion et aides N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['64', '65']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F31',
+      'excel.n1.resultat.personnel',
+      'Charges de personnel N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['66'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F33',
+      'excel.n1.resultat.reprises_amortissements',
+      'Reprises d amortissements, provisions et depreciations N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['79']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F34',
+      'excel.n1.resultat.dotations',
+      'Dotations aux amortissements et depreciations N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['68'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F36',
+      'excel.n1.resultat.revenus_financiers',
+      'Revenus financiers et assimiles N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['77']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F39',
+      'excel.n1.resultat.charges_financieres',
+      'Frais financiers et charges assimilees N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['67'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F40',
+      'excel.n1.resultat.dotations_financieres',
+      'Dotations financieres N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['69'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F43',
+      'excel.n1.resultat.produits_cessions_immobilisations',
+      'Produits des cessions d immobilisations N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['82']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F44',
+      'excel.n1.resultat.produits_hao',
+      'Produits hors activites ordinaires N-1',
+      _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['82']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F45',
+      'excel.n1.resultat.valeurs_comptables_cessions',
+      'Valeurs comptables des cessions d immobilisations N-1',
+      _debitBySelector(previousLines, const _AccountSelector(prefixes: ['81'])),
+    );
+    yield _value(
+      'RESULTAT',
+      'F46',
+      'excel.n1.resultat.charges_hao',
+      'Charges hors activites ordinaires N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['81']),
+      ),
+    );
+    yield _value(
+      'RESULTAT',
+      'F49',
+      'excel.n1.resultat.impots_resultat',
+      'Impots sur le resultat N-1',
+      _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['695']),
+      ),
+    );
+
+    yield _value(
+      'TFT',
+      'H11',
+      'excel.tft.tresorerie_ouverture',
+      'Tresorerie nette au 1er janvier',
+      _treasuryNet(previousLines),
+    );
+    yield _value(
+      'TFT',
+      'H16',
+      'excel.tft.variation_stocks',
+      'Variation des stocks',
+      _stockValue(lines) - _stockValue(previousLines),
+    );
+    yield _value(
+      'TFT',
+      'H17',
+      'excel.tft.variation_creances',
+      'Variation des creances',
+      _receivablesValue(lines) - _receivablesValue(previousLines),
+    );
+    yield _value(
+      'TFT',
+      'H18',
+      'excel.tft.variation_passif_circulant',
+      'Variation du passif circulant',
+      _currentLiabilities(lines) - _currentLiabilities(previousLines),
+    );
   }
 
   static Iterable<FiscalExcelCellValue> _zeroSourceValues() sync* {
@@ -940,6 +1547,81 @@ class SyscebnlFiscalExcelMapper {
     return lines
         .where(selector.matches)
         .fold<double>(0, (sum, line) => sum + line.soldeCrediteur);
+  }
+
+  static double _netBySelectors(
+    List<SyscebnlBalanceLine> lines,
+    _AccountSelector debitSelector,
+    _AccountSelector creditSelector,
+  ) {
+    return _debitBySelector(lines, debitSelector) -
+        _creditBySelector(lines, creditSelector);
+  }
+
+  static double _stockValue(List<SyscebnlBalanceLine> lines) {
+    return _debitBySelector(lines, const _AccountSelector(prefixes: ['3']));
+  }
+
+  static double _otherReceivables(List<SyscebnlBalanceLine> lines) {
+    return _debitBySelector(
+      lines,
+      const _AccountSelector(
+        prefixes: ['45', '46', '47', '48'],
+        nature: 'actif',
+      ),
+    );
+  }
+
+  static double _otherDebts(List<SyscebnlBalanceLine> lines) {
+    return _creditBySelector(
+      lines,
+      const _AccountSelector(prefixes: ['45', '46', '47', '48']),
+    );
+  }
+
+  static double _treasuryActive(List<SyscebnlBalanceLine> lines) {
+    return _debitBySelector(
+      lines,
+      const _AccountSelector(
+        prefixes: ['5'],
+        excludePrefixes: ['50', '511'],
+        nature: 'actif',
+      ),
+    );
+  }
+
+  static double _treasuryPassive(List<SyscebnlBalanceLine> lines) {
+    return _creditBySelector(
+      lines,
+      const _AccountSelector(prefixes: ['5'], nature: 'passif'),
+    );
+  }
+
+  static double _treasuryNet(List<SyscebnlBalanceLine> lines) {
+    return _treasuryActive(lines) - _treasuryPassive(lines);
+  }
+
+  static double _receivablesValue(List<SyscebnlBalanceLine> lines) {
+    return _debitBySelector(lines, const _AccountSelector(prefixes: ['409'])) +
+        _debitBySelector(
+          lines,
+          const _AccountSelector(
+            prefixes: ['4'],
+            excludePrefixes: ['409', '45', '46', '47', '48'],
+            nature: 'actif',
+          ),
+        ) +
+        _otherReceivables(lines);
+  }
+
+  static double _currentLiabilities(List<SyscebnlBalanceLine> lines) {
+    return _creditBySelector(lines, const _AccountSelector(prefixes: ['419'])) +
+        _creditBySelector(lines, const _AccountSelector(prefixes: ['40'])) +
+        _creditBySelector(
+          lines,
+          const _AccountSelector(prefixes: ['42', '43', '44']),
+        ) +
+        _otherDebts(lines);
   }
 
   static double _round(double value) => (value * 100).roundToDouble() / 100;

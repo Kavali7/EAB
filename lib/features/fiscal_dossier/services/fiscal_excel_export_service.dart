@@ -28,7 +28,10 @@ class FiscalExcelExportAudit {
     required this.churchUnitId,
     required this.dateDebut,
     required this.dateFin,
+    required this.previousDateDebut,
+    required this.previousDateFin,
     required this.balanceLineCount,
+    required this.previousBalanceLineCount,
     required this.adjustmentCount,
     required this.adjustmentLineCount,
     required this.totalDebit,
@@ -40,7 +43,10 @@ class FiscalExcelExportAudit {
   final String churchUnitId;
   final DateTime dateDebut;
   final DateTime dateFin;
+  final DateTime previousDateDebut;
+  final DateTime previousDateFin;
   final int balanceLineCount;
+  final int previousBalanceLineCount;
   final int adjustmentCount;
   final int adjustmentLineCount;
   final double totalDebit;
@@ -88,6 +94,13 @@ class FiscalExcelExportService {
       dateDebut: dateDebut,
       dateFin: dateFin,
     );
+    final previousPeriod = _previousPeriod(dateDebut, dateFin);
+    final previousBalance = await _reportsRepository.fetchBalanceGenerale(
+      dossier.organizationId,
+      churchUnitId: churchUnitId,
+      dateDebut: previousPeriod.start,
+      dateFin: previousPeriod.end,
+    );
 
     final adjustments = FiscalExportAdjustmentCodec.decode(
       values[FiscalExportAdjustmentCodec.fieldKey],
@@ -96,8 +109,17 @@ class FiscalExcelExportService {
       balanceLines: balance.map(_toSyscebnlLine).toList(growable: false),
       adjustments: adjustments,
     );
+    final previousAdjustedBalance = previousBalance.isEmpty
+        ? null
+        : FiscalExportAdjustmentEngine.apply(
+            balanceLines: previousBalance
+                .map(_toSyscebnlLine)
+                .toList(growable: false),
+            adjustments: const [],
+          );
     final mapping = SyscebnlFiscalExcelMapper.fromBalance(
       adjustedBalance.lines,
+      previousLines: previousAdjustedBalance?.lines ?? const [],
     );
     final templateBytes = await rootBundle.load(templateAssetPath);
     final bytes = FiscalExcelTemplateWriter.write(
@@ -108,6 +130,7 @@ class FiscalExcelExportService {
         values,
         dateDebut,
         dateFin,
+        previousPeriod.end,
         churchUnit,
       ),
       textReplacements: syscebnlFiscalExcelTextReplacements,
@@ -122,7 +145,10 @@ class FiscalExcelExportService {
         churchUnitId: churchUnitId,
         dateDebut: dateDebut,
         dateFin: dateFin,
+        previousDateDebut: previousPeriod.start,
+        previousDateFin: previousPeriod.end,
         balanceLineCount: balance.length,
+        previousBalanceLineCount: previousBalance.length,
         adjustmentCount: adjustedBalance.adjustmentCount,
         adjustmentLineCount: adjustedBalance.adjustmentLineCount,
         totalDebit: adjustedBalance.totalDebit,
@@ -154,6 +180,7 @@ class FiscalExcelExportService {
     Map<String, dynamic> values,
     DateTime dateDebut,
     DateTime dateFin,
+    DateTime previousDateFin,
     ChurchUnit? churchUnit,
   ) {
     final orgName = _stringValue(values['org.name']) ?? organization.nom;
@@ -177,7 +204,7 @@ class FiscalExcelExportService {
       '_ExerClos': '$exerciceLabel clos le ${_formatDate(dateFin)}',
       '_ExerDeb': _formatDate(dateDebut),
       '_ExerFin': _formatDate(dateFin),
-      '_ExerFin1': _formatDate(DateTime(dateFin.year - 1, 12, 31)),
+      '_ExerFin1': _formatDate(previousDateFin),
       '_Duree': 'Duree (en mois) ${_monthDuration(dateDebut, dateFin)}',
     };
   }
@@ -220,6 +247,22 @@ class FiscalExcelExportService {
     return months < 1 ? 1 : months;
   }
 
+  static _FiscalPeriod _previousPeriod(DateTime start, DateTime end) {
+    return _FiscalPeriod(_shiftOneYearBack(start), _shiftOneYearBack(end));
+  }
+
+  static DateTime _shiftOneYearBack(DateTime date) {
+    final targetYear = date.year - 1;
+    final day = date.day
+        .clamp(1, _lastDayOfMonth(targetYear, date.month))
+        .toInt();
+    return DateTime(targetYear, date.month, day);
+  }
+
+  static int _lastDayOfMonth(int year, int month) {
+    return DateTime(year, month + 1, 0).day;
+  }
+
   static String _filename(
     Organization organization,
     ChurchUnit? churchUnit,
@@ -247,4 +290,11 @@ class FiscalExcelExportService {
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
   }
+}
+
+class _FiscalPeriod {
+  const _FiscalPeriod(this.start, this.end);
+
+  final DateTime start;
+  final DateTime end;
 }

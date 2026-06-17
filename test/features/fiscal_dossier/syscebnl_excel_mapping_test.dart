@@ -229,5 +229,70 @@ void main() {
       expect(mapping.valueFor('TFT', 'H17'), 0);
       expect(mapping.valueFor('TFT', 'I40'), 0);
     });
+
+    test('alimente les colonnes comparatives depuis la balance N-1', () {
+      final mapping = SyscebnlFiscalExcelMapper.fromBalance(
+        const [
+          SyscebnlBalanceLine(
+            numero: '512',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 150000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '411',
+            intitule: 'Creances membres',
+            nature: 'actif',
+            totalDebit: 25000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '701',
+            intitule: 'Dimes',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 175000,
+          ),
+        ],
+        previousLines: const [
+          SyscebnlBalanceLine(
+            numero: '512',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 100000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '411',
+            intitule: 'Creances membres',
+            nature: 'actif',
+            totalDebit: 10000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '701',
+            intitule: 'Dimes',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 110000,
+          ),
+        ],
+      );
+
+      expect(mapping.valueFor('ACTIF', 'D36'), 0);
+      expect(mapping.valueFor('ACTIF', 'D37'), 150000);
+      expect(mapping.valueFor('ACTIF', 'G32'), 10000);
+      expect(mapping.valueFor('ACTIF', 'G36'), 0);
+      expect(mapping.valueFor('ACTIF', 'G37'), 100000);
+      expect(mapping.valueFor('RESULTAT', 'F20'), 110000);
+      expect(mapping.valueFor('TFT', 'H11'), 100000);
+      expect(mapping.valueFor('TFT', 'H17'), 15000);
+      expect(mapping.formulaFor('PASSIF', 'E19'), '=RESULTAT!F50');
+      expect(
+        mapping.formulaFor('TFT', 'I14'),
+        '=RESULTAT!F50+RESULTAT!F34-RESULTAT!F33-RESULTAT!F37',
+      );
+    });
   });
 }

@@ -917,7 +917,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
               'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
               'du perimetre fiscal, ${export.audit.adjustmentCount} '
               'ajustement(s), debit ${export.audit.totalDebit}, '
-              'credit ${export.audit.totalCredit}.',
+              'credit ${export.audit.totalCredit}, '
+              'N-1 ${export.audit.previousBalanceLineCount} lignes.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -1068,6 +1069,11 @@ class _FiscalPreflightDialog extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                   _MetricChip(
+                    label: 'Balance N-1',
+                    value: '${report.previousBalanceLineCount} lignes',
+                    color: AppColors.primary,
+                  ),
+                  _MetricChip(
                     label: 'Cellules',
                     value:
                         '${report.nonZeroInjectedCellCount}/${report.injectedCellCount}',
@@ -1125,6 +1131,9 @@ class _FiscalPreflightDialog extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Periode : ${_formatDate(report.dateDebut)} - ${_formatDate(report.dateFin)}',
+          ),
+          Text(
+            'Comparatif N-1 : ${_formatDate(report.previousDateDebut)} - ${_formatDate(report.previousDateFin)}',
           ),
           Text(
             'Totaux controles : debit ${_formatAmount(report.totalDebit)} / credit ${_formatAmount(report.totalCredit)}',
