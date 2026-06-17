@@ -17,6 +17,7 @@ import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_export_adjustments.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_service.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
 
@@ -162,6 +163,13 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           onPressed: _isLoading ? null : () => _validate(dossier),
           icon: const Icon(Icons.check_circle_outline, size: 18),
           label: const Text('Valider'),
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+        ),
+        const SizedBox(width: 4),
+        TextButton.icon(
+          onPressed: _isLoading ? null : () => _showAdjustmentsDialog(dossier),
+          icon: const Icon(Icons.tune_outlined, size: 18),
+          label: const Text('Ajustements'),
           style: TextButton.styleFrom(foregroundColor: AppColors.primary),
         ),
         const SizedBox(width: 4),
@@ -408,6 +416,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                 onPressed: _isLoading ? null : () => _validate(dossier),
               ),
               const SizedBox(width: 8),
+              _CommandButton(
+                label: 'Ajustements',
+                icon: Icons.tune_outlined,
+                onPressed: _isLoading
+                    ? null
+                    : () => _showAdjustmentsDialog(dossier),
+              ),
+              const SizedBox(width: 8),
             ],
             _CommandButton(
               label: 'PDF',
@@ -607,6 +623,59 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     }
   }
 
+  Future<void> _showAdjustmentsDialog(FiscalDossier dossier) async {
+    try {
+      final repo = ref.read(fiscalRepositoryProvider);
+      final valuesMap = await repo.getValues(dossier.id);
+      final flatValues = <String, dynamic>{};
+      for (final entry in valuesMap.entries) {
+        flatValues[entry.key] = entry.value.value;
+      }
+      flatValues.addAll(_localValues);
+
+      final initial = FiscalExportAdjustmentCodec.decode(
+        flatValues[FiscalExportAdjustmentCodec.fieldKey],
+      );
+      if (!mounted) return;
+
+      final updated = await showDialog<List<FiscalExportAdjustment>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _FiscalAdjustmentDialog(initial: initial),
+      );
+      if (updated == null) return;
+
+      FiscalExportAdjustmentEngine.validate(updated);
+      final encoded = FiscalExportAdjustmentCodec.encode(updated);
+
+      setState(() => _isLoading = true);
+      await repo.saveValue(
+        dossierId: dossier.id,
+        organizationId: dossier.organizationId,
+        fieldKey: FiscalExportAdjustmentCodec.fieldKey,
+        value: encoded,
+        source: 'export_adjustment',
+      );
+      _localValues[FiscalExportAdjustmentCodec.fieldKey] = encoded;
+      ref.invalidate(fiscalValuesProvider(dossier.id));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${updated.length} ajustement(s) export enregistre(s).',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showActionError(e, prefix: 'Erreur ajustements');
+    } finally {
+      if (mounted && _isLoading) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _prefill(FiscalDossier dossier) async {
     setState(() => _isLoading = true);
     try {
@@ -789,7 +858,9 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           SnackBar(
             content: Text(
               'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
-              'du perimetre fiscal.',
+              'du perimetre fiscal, ${export.audit.adjustmentCount} '
+              'ajustement(s), debit ${export.audit.totalDebit}, '
+              'credit ${export.audit.totalCredit}.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -877,5 +948,378 @@ class _CommandButton extends StatelessWidget {
         visualDensity: VisualDensity.compact,
       ),
     );
+  }
+}
+
+class _FiscalAdjustmentDialog extends StatefulWidget {
+  const _FiscalAdjustmentDialog({required this.initial});
+
+  final List<FiscalExportAdjustment> initial;
+
+  @override
+  State<_FiscalAdjustmentDialog> createState() =>
+      _FiscalAdjustmentDialogState();
+}
+
+class _FiscalAdjustmentDialogState extends State<_FiscalAdjustmentDialog> {
+  static const _balancedEntry = 'balanced_entry';
+  static const _debitReclass = 'debit_reclass';
+  static const _creditReclass = 'credit_reclass';
+
+  final _formKey = GlobalKey<FormState>();
+  final _labelController = TextEditingController();
+  final _reasonController = TextEditingController();
+  final _sourceAccountController = TextEditingController();
+  final _sourceLabelController = TextEditingController();
+  final _targetAccountController = TextEditingController();
+  final _targetLabelController = TextEditingController();
+  final _amountController = TextEditingController();
+
+  late final List<FiscalExportAdjustment> _adjustments;
+  String _type = _balancedEntry;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _adjustments = [...widget.initial];
+  }
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _reasonController.dispose();
+    _sourceAccountController.dispose();
+    _sourceLabelController.dispose();
+    _targetAccountController.dispose();
+    _targetLabelController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Ajustements d export'),
+      content: SizedBox(
+        width: 720,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: const Text(
+                  'Ces ajustements ne modifient pas les ecritures. Ils '
+                  's appliquent uniquement au fichier Excel/PDF genere et '
+                  'doivent toujours rester equilibres.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildExistingAdjustments(),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: _type,
+                      decoration: const InputDecoration(
+                        labelText: 'Type d ajustement',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: _balancedEntry,
+                          child: Text('Ecriture debit / credit'),
+                        ),
+                        DropdownMenuItem(
+                          value: _debitReclass,
+                          child: Text('Reclassement cote debit'),
+                        ),
+                        DropdownMenuItem(
+                          value: _creditReclass,
+                          child: Text('Reclassement cote credit'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _type = value;
+                          _error = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: _labelController,
+                      label: 'Libelle de l ajustement',
+                      validator: _required,
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: _reasonController,
+                      label: 'Justification',
+                      validator: _required,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _field(
+                          controller: _sourceAccountController,
+                          label: _sourceAccountLabel,
+                          validator: _accountValidator,
+                          width: 210,
+                        ),
+                        _field(
+                          controller: _sourceLabelController,
+                          label: 'Intitule source',
+                          validator: _required,
+                          width: 300,
+                        ),
+                        _field(
+                          controller: _targetAccountController,
+                          label: _targetAccountLabel,
+                          validator: _accountValidator,
+                          width: 210,
+                        ),
+                        _field(
+                          controller: _targetLabelController,
+                          label: 'Intitule cible',
+                          validator: _required,
+                          width: 300,
+                        ),
+                        _field(
+                          controller: _amountController,
+                          label: 'Montant',
+                          validator: _amountValidator,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          width: 210,
+                        ),
+                      ],
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ],
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _addAdjustment,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Ajouter l ajustement'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.of(context).pop(_adjustments),
+          icon: const Icon(Icons.check, size: 18),
+          label: const Text('Enregistrer'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExistingAdjustments() {
+    if (_adjustments.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: const Text('Aucun ajustement en attente.'),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_adjustments.length} ajustement(s) en attente',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        ..._adjustments.map(
+          (adjustment) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              dense: true,
+              title: Text(adjustment.label),
+              subtitle: Text(_summary(adjustment)),
+              trailing: IconButton(
+                tooltip: 'Supprimer',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () {
+                  setState(() {
+                    _adjustments.remove(adjustment);
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    double? width,
+  }) {
+    return SizedBox(
+      width: width,
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label),
+        validator: validator,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+      ),
+    );
+  }
+
+  void _addAdjustment() {
+    if (!_formKey.currentState!.validate()) return;
+    try {
+      final amount = fiscalExportAdjustmentAmountFromText(
+        _amountController.text,
+      );
+      final id = 'adj_${DateTime.now().microsecondsSinceEpoch}';
+      final adjustment = switch (_type) {
+        _debitReclass => FiscalExportAdjustment.debitReclassification(
+          id: id,
+          label: _labelController.text.trim(),
+          reason: _reasonController.text.trim(),
+          sourceAccountNumber: _sourceAccountController.text.trim(),
+          sourceAccountLabel: _sourceLabelController.text.trim(),
+          targetAccountNumber: _targetAccountController.text.trim(),
+          targetAccountLabel: _targetLabelController.text.trim(),
+          amount: amount,
+        ),
+        _creditReclass => FiscalExportAdjustment.creditReclassification(
+          id: id,
+          label: _labelController.text.trim(),
+          reason: _reasonController.text.trim(),
+          sourceAccountNumber: _sourceAccountController.text.trim(),
+          sourceAccountLabel: _sourceLabelController.text.trim(),
+          targetAccountNumber: _targetAccountController.text.trim(),
+          targetAccountLabel: _targetLabelController.text.trim(),
+          amount: amount,
+        ),
+        _ => FiscalExportAdjustment.balancedEntry(
+          id: id,
+          label: _labelController.text.trim(),
+          reason: _reasonController.text.trim(),
+          debitAccountNumber: _sourceAccountController.text.trim(),
+          debitAccountLabel: _sourceLabelController.text.trim(),
+          creditAccountNumber: _targetAccountController.text.trim(),
+          creditAccountLabel: _targetLabelController.text.trim(),
+          amount: amount,
+        ),
+      };
+      final updated = [..._adjustments, adjustment];
+      FiscalExportAdjustmentEngine.validate(updated);
+      setState(() {
+        _adjustments
+          ..clear()
+          ..addAll(updated);
+        _error = null;
+      });
+      _labelController.clear();
+      _reasonController.clear();
+      _sourceAccountController.clear();
+      _sourceLabelController.clear();
+      _targetAccountController.clear();
+      _targetLabelController.clear();
+      _amountController.clear();
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  String get _sourceAccountLabel {
+    return switch (_type) {
+      _balancedEntry => 'Compte a debiter',
+      _debitReclass => 'Compte debit source',
+      _creditReclass => 'Compte credit source',
+      _ => 'Compte source',
+    };
+  }
+
+  String get _targetAccountLabel {
+    return switch (_type) {
+      _balancedEntry => 'Compte a crediter',
+      _debitReclass => 'Compte debit cible',
+      _creditReclass => 'Compte credit cible',
+      _ => 'Compte cible',
+    };
+  }
+
+  String? _required(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Champ obligatoire';
+    return null;
+  }
+
+  String? _accountValidator(String? value) {
+    final requiredError = _required(value);
+    if (requiredError != null) return requiredError;
+    if (!RegExp(r'^\d+').hasMatch(value!.trim())) {
+      return 'Compte SYSCEBNL invalide';
+    }
+    return null;
+  }
+
+  String? _amountValidator(String? value) {
+    try {
+      fiscalExportAdjustmentAmountFromText(value ?? '');
+      return null;
+    } catch (_) {
+      return 'Montant positif requis';
+    }
+  }
+
+  String _summary(FiscalExportAdjustment adjustment) {
+    final debit = adjustment.lines.fold<double>(
+      0,
+      (sum, line) => sum + line.debitDelta,
+    );
+    final credit = adjustment.lines.fold<double>(
+      0,
+      (sum, line) => sum + line.creditDelta,
+    );
+    return 'Debit ${debit.toStringAsFixed(2)} / Credit ${credit.toStringAsFixed(2)} - ${adjustment.reason}';
   }
 }

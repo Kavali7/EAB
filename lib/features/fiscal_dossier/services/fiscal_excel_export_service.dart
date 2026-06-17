@@ -5,6 +5,7 @@ import 'package:eab/features/etats_financiers/data/reports_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/organization/data/organization_model.dart';
 
+import 'fiscal_export_adjustments.dart';
 import 'fiscal_excel_template_writer.dart';
 import 'fiscal_excel_sanitization.dart';
 import 'syscebnl_excel_mapping.dart';
@@ -28,6 +29,10 @@ class FiscalExcelExportAudit {
     required this.dateDebut,
     required this.dateFin,
     required this.balanceLineCount,
+    required this.adjustmentCount,
+    required this.adjustmentLineCount,
+    required this.totalDebit,
+    required this.totalCredit,
     required this.injectedCellCount,
   });
 
@@ -36,6 +41,10 @@ class FiscalExcelExportAudit {
   final DateTime dateDebut;
   final DateTime dateFin;
   final int balanceLineCount;
+  final int adjustmentCount;
+  final int adjustmentLineCount;
+  final double totalDebit;
+  final double totalCredit;
   final int injectedCellCount;
 }
 
@@ -80,8 +89,15 @@ class FiscalExcelExportService {
       dateFin: dateFin,
     );
 
+    final adjustments = FiscalExportAdjustmentCodec.decode(
+      values[FiscalExportAdjustmentCodec.fieldKey],
+    );
+    final adjustedBalance = FiscalExportAdjustmentEngine.apply(
+      balanceLines: balance.map(_toSyscebnlLine).toList(growable: false),
+      adjustments: adjustments,
+    );
     final mapping = SyscebnlFiscalExcelMapper.fromBalance(
-      balance.map(_toSyscebnlLine).toList(growable: false),
+      adjustedBalance.lines,
     );
     final templateBytes = await rootBundle.load(templateAssetPath);
     final bytes = FiscalExcelTemplateWriter.write(
@@ -107,6 +123,10 @@ class FiscalExcelExportService {
         dateDebut: dateDebut,
         dateFin: dateFin,
         balanceLineCount: balance.length,
+        adjustmentCount: adjustedBalance.adjustmentCount,
+        adjustmentLineCount: adjustedBalance.adjustmentLineCount,
+        totalDebit: adjustedBalance.totalDebit,
+        totalCredit: adjustedBalance.totalCredit,
         injectedCellCount: mapping.values.length + mapping.formulas.length,
       ),
     );

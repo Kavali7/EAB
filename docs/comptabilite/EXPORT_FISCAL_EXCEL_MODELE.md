@@ -133,9 +133,9 @@ Le prototype controle que le classeur genere conserve le meme nombre d'entrees z
 
 Le niveau autorise, generalement le plus haut niveau comptable, doit pouvoir effectuer des ajustements temporaires avant generation :
 
-- reclasser un montant dans une cellule de sortie ;
-- ajouter une correction fiscale de presentation ;
-- forcer un libelle ou un total de depot ;
+- ajouter une ecriture debit/credit equilibree ;
+- reclasser un montant entre deux comptes debiteurs ;
+- reclasser un montant entre deux comptes crediteurs ;
 - verifier les controles actif/passif/resultat avant export.
 
 Ces ajustements ne doivent jamais modifier les ecritures comptables, les mouvements financiers ou les donnees de base. Ils doivent rester dans une couche d'export, par exemple :
@@ -143,6 +143,25 @@ Ces ajustements ne doivent jamais modifier les ecritures comptables, les mouveme
 - brouillon d'export fiscal ;
 - table ou objet JSON d'ajustements de presentation ;
 - application des ajustements uniquement lors de la generation Excel/PDF.
+
+Implementation actuelle :
+
+`lib/features/fiscal_dossier/services/fiscal_export_adjustments.dart`
+
+Les ajustements sont stockes dans les valeurs du dossier fiscal sous la cle :
+
+`export.adjustments`
+
+Garde-fous obligatoires :
+
+- chaque ajustement a un libelle, une justification et au moins deux lignes ;
+- une ligne ne peut modifier qu'un cote comptable a la fois ;
+- le total des deltas debit doit rester egal au total des deltas credit ;
+- un reclassement ne peut pas rendre un compte negatif ;
+- apres application, la balance ajustee doit rester equilibree avant generation ;
+- les totaux et sous-totaux du fichier restent recalcules par les formules Excel du modele.
+
+Ainsi, un ajustement agit comme une piece d'export controlee : il affecte automatiquement les comptes et cellules dependantes via le mapping SYSCEBNL, mais il ne touche pas aux ecritures source.
 
 ## Implication pour le developpement
 
