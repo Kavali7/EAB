@@ -29,6 +29,43 @@ Le modele source est inspire d'un fichier SYSCOHADA de societe commerciale. L'ap
 - calculs comptables gardes coherents avec les formules du modele ;
 - notes non applicables laissees vides, a zero ou marquees non applicables selon le parametrage final.
 
+## Mapping SYSCEBNL vers le classeur
+
+La logique comptable est isolee dans le service Flutter :
+
+`lib/features/fiscal_dossier/services/syscebnl_excel_mapping.dart`
+
+Ce service ne modifie pas encore le fichier `.xlsx`. Il produit une liste de cellules sources et de formules a appliquer au classeur. Cette separation est volontaire : elle evite de melanger les regles SYSCEBNL avec la librairie technique qui ecrira le fichier Excel.
+
+Premiere couverture du mapping :
+
+| Feuille | Cellules | Regle SYSCEBNL |
+| --- | --- | --- |
+| `ACTIF` | `D16`, `D18`, `D20`, `D21` | Immobilisations brutes classe 2, en excluant les amortissements classe 28 |
+| `ACTIF` | `E18`, `E21` | Amortissements comptes 2813 et 2818, presentes en deduction |
+| `ACTIF` | `D29`, `D32`, `D37` | Stocks classe 3, creances classe 4 debitrice, tresorerie active classe 5 |
+| `PASSIF` | `D12` | Fonds associatifs, dotations et ressources durables classe 1 |
+| `PASSIF` | `D19` | Formule `=RESULTAT!E50`, pour reprendre le resultat net de l'exercice |
+| `PASSIF` | `D30`, `D31`, `D32`, `D36` | Fournisseurs, dettes fiscales/sociales, autres dettes, tresorerie passive |
+| `RESULTAT` | `E20` | Produits d'eglise : dimes, offrandes, dons, cotisations et autres produits classe 7 |
+| `RESULTAT` | `E26`, `E27`, `E29`, `E31`, `E34`, `E39` | Charges par nature : transport, services, autres charges, personnel, dotations, frais financiers |
+| `RESULTAT` | `E44`, `E46` | Produits et charges hors activites ordinaires classe 8 |
+| `TFT` | `H14` | Formule de capacite d'autofinancement : resultat net + dotations - reprises |
+
+Les totaux, sous-totaux et nets du classeur doivent rester des formules Excel. Le generateur ne doit ecrire que les cellules sources, sauf lorsqu'une formule doit explicitement remplacer une valeur manuelle du modele.
+
+Un test verrouille cette logique :
+
+`test/features/fiscal_dossier/syscebnl_excel_mapping_test.dart`
+
+Points couverts par le test :
+
+- les comptes 28 ne sont pas inclus dans l'immobilisation brute ;
+- les amortissements sont presentes dans les colonnes d'amortissement/depreciation ;
+- les creances et dettes de classe 4 sont separees selon leur nature active ou passive ;
+- les produits classe 7 et charges classe 6 alimentent le resultat selon une logique SYSCEBNL ;
+- le resultat net du passif est repris depuis la feuille `RESULTAT`.
+
 ## Ajustements avant generation
 
 Le niveau autorise, generalement le plus haut niveau comptable, doit pouvoir effectuer des ajustements temporaires avant generation :
