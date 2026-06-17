@@ -9,9 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/data/csv_import_service.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 
@@ -30,6 +34,7 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
 
   CsvImportResult? _parseResult;
   bool _isImporting = false;
+  String? _selectedChurchUnitId;
 
   @override
   void dispose() {
@@ -40,6 +45,12 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final churchUnits = userScopeUnits(
+      ref.watch(churchUnitsProvider).value ?? [],
+    );
+    final activeUnitId = ref.watch(churchUnitActiveIdProvider);
+    final selectedUnitId = _effectiveSelectedUnitId(churchUnits, activeUnitId);
+
     return AppShell(
       title: 'Import balance',
       currentRoute: '/fiscal-dossiers',
@@ -79,6 +90,32 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: compact ? double.infinity : 520,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: selectedUnitId,
+                    decoration: const InputDecoration(
+                      labelText: 'Perimetre de la balance',
+                      prefixIcon: Icon(Icons.location_city_outlined),
+                    ),
+                    isExpanded: true,
+                    items: [
+                      for (final unit in churchUnits)
+                        DropdownMenuItem(
+                          value: unit.id,
+                          child: Text(
+                            churchUnitLabel(unit),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    onChanged: churchUnits.isEmpty
+                        ? null
+                        : (value) =>
+                              setState(() => _selectedChurchUnitId = value),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Expanded(
                   child: _parseResult == null
                       ? _buildPasteZone(compact)
@@ -90,6 +127,20 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
         },
       ),
     );
+  }
+
+  String? _effectiveSelectedUnitId(
+    List<ChurchUnit> units,
+    String? activeUnitId,
+  ) {
+    if (_selectedChurchUnitId != null &&
+        units.any((unit) => unit.id == _selectedChurchUnitId)) {
+      return _selectedChurchUnitId;
+    }
+    if (activeUnitId != null && units.any((unit) => unit.id == activeUnitId)) {
+      return activeUnitId;
+    }
+    return units.isEmpty ? null : units.first.id;
   }
 
   Widget _buildPasteZone(bool compact) {
@@ -209,8 +260,8 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
                   icon: Icons.table_rows_outlined,
                 )
               : compact
-                  ? _buildMobilePreview(result)
-                  : _buildDesktopPreview(result),
+              ? _buildMobilePreview(result)
+              : _buildDesktopPreview(result),
         ),
         const SizedBox(height: AppSpacing.sm),
         _buildPreviewActions(result, compact),
@@ -340,6 +391,13 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
 
     final org = ref.read(currentOrganizationProvider).value;
     final orgId = org?.id;
+    final churchUnits = userScopeUnits(
+      ref.read(churchUnitsProvider).value ?? [],
+    );
+    final selectedUnitId = _effectiveSelectedUnitId(
+      churchUnits,
+      ref.read(churchUnitActiveIdProvider),
+    );
     if (orgId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Organisation non trouvee.')),
@@ -352,6 +410,7 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
       final repo = ref.read(fiscalRepositoryProvider);
       await repo.saveImport(
         organizationId: orgId,
+        churchUnitId: selectedUnitId,
         exerciceLabel: _exerciceController.text.trim().isEmpty
             ? null
             : _exerciceController.text.trim(),
@@ -367,9 +426,7 @@ class _FiscalImportScreenState extends ConsumerState<FiscalImportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Import enregistre - ${result.lines.length} lignes.',
-            ),
+            content: Text('Import enregistre - ${result.lines.length} lignes.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -421,9 +478,7 @@ class _PreviewSummary extends StatelessWidget {
       ),
       _MetricTile(
         label: result.isBalanced ? 'Equilibree' : 'Ecart',
-        value: result.isBalanced
-            ? 'OK'
-            : moneyFormat.format(result.difference),
+        value: result.isBalanced ? 'OK' : moneyFormat.format(result.difference),
         icon: result.isBalanced
             ? Icons.check_circle_outline
             : Icons.warning_amber_outlined,

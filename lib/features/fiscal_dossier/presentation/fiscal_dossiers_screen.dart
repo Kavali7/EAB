@@ -9,9 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 
@@ -30,6 +34,8 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
   Widget build(BuildContext context) {
     final dossiersAsync = ref.watch(fiscalDossiersProvider);
     final importsAsync = ref.watch(fiscalImportsProvider);
+    final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final activeUnitId = ref.watch(churchUnitActiveIdProvider);
 
     return AppShell(
       title: 'Dossier fiscal',
@@ -43,6 +49,18 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 720;
           final horizontalPadding = compact ? AppSpacing.md : AppSpacing.xl;
+          final churchUnits = churchUnitsAsync.value ?? const <ChurchUnit>[];
+          final activeUnit = _findUnit(churchUnits, activeUnitId);
+          final scopedUnitIds = _unitScopeIds(churchUnits, activeUnit);
+          final unitById = {for (final unit in churchUnits) unit.id: unit};
+          final visibleDossiers = dossiersAsync.maybeWhen(
+            data: (items) => _filterByScope(items, scopedUnitIds),
+            orElse: () => const <FiscalDossier>[],
+          );
+          final visibleImports = importsAsync.maybeWhen(
+            data: (items) => _filterImportsByScope(items, scopedUnitIds),
+            orElse: () => const <ImportedTrialBalance>[],
+          );
 
           return Padding(
             padding: EdgeInsets.fromLTRB(
@@ -84,22 +102,22 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
                   ),
                 const SizedBox(height: AppSpacing.md),
                 _FiscalSummaryStrip(
-                  dossiers: dossiersAsync.maybeWhen(
-                    data: (items) => items,
-                    orElse: () => const [],
-                  ),
-                  importCount: importsAsync.maybeWhen(
-                    data: (items) => items.length,
-                    orElse: () => 0,
-                  ),
+                  dossiers: visibleDossiers,
+                  importCount: visibleImports.length,
                   compact: compact,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Expanded(
                   child: dossiersAsync.when(
                     data: (dossiers) => compact
-                        ? _buildMobileList(dossiers)
-                        : _buildDesktopTable(dossiers),
+                        ? _buildMobileList(
+                            _filterByScope(dossiers, scopedUnitIds),
+                            unitById,
+                          )
+                        : _buildDesktopTable(
+                            _filterByScope(dossiers, scopedUnitIds),
+                            unitById,
+                          ),
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => ErrorState(
@@ -116,7 +134,10 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
     );
   }
 
-  Widget _buildDesktopTable(List<FiscalDossier> dossiers) {
+  Widget _buildDesktopTable(
+    List<FiscalDossier> dossiers,
+    Map<String, ChurchUnit> unitById,
+  ) {
     return EabTable<FiscalDossier>(
       items: dossiers,
       emptyMessage: 'Aucun dossier fiscal.',
@@ -146,6 +167,16 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+        EabColumn<FiscalDossier>(
+          label: 'Perimetre',
+          flex: 2,
+          sortKeyExtractor: (d) => _unitLabel(unitById, d.churchUnitId),
+          cellBuilder: (d) => Text(
+            _unitLabel(unitById, d.churchUnitId),
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
         ),
         EabColumn<FiscalDossier>(
@@ -188,7 +219,10 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
     );
   }
 
-  Widget _buildMobileList(List<FiscalDossier> dossiers) {
+  Widget _buildMobileList(
+    List<FiscalDossier> dossiers,
+    Map<String, ChurchUnit> unitById,
+  ) {
     if (dossiers.isEmpty) {
       return const Padding(
         padding: EdgeInsets.only(bottom: 96),
@@ -206,6 +240,7 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) => _DossierCard(
         dossier: dossiers[index],
+        unitLabel: _unitLabel(unitById, dossiers[index].churchUnitId),
         dateFormat: _dateFormat,
         statusChip: _statusChip(dossiers[index].status),
         onOpen: () => _openDossier(dossiers[index]),
@@ -273,6 +308,17 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
     }
 
     String? selectedTemplateId = templates.first.id;
+    final churchUnits = userScopeUnits(
+      ref.read(churchUnitsProvider).value ?? [],
+    );
+    final activeUnitId = ref.read(churchUnitActiveIdProvider);
+    String? selectedChurchUnitId =
+        activeUnitId != null &&
+            churchUnits.any((unit) => unit.id == activeUnitId)
+        ? activeUnitId
+        : churchUnits.isEmpty
+        ? null
+        : churchUnits.first.id;
     String label = '';
 
     final org = ref.read(currentOrganizationProvider).value;
@@ -315,6 +361,30 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
                         setDialogState(() => selectedTemplateId = v),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedChurchUnitId,
+                    decoration: const InputDecoration(
+                      labelText: 'Perimetre',
+                      prefixIcon: Icon(Icons.location_city_outlined),
+                    ),
+                    isExpanded: true,
+                    items: [
+                      for (final unit in churchUnits)
+                        DropdownMenuItem(
+                          value: unit.id,
+                          child: Text(
+                            churchUnitLabel(unit),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                    validator: (value) =>
+                        value == null ? 'Selectionnez un perimetre.' : null,
+                    onChanged: churchUnits.isEmpty
+                        ? null
+                        : (v) => setDialogState(() => selectedChurchUnitId = v),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   TextFormField(
                     decoration: const InputDecoration(
                       labelText: 'Libelle du dossier',
@@ -339,6 +409,7 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
                         .createDossier(
                           organizationId: orgId,
                           templateId: selectedTemplateId!,
+                          churchUnitId: selectedChurchUnitId,
                           label: label.trim().isEmpty ? null : label.trim(),
                         );
                     if (ctx.mounted) Navigator.of(ctx).pop();
@@ -366,6 +437,68 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
     if (confirmed == true) {
       await ref.read(fiscalDossiersProvider.notifier).deleteDossier(dossier.id);
     }
+  }
+
+  ChurchUnit? _findUnit(List<ChurchUnit> units, String? id) {
+    if (id == null) return null;
+    for (final unit in units) {
+      if (unit.id == id) return unit;
+    }
+    return null;
+  }
+
+  Set<String> _unitScopeIds(List<ChurchUnit> units, ChurchUnit? activeUnit) {
+    if (activeUnit == null) return const {};
+    if (!activeUnit.canViewDescendants) return {activeUnit.id};
+    final byParent = <String?, List<ChurchUnit>>{};
+    for (final unit in units) {
+      byParent.putIfAbsent(unit.parentId, () => []).add(unit);
+    }
+    final result = <String>{};
+    void visit(String id) {
+      if (!result.add(id)) return;
+      for (final child in byParent[id] ?? const <ChurchUnit>[]) {
+        visit(child.id);
+      }
+    }
+
+    visit(activeUnit.id);
+    return result;
+  }
+
+  List<FiscalDossier> _filterByScope(
+    List<FiscalDossier> dossiers,
+    Set<String> scopedUnitIds,
+  ) {
+    if (scopedUnitIds.isEmpty) return dossiers;
+    return dossiers
+        .where(
+          (dossier) =>
+              dossier.churchUnitId == null ||
+              scopedUnitIds.contains(dossier.churchUnitId),
+        )
+        .toList();
+  }
+
+  List<ImportedTrialBalance> _filterImportsByScope(
+    List<ImportedTrialBalance> imports,
+    Set<String> scopedUnitIds,
+  ) {
+    if (scopedUnitIds.isEmpty) return imports;
+    return imports
+        .where(
+          (item) =>
+              item.churchUnitId == null ||
+              scopedUnitIds.contains(item.churchUnitId),
+        )
+        .toList();
+  }
+
+  String _unitLabel(Map<String, ChurchUnit> unitById, String? unitId) {
+    if (unitId == null) return 'Perimetre non renseigne';
+    final unit = unitById[unitId];
+    if (unit == null) return 'Perimetre limite';
+    return '${unit.typeLabel} - ${unit.nom}';
   }
 }
 
@@ -583,6 +716,7 @@ class _SummaryItem extends StatelessWidget {
 class _DossierCard extends StatelessWidget {
   const _DossierCard({
     required this.dossier,
+    required this.unitLabel,
     required this.dateFormat,
     required this.statusChip,
     required this.onOpen,
@@ -590,6 +724,7 @@ class _DossierCard extends StatelessWidget {
   });
 
   final FiscalDossier dossier;
+  final String unitLabel;
   final DateFormat dateFormat;
   final Widget statusChip;
   final VoidCallback onOpen;
@@ -646,6 +781,16 @@ class _DossierCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           'Cree le ${dateFormat.format(dossier.createdAt)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          unitLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

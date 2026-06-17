@@ -39,8 +39,10 @@ class FiscalDossierRepository {
     final fieldsData = await _sb
         .from('fiscal_template_fields')
         .select()
-        .inFilter('page_id',
-            (pagesData as List).map((p) => p['id'] as String).toList())
+        .inFilter(
+          'page_id',
+          (pagesData as List).map((p) => p['id'] as String).toList(),
+        )
         .order('field_order');
 
     final fieldsByPage = <String, List<FiscalTemplateField>>{};
@@ -84,6 +86,7 @@ class FiscalDossierRepository {
   Future<FiscalDossier> createDossier({
     required String organizationId,
     required String templateId,
+    String? churchUnitId,
     String? exerciceId,
     String? label,
   }) async {
@@ -91,6 +94,7 @@ class FiscalDossierRepository {
         .from('fiscal_dossiers')
         .insert({
           'organization_id': organizationId,
+          if (churchUnitId != null) 'church_unit_id': churchUnitId,
           'template_id': templateId,
           if (exerciceId != null) 'exercice_id': exerciceId,
           'label': label ?? 'Nouveau dossier fiscal',
@@ -132,17 +136,14 @@ class FiscalDossierRepository {
     required dynamic value,
     String source = 'manual',
   }) async {
-    await _sb.from('fiscal_dossier_values').upsert(
-      {
-        'dossier_id': dossierId,
-        'organization_id': organizationId,
-        'field_key': fieldKey,
-        'value': value,
-        'source': source,
-        'updated_by': _sb.auth.currentUser?.id,
-      },
-      onConflict: 'dossier_id,field_key',
-    );
+    await _sb.from('fiscal_dossier_values').upsert({
+      'dossier_id': dossierId,
+      'organization_id': organizationId,
+      'field_key': fieldKey,
+      'value': value,
+      'source': source,
+      'updated_by': _sb.auth.currentUser?.id,
+    }, onConflict: 'dossier_id,field_key');
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -151,36 +152,40 @@ class FiscalDossierRepository {
 
   /// Pré-remplit les champs depuis la comptabilité existante.
   Future<Map<String, dynamic>> prefill(String dossierId) async {
-    final result = await _sb.rpc('prefill_fiscal_dossier', params: {
-      'p_dossier_id': dossierId,
-    });
+    final result = await _sb.rpc(
+      'prefill_fiscal_dossier',
+      params: {'p_dossier_id': dossierId},
+    );
     return result as Map<String, dynamic>;
   }
 
   /// Pré-remplit depuis une balance importée.
   Future<Map<String, dynamic>> prefillFromImport(
-      String dossierId, String importId) async {
-    final result =
-        await _sb.rpc('prefill_fiscal_dossier_from_import', params: {
-      'p_dossier_id': dossierId,
-      'p_import_id': importId,
-    });
+    String dossierId,
+    String importId,
+  ) async {
+    final result = await _sb.rpc(
+      'prefill_fiscal_dossier_from_import',
+      params: {'p_dossier_id': dossierId, 'p_import_id': importId},
+    );
     return result as Map<String, dynamic>;
   }
 
   /// Valide le dossier (contrôles bloquants).
   Future<FiscalValidationResult> validate(String dossierId) async {
-    final result = await _sb.rpc('validate_fiscal_dossier', params: {
-      'p_dossier_id': dossierId,
-    });
+    final result = await _sb.rpc(
+      'validate_fiscal_dossier',
+      params: {'p_dossier_id': dossierId},
+    );
     return FiscalValidationResult.fromJson(result as Map<String, dynamic>);
   }
 
   /// Verrouille le dossier.
   Future<Map<String, dynamic>> lock(String dossierId) async {
-    final result = await _sb.rpc('lock_fiscal_dossier', params: {
-      'p_dossier_id': dossierId,
-    });
+    final result = await _sb.rpc(
+      'lock_fiscal_dossier',
+      params: {'p_dossier_id': dossierId},
+    );
     return result as Map<String, dynamic>;
   }
 
@@ -194,14 +199,13 @@ class FiscalDossierRepository {
         .from('imported_trial_balances')
         .select()
         .order('created_at', ascending: false);
-    return (data as List)
-        .map((e) => ImportedTrialBalance.fromJson(e))
-        .toList();
+    return (data as List).map((e) => ImportedTrialBalance.fromJson(e)).toList();
   }
 
   /// Sauvegarde un import de balance.
   Future<ImportedTrialBalance> saveImport({
     required String organizationId,
+    String? churchUnitId,
     required String? exerciceLabel,
     required String? filename,
     required double totalDebit,
@@ -214,6 +218,7 @@ class FiscalDossierRepository {
         .from('imported_trial_balances')
         .insert({
           'organization_id': organizationId,
+          if (churchUnitId != null) 'church_unit_id': churchUnitId,
           'exercice_label': exerciceLabel,
           'filename': filename,
           'total_debit': totalDebit,
@@ -228,11 +233,17 @@ class FiscalDossierRepository {
 
     // 2) Insérer les lignes par lots de 100
     for (int i = 0; i < lines.length; i += 100) {
-      final batch = lines.skip(i).take(100).map((l) => {
-            'import_id': importId,
-            'organization_id': organizationId,
-            ...l,
-          }).toList();
+      final batch = lines
+          .skip(i)
+          .take(100)
+          .map(
+            (l) => {
+              'import_id': importId,
+              'organization_id': organizationId,
+              ...l,
+            },
+          )
+          .toList();
       await _sb.from('imported_trial_balance_lines').insert(batch);
     }
 

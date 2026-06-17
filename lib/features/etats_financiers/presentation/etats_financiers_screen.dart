@@ -10,7 +10,7 @@ import 'package:printing/printing.dart';
 
 import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/core/theme.dart';
-import 'package:eab/providers/user_profile_providers.dart';
+import 'package:eab/features/organization/application/organization_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
@@ -36,6 +36,7 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   DateTime? _dateDebut;
   DateTime? _dateFin;
   bool _isLoading = false;
+  String? _loadedOrgId;
 
   List<LigneBalance> _balance = [];
   List<LigneResultat> _resultat = [];
@@ -49,7 +50,6 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
     final now = DateTime.now();
     _dateDebut = DateTime(now.year, 1, 1);
     _dateFin = DateTime(now.year, 12, 31);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
   }
 
   @override
@@ -59,29 +59,28 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   }
 
   Future<void> _loadAll() async {
-    final profile = ref.read(profilUtilisateurCourantProvider);
-    if (profile == null) return;
+    final org = ref.read(currentOrganizationProvider).value;
+    if (org == null) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadedOrgId = org.id;
+    });
     final repo = ref.read(reportsRepositoryProvider);
     try {
       final results = await Future.wait([
         repo.fetchBalanceGenerale(
-          profile.id,
+          org.id,
           dateDebut: _dateDebut,
           dateFin: _dateFin,
         ),
         repo.fetchCompteResultat(
-          profile.id,
+          org.id,
           dateDebut: _dateDebut,
           dateFin: _dateFin,
         ),
-        repo.fetchBilan(profile.id, dateFin: _dateFin),
-        repo.fetchGrandLivre(
-          profile.id,
-          dateDebut: _dateDebut,
-          dateFin: _dateFin,
-        ),
+        repo.fetchBilan(org.id, dateFin: _dateFin),
+        repo.fetchGrandLivre(org.id, dateDebut: _dateDebut, dateFin: _dateFin),
       ]);
       setState(() {
         _balance = results[0] as List<LigneBalance>;
@@ -97,8 +96,8 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   }
 
   void _onExport(String format) {
-    final profile = ref.read(profilUtilisateurCourantProvider);
-    final orgName = profile?.nom ?? 'Organisation';
+    final org = ref.read(currentOrganizationProvider).value;
+    final orgName = org?.nom ?? 'Organisation';
     final periode =
         '${_dateFmt.format(_dateDebut!)} - ${_dateFmt.format(_dateFin!)}';
 
@@ -161,6 +160,13 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final org = ref.watch(currentOrganizationProvider).value;
+    if (org != null && _loadedOrgId != org.id && !_isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadAll();
+      });
+    }
+
     return AppShell(
       title: 'Etats financiers',
       currentRoute: '/etats-financiers',

@@ -84,12 +84,12 @@ class FiscalTemplate {
   });
 
   factory FiscalTemplate.fromJson(Map<String, dynamic> j) => FiscalTemplate(
-        id: j['id'] ?? '',
-        code: j['code'] ?? '',
-        label: j['label'] ?? '',
-        version: j['version'] ?? 1,
-        isActive: j['is_active'] ?? true,
-      );
+    id: j['id'] ?? '',
+    code: j['code'] ?? '',
+    label: j['label'] ?? '',
+    version: j['version'] ?? 1,
+    isActive: j['is_active'] ?? true,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,10 +138,8 @@ class FiscalTemplatePage {
         code: j['code'] ?? '',
         title: j['title'] ?? '',
         pageOrder: j['page_order'] ?? 0,
-        layout:
-            (j['layout'] as Map<String, dynamic>?) ?? <String, dynamic>{},
-        rules:
-            (j['rules'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+        layout: (j['layout'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+        rules: (j['rules'] as Map<String, dynamic>?) ?? <String, dynamic>{},
       );
 }
 
@@ -211,6 +209,7 @@ class FiscalTemplateField {
 class FiscalDossier {
   final String id;
   final String organizationId;
+  final String? churchUnitId;
   final String templateId;
   final String? exerciceId;
   final String? importId;
@@ -226,6 +225,7 @@ class FiscalDossier {
   const FiscalDossier({
     required this.id,
     required this.organizationId,
+    this.churchUnitId,
     required this.templateId,
     this.exerciceId,
     this.importId,
@@ -240,23 +240,25 @@ class FiscalDossier {
   });
 
   factory FiscalDossier.fromJson(Map<String, dynamic> j) => FiscalDossier(
-        id: j['id'] ?? '',
-        organizationId: j['organization_id'] ?? '',
-        templateId: j['template_id'] ?? '',
-        exerciceId: j['exercice_id'],
-        importId: j['import_id'],
-        status: FiscalDossierStatus.fromString(j['status'] ?? 'draft'),
-        label: j['label'],
-        notes: j['notes'],
-        createdBy: j['created_by'],
-        lockedBy: j['locked_by'],
-        lockedAt:
-            j['locked_at'] != null ? DateTime.parse(j['locked_at']) : null,
-        createdAt: DateTime.parse(
-            j['created_at'] ?? DateTime.now().toIso8601String()),
-        updatedAt: DateTime.parse(
-            j['updated_at'] ?? DateTime.now().toIso8601String()),
-      );
+    id: j['id'] ?? '',
+    organizationId: j['organization_id'] ?? '',
+    churchUnitId: j['church_unit_id'],
+    templateId: j['template_id'] ?? '',
+    exerciceId: j['exercice_id'],
+    importId: j['import_id'],
+    status: FiscalDossierStatus.fromString(j['status'] ?? 'draft'),
+    label: j['label'],
+    notes: j['notes'],
+    createdBy: j['created_by'],
+    lockedBy: j['locked_by'],
+    lockedAt: j['locked_at'] != null ? DateTime.parse(j['locked_at']) : null,
+    createdAt: DateTime.parse(
+      j['created_at'] ?? DateTime.now().toIso8601String(),
+    ),
+    updatedAt: DateTime.parse(
+      j['updated_at'] ?? DateTime.now().toIso8601String(),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,7 +334,8 @@ class FiscalValidationResult {
       FiscalValidationResult(
         ok: j['ok'] ?? false,
         errorCount: j['error_count'] ?? 0,
-        errors: (j['errors'] as List?)
+        errors:
+            (j['errors'] as List?)
                 ?.map((e) => FiscalValidationError.fromJson(e))
                 .toList() ??
             [],
@@ -346,6 +349,7 @@ class FiscalValidationResult {
 class ImportedTrialBalance {
   final String id;
   final String organizationId;
+  final String? churchUnitId;
   final String? exerciceLabel;
   final String? filename;
   final double totalDebit;
@@ -356,6 +360,7 @@ class ImportedTrialBalance {
   const ImportedTrialBalance({
     required this.id,
     required this.organizationId,
+    this.churchUnitId,
     this.exerciceLabel,
     this.filename,
     required this.totalDebit,
@@ -368,13 +373,15 @@ class ImportedTrialBalance {
       ImportedTrialBalance(
         id: j['id'] ?? '',
         organizationId: j['organization_id'] ?? '',
+        churchUnitId: j['church_unit_id'],
         exerciceLabel: j['exercice_label'],
         filename: j['filename'],
         totalDebit: (j['total_debit'] as num?)?.toDouble() ?? 0,
         totalCredit: (j['total_credit'] as num?)?.toDouble() ?? 0,
         lineCount: j['line_count'] ?? 0,
         createdAt: DateTime.parse(
-            j['created_at'] ?? DateTime.now().toIso8601String()),
+          j['created_at'] ?? DateTime.now().toIso8601String(),
+        ),
       );
 }
 

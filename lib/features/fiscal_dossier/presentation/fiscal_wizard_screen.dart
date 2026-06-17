@@ -15,8 +15,6 @@ import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_service.dart';
-import 'package:eab/providers/user_profile_providers.dart';
-import 'package:eab/models/profil_utilisateur.dart';
 
 class FiscalWizardScreen extends ConsumerStatefulWidget {
   final String dossierId;
@@ -586,11 +584,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
-      }
+      _showActionError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -616,11 +610,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
-      }
+      _showActionError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -657,35 +647,13 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
-      }
+      _showActionError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _lock(FiscalDossier dossier) async {
-    final profile = ref.read(profilUtilisateurCourantProvider);
-    final role = profile?.role;
-
-    if (role != RoleUtilisateur.adminNational &&
-        role != RoleUtilisateur.responsableRegion) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Seuls les administrateurs et responsables de région peuvent verrouiller.',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-
     final confirmed = await EabDialog.confirm(
       context,
       title: 'Verrouiller le dossier ?',
@@ -720,11 +688,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
-      }
+      _showActionError(e);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -765,14 +729,7 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       // Ouvrir la prévisualisation
       await FiscalPdfService.preview(doc, 'Dossier Fiscal — $orgName');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur PDF : $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showActionError(e, prefix: 'Erreur PDF');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -781,6 +738,25 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   // ═════════════════════════════════════════════════════════════════════════
   // Helpers
   // ═════════════════════════════════════════════════════════════════════════
+
+  void _showActionError(Object error, {String prefix = 'Erreur'}) {
+    if (!mounted) return;
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+    final isPermissionError =
+        raw.contains('42501') ||
+        lower.contains('droit insuffisant') ||
+        lower.contains('permission');
+    final message = isPermissionError
+        ? 'Action bloquee par les permissions hierarchiques de ce perimetre.'
+        : '$prefix : $raw';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isPermissionError ? Colors.orange : Colors.red,
+      ),
+    );
+  }
 
   Widget _pageIcon(FiscalTemplatePage page, bool hasError) {
     if (hasError) {

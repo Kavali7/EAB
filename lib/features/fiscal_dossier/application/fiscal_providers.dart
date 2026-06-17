@@ -20,8 +20,9 @@ final fiscalRepositoryProvider = Provider<FiscalDossierRepository>((ref) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Liste des templates actifs.
-final fiscalTemplatesProvider =
-    FutureProvider<List<FiscalTemplate>>((ref) async {
+final fiscalTemplatesProvider = FutureProvider<List<FiscalTemplate>>((
+  ref,
+) async {
   final repo = ref.watch(fiscalRepositoryProvider);
   return repo.listTemplates();
 });
@@ -33,8 +34,8 @@ final fiscalTemplatesProvider =
 /// Liste des dossiers fiscaux.
 final fiscalDossiersProvider =
     AsyncNotifierProvider<FiscalDossiersNotifier, List<FiscalDossier>>(
-  FiscalDossiersNotifier.new,
-);
+      FiscalDossiersNotifier.new,
+    );
 
 class FiscalDossiersNotifier extends AsyncNotifier<List<FiscalDossier>> {
   @override
@@ -46,6 +47,7 @@ class FiscalDossiersNotifier extends AsyncNotifier<List<FiscalDossier>> {
   Future<FiscalDossier> createDossier({
     required String organizationId,
     required String templateId,
+    String? churchUnitId,
     String? exerciceId,
     String? label,
   }) async {
@@ -53,6 +55,7 @@ class FiscalDossiersNotifier extends AsyncNotifier<List<FiscalDossier>> {
     final dossier = await repo.createDossier(
       organizationId: organizationId,
       templateId: templateId,
+      churchUnitId: churchUnitId,
       exerciceId: exerciceId,
       label: label,
     );
@@ -73,34 +76,35 @@ class FiscalDossiersNotifier extends AsyncNotifier<List<FiscalDossier>> {
 
 /// Pages template chargées pour un dossier.
 final fiscalTemplatePagesProvider =
-    FutureProvider.family<List<FiscalTemplatePage>, String>(
-  (ref, templateId) async {
-    final repo = ref.watch(fiscalRepositoryProvider);
-    return repo.getTemplatePages(templateId);
-  },
-);
+    FutureProvider.family<List<FiscalTemplatePage>, String>((
+      ref,
+      templateId,
+    ) async {
+      final repo = ref.watch(fiscalRepositoryProvider);
+      return repo.getTemplatePages(templateId);
+    });
 
 /// Valeurs du dossier courant.
 final fiscalValuesProvider =
-    FutureProvider.family<Map<String, FiscalDossierValue>, String>(
-  (ref, dossierId) async {
-    final repo = ref.watch(fiscalRepositoryProvider);
-    return repo.getValues(dossierId);
-  },
-);
+    FutureProvider.family<Map<String, FiscalDossierValue>, String>((
+      ref,
+      dossierId,
+    ) async {
+      final repo = ref.watch(fiscalRepositoryProvider);
+      return repo.getValues(dossierId);
+    });
 
 /// Dossier courant (pour le wizard).
 final currentFiscalDossierProvider =
-    FutureProvider.family<FiscalDossier?, String>(
-  (ref, dossierId) async {
-    final repo = ref.watch(fiscalRepositoryProvider);
-    return repo.getDossier(dossierId);
-  },
-);
+    FutureProvider.family<FiscalDossier?, String>((ref, dossierId) async {
+      final repo = ref.watch(fiscalRepositoryProvider);
+      return repo.getDossier(dossierId);
+    });
 
 /// Page sélectionnée dans le wizard.
-final selectedPageIndexProvider =
-    NotifierProvider<SelectedPageNotifier, int>(SelectedPageNotifier.new);
+final selectedPageIndexProvider = NotifierProvider<SelectedPageNotifier, int>(
+  SelectedPageNotifier.new,
+);
 
 class SelectedPageNotifier extends Notifier<int> {
   @override
@@ -114,8 +118,9 @@ class SelectedPageNotifier extends Notifier<int> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Liste des imports.
-final fiscalImportsProvider =
-    FutureProvider<List<ImportedTrialBalance>>((ref) async {
+final fiscalImportsProvider = FutureProvider<List<ImportedTrialBalance>>((
+  ref,
+) async {
   final repo = ref.watch(fiscalRepositoryProvider);
   return repo.listImports();
 });
