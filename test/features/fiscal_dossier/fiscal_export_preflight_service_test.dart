@@ -111,6 +111,10 @@ void main() {
         report.issues.map((issue) => issue.code),
         contains('adjustments_present'),
       );
+      expect(
+        report.issues.map((issue) => issue.code),
+        contains('fiscal_excel_mapping_coverage'),
+      );
     });
 
     test('signale un comparatif N-1 charge quand la balance existe', () {

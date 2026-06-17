@@ -524,6 +524,267 @@ void main() {
       expect(mapping.valueFor('NOTE 11', 'C22'), 60);
     });
 
+    test('alimente les notes fiscales de placements et fonds propres', () {
+      final mapping = SyscebnlFiscalExcelMapper.fromBalance(
+        const [
+          SyscebnlBalanceLine(
+            numero: '501',
+            intitule: 'Titres de placement',
+            nature: 'actif',
+            totalDebit: 250,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '590',
+            intitule: 'Depreciation titres',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 30,
+          ),
+          SyscebnlBalanceLine(
+            numero: '511',
+            intitule: 'Valeurs a encaisser',
+            nature: 'actif',
+            totalDebit: 90,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '591',
+            intitule: 'Depreciation valeurs',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 10,
+          ),
+          SyscebnlBalanceLine(
+            numero: '781',
+            intitule: 'Transfert de charges',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 45,
+          ),
+          SyscebnlBalanceLine(
+            numero: '787',
+            intitule: 'Transfert financier',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 15,
+          ),
+          SyscebnlBalanceLine(
+            numero: '106',
+            intitule: 'Reserves reglementees',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 500,
+          ),
+          SyscebnlBalanceLine(
+            numero: '110',
+            intitule: 'Report a nouveau crediteur',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 700,
+          ),
+          SyscebnlBalanceLine(
+            numero: '120',
+            intitule: 'Resultat net',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 50,
+          ),
+          SyscebnlBalanceLine(
+            numero: '140',
+            intitule: 'Subventions',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 600,
+          ),
+          SyscebnlBalanceLine(
+            numero: '150',
+            intitule: 'Provisions reglementees',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 70,
+          ),
+          SyscebnlBalanceLine(
+            numero: '180',
+            intitule: 'Autres fonds propres',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 25,
+          ),
+          SyscebnlBalanceLine(
+            numero: '190',
+            intitule: 'Provisions risques',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 90,
+          ),
+          SyscebnlBalanceLine(
+            numero: '390',
+            intitule: 'Depreciation stocks',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 12,
+          ),
+          SyscebnlBalanceLine(
+            numero: '491',
+            intitule: 'Depreciation creances',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 18,
+          ),
+        ],
+        previousLines: const [
+          SyscebnlBalanceLine(
+            numero: '501',
+            intitule: 'Titres de placement',
+            nature: 'actif',
+            totalDebit: 200,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '590',
+            intitule: 'Depreciation titres',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 20,
+          ),
+          SyscebnlBalanceLine(
+            numero: '511',
+            intitule: 'Valeurs a encaisser',
+            nature: 'actif',
+            totalDebit: 80,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '591',
+            intitule: 'Depreciation valeurs',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 8,
+          ),
+          SyscebnlBalanceLine(
+            numero: '781',
+            intitule: 'Transfert de charges',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 30,
+          ),
+          SyscebnlBalanceLine(
+            numero: '787',
+            intitule: 'Transfert financier',
+            nature: 'produit',
+            totalDebit: 0,
+            totalCredit: 9,
+          ),
+          SyscebnlBalanceLine(
+            numero: '106',
+            intitule: 'Reserves reglementees',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 400,
+          ),
+          SyscebnlBalanceLine(
+            numero: '110',
+            intitule: 'Report a nouveau crediteur',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 650,
+          ),
+          SyscebnlBalanceLine(
+            numero: '120',
+            intitule: 'Resultat net',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 40,
+          ),
+          SyscebnlBalanceLine(
+            numero: '140',
+            intitule: 'Subventions',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 500,
+          ),
+          SyscebnlBalanceLine(
+            numero: '150',
+            intitule: 'Provisions reglementees',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 30,
+          ),
+          SyscebnlBalanceLine(
+            numero: '180',
+            intitule: 'Autres fonds propres',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 20,
+          ),
+          SyscebnlBalanceLine(
+            numero: '190',
+            intitule: 'Provisions risques',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 60,
+          ),
+          SyscebnlBalanceLine(
+            numero: '390',
+            intitule: 'Depreciation stocks',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 20,
+          ),
+          SyscebnlBalanceLine(
+            numero: '491',
+            intitule: 'Depreciation creances',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 10,
+          ),
+        ],
+      );
+
+      expect(mapping.valueFor('NOTE 9', 'B17'), 250);
+      expect(mapping.valueFor('NOTE 9', 'C17'), 200);
+      expect(mapping.valueFor('NOTE 9', 'B20'), 30);
+      expect(mapping.valueFor('NOTE 9', 'C20'), 20);
+      expect(mapping.valueFor('NOTE 10', 'B15'), 90);
+      expect(mapping.valueFor('NOTE 10', 'C15'), 80);
+      expect(mapping.valueFor('NOTE 10', 'B18'), 10);
+      expect(mapping.valueFor('NOTE 10', 'C18'), 8);
+      expect(mapping.valueFor('NOTE 12', 'B25'), 45);
+      expect(mapping.valueFor('NOTE 12', 'C25'), 30);
+      expect(mapping.valueFor('NOTE 12', 'B29'), 15);
+      expect(mapping.valueFor('NOTE 12', 'C29'), 9);
+      expect(mapping.valueFor('NOTE 14', 'C21'), 500);
+      expect(mapping.valueFor('NOTE 14', 'D21'), 400);
+      expect(mapping.valueFor('NOTE 14', 'C24'), 700);
+      expect(mapping.valueFor('NOTE 14', 'D24'), 650);
+      expect(mapping.valueFor('NOTE 14', 'C26'), 50);
+      expect(mapping.valueFor('NOTE 14', 'D26'), 40);
+      expect(mapping.valueFor('NOTE 15A', 'C17'), 600);
+      expect(mapping.valueFor('NOTE 15A', 'D17'), 500);
+      expect(mapping.valueFor('NOTE 15A', 'C26'), 70);
+      expect(mapping.valueFor('NOTE 15A', 'D26'), 30);
+      expect(mapping.formulaFor('NOTE 15A', 'C18'), '=SUM(C10:C17)');
+      expect(mapping.formulaFor('NOTE 15A', 'C27'), '=SUM(C20:C26)');
+      expect(mapping.formulaFor('NOTE 15A', 'C29'), '=C18+C27');
+      expect(mapping.valueFor('NOTES 15B', 'C14'), 25);
+      expect(mapping.valueFor('NOTES 15B', 'D14'), 20);
+      expect(mapping.valueFor('NOTE 28', 'B12'), 30);
+      expect(mapping.valueFor('NOTE 28', 'C12'), 40);
+      expect(mapping.valueFor('NOTE 28', 'B13'), 60);
+      expect(mapping.valueFor('NOTE 28', 'C13'), 30);
+      expect(mapping.valueFor('NOTE 28', 'B17'), 20);
+      expect(mapping.valueFor('NOTE 28', 'F17'), 8);
+      expect(mapping.valueFor('NOTE 28', 'B20'), 10);
+      expect(mapping.valueFor('NOTE 28', 'C20'), 8);
+      expect(
+        mapping.formulaFor('NOTE 28', 'I12'),
+        '=B12+C12+D12+E12-F12-G12-H12',
+      );
+      expect(mapping.formulaFor('NOTE 34', 'C10'), "='NOTE 21'!B40");
+      expect(mapping.formulaFor('NOTE 34', 'D10'), "='NOTE 21'!C40");
+    });
+
     test('alimente les notes de dettes et de resultat depuis SYSCEBNL', () {
       final mapping = SyscebnlFiscalExcelMapper.fromBalance(
         const [

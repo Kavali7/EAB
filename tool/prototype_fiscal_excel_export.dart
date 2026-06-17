@@ -91,8 +91,26 @@ void main() {
   final note7 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 7')!),
   );
+  final note9 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 9')!),
+  );
+  final note10 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 10')!),
+  );
   final note11 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 11')!),
+  );
+  final note12 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 12')!),
+  );
+  final note14 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 14')!),
+  );
+  final note15a = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 15A')!),
+  );
+  final notes15b = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTES 15B')!),
   );
   final note17 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 17')!),
@@ -109,11 +127,17 @@ void main() {
   final note27a = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 27A')!),
   );
+  final note28 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 28')!),
+  );
   final note29 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 29')!),
   );
   final note31 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 31')!),
+  );
+  final note34 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 34')!),
   );
 
   stdout.writeln('Prototype genere: ${output.path}');
@@ -137,17 +161,25 @@ void main() {
   stdout.writeln('NOTE 3C!C22=${_cellValue(note3c, 'C22')}');
   stdout.writeln('NOTE 6!B12=${_cellValue(note6, 'B12')}');
   stdout.writeln('NOTE 7!B12=${_cellValue(note7, 'B12')}');
+  stdout.writeln('NOTE 9!B17=${_cellValue(note9, 'B17')}');
+  stdout.writeln('NOTE 10!B15=${_cellValue(note10, 'B15')}');
   stdout.writeln('NOTE 11!C12=${_cellValue(note11, 'C12')}');
   stdout.writeln('NOTE 11!C21=${_cellValue(note11, 'C21')}');
+  stdout.writeln('NOTE 12!B25=${_cellValue(note12, 'B25')}');
+  stdout.writeln('NOTE 14!C21=${_cellValue(note14, 'C21')}');
+  stdout.writeln('NOTE 15A!C18=${_cellFormula(note15a, 'C18')}');
+  stdout.writeln('NOTES 15B!C14=${_cellValue(notes15b, 'C14')}');
   stdout.writeln('NOTE 17!B10=${_cellValue(note17, 'B10')}');
   stdout.writeln('NOTE 21!B37=${_cellValue(note21, 'B37')}');
   stdout.writeln('NOTE 21!B38=${_cellFormula(note21, 'B38')}');
   stdout.writeln('NOTE 24!B11=${_cellValue(note24, 'B11')}');
   stdout.writeln('NOTE 26!B15=${_cellValue(note26, 'B15')}');
   stdout.writeln('NOTE 27A!B11=${_cellValue(note27a, 'B11')}');
+  stdout.writeln('NOTE 28!I12=${_cellFormula(note28, 'I12')}');
   stdout.writeln('NOTE 29!B10=${_cellValue(note29, 'B10')}');
   stdout.writeln('NOTE 31!B18=${_cellFormula(note31, 'B18')}');
   stdout.writeln('NOTE 31!B22=${_cellFormula(note31, 'B22')}');
+  stdout.writeln('NOTE 34!C10=${_cellFormula(note34, 'C10')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
@@ -217,11 +249,102 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
+      numero: '501',
+      intitule: 'Titres de placement',
+      nature: 'actif',
+      totalDebit: 125000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '590',
+      intitule: 'Depreciation titres de placement',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 10000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '511',
+      intitule: 'Valeurs a encaisser',
+      nature: 'actif',
+      totalDebit: 90000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '591',
+      intitule: 'Depreciation valeurs a encaisser',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 5000,
+    ),
+    SyscebnlBalanceLine(
       numero: '401',
       intitule: 'Fournisseurs',
       nature: 'passif',
       totalDebit: 0,
       totalCredit: 600000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '106',
+      intitule: 'Reserves reglementees',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 450000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '110',
+      intitule: 'Report a nouveau',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 750000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '120',
+      intitule: 'Resultat net',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 100000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '140',
+      intitule: 'Subventions d investissement',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 200000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '150',
+      intitule: 'Provisions reglementees',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 40000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '180',
+      intitule: 'Autres fonds propres',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 65000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '190',
+      intitule: 'Provisions risques',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 30000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '390',
+      intitule: 'Depreciation stocks',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 15000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '491',
+      intitule: 'Depreciation creances',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 6000,
     ),
     SyscebnlBalanceLine(
       numero: '701',
@@ -300,6 +423,20 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       totalDebit: 0,
       totalCredit: 30000,
     ),
+    SyscebnlBalanceLine(
+      numero: '781',
+      intitule: 'Transferts de charges',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 35000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '787',
+      intitule: 'Transferts financiers',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 7000,
+    ),
   ];
 }
 
@@ -369,11 +506,102 @@ List<SyscebnlBalanceLine> _samplePreviousBalance() {
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
+      numero: '501',
+      intitule: 'Titres de placement',
+      nature: 'actif',
+      totalDebit: 100000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '590',
+      intitule: 'Depreciation titres de placement',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 8000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '511',
+      intitule: 'Valeurs a encaisser',
+      nature: 'actif',
+      totalDebit: 75000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '591',
+      intitule: 'Depreciation valeurs a encaisser',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 4000,
+    ),
+    SyscebnlBalanceLine(
       numero: '401',
       intitule: 'Fournisseurs',
       nature: 'passif',
       totalDebit: 0,
       totalCredit: 500000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '106',
+      intitule: 'Reserves reglementees',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 420000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '110',
+      intitule: 'Report a nouveau',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 700000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '120',
+      intitule: 'Resultat net',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 90000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '140',
+      intitule: 'Subventions d investissement',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 180000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '150',
+      intitule: 'Provisions reglementees',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 25000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '180',
+      intitule: 'Autres fonds propres',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 50000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '190',
+      intitule: 'Provisions risques',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 35000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '390',
+      intitule: 'Depreciation stocks',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 9000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '491',
+      intitule: 'Depreciation creances',
+      nature: 'passif',
+      totalDebit: 0,
+      totalCredit: 3000,
     ),
     SyscebnlBalanceLine(
       numero: '701',
@@ -451,6 +679,20 @@ List<SyscebnlBalanceLine> _samplePreviousBalance() {
       nature: 'produit',
       totalDebit: 0,
       totalCredit: 20000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '781',
+      intitule: 'Transferts de charges',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 25000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '787',
+      intitule: 'Transferts financiers',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 5000,
     ),
   ];
 }

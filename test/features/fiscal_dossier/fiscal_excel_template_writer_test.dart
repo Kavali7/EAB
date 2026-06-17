@@ -165,7 +165,13 @@ Uint8List _buildMiniWorkbook() {
     'NOTE 4',
     'NOTE 7',
     'NOTE 8',
+    'NOTE 9',
+    'NOTE 10',
     'NOTE 11',
+    'NOTE 12',
+    'NOTE 14',
+    'NOTE 15A',
+    'NOTES 15B',
     'NOTE 16A',
     'NOTE 17',
     'NOTE 18',
@@ -178,9 +184,11 @@ Uint8List _buildMiniWorkbook() {
     'NOTE 25',
     'NOTE 26',
     'NOTE 27A',
+    'NOTE 28',
     'NOTE 29',
     'NOTE 30',
     'NOTE 31',
+    'NOTE 34',
   ];
   final sheetEntries = [
     for (var i = 0; i < sheetNames.length; i++)

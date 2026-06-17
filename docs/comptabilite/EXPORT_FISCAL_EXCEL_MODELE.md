@@ -66,7 +66,13 @@ Premiere couverture des annexes :
 | `NOTE 6` | `B12:C12` | Stocks et en-cours classe 3, courant et N-1 |
 | `NOTE 7` | `B12:C12`, `E12` | Creances membres et tiers debiteurs classe 4, courant, N-1 et part a un an au plus |
 | `NOTE 8` | lignes `14`, `15`, `16`, `18`, `20` | Autres creances : personnel, organismes sociaux, Etat, entites liees et autres debiteurs |
+| `NOTE 9` | `B17:C17`, `B20:C20` | Titres de placement classe 50 et depreciations classe 590 |
+| `NOTE 10` | `B15:C15`, `B18:C18` | Valeurs a encaisser classe 511 et depreciations classe 591 |
 | `NOTE 11` | `C12:D12`, `C18:D18`, `C21:D23` | Disponibilites : banque, etablissements financiers, caisse, Mobile Money et regies d'avance |
+| `NOTE 12` | `B25:C25`, `B29:C29` | Transferts de charges classe 78, avec separation des transferts financiers 787 |
+| `NOTE 14` | `C21:D21`, `C24:D24`, `C26:D26` | Reserves, report a nouveau et resultat comptes 106, 11 et 12 |
+| `NOTE 15A` | `C17:D17`, `C26:D26`, formules `C18:D18`, `C27:D27`, `C29:D29` | Subventions d'investissement classe 14 et provisions reglementees classe 15 |
+| `NOTES 15B` | `C14:D14` | Autres fonds propres classe 18 |
 | `NOTE 16A` | `B8:C8`, `F8`, `B38:C38` | Emprunts classe 16 et provisions pour risques classe 19, avec classement court terme par defaut faute d'echeancier detaille |
 | `NOTE 17` | `B10:C10`, `B17:C17` | Fournisseurs classe 40 et avances fournisseurs classe 409 |
 | `NOTE 18` | lignes `12`, `14`, `20` | Dettes personnel, organismes sociaux et Etat classes 42, 43 et 44, classees a un an au plus par defaut |
@@ -79,9 +85,11 @@ Premiere couverture des annexes :
 | `NOTE 25` | lignes `11` a `15` | Impots et taxes classe 63 par familles |
 | `NOTE 26` | lignes `10`, `15`, `16` | Pertes sur creances, aides/dons accordes et autres charges diverses classes 64/65 |
 | `NOTE 27A` | lignes `11`, `13`, `15`, `16` | Charges de personnel classe 66 : remunerations, charges sociales, personnel exterieur et autres charges |
+| `NOTE 28` | lignes `12`, `13`, `17`, `20`, `23`, `24`, formules `I12:I13` | Provisions et depreciations classes 15, 19, 39, 49, 590 et 591, en mouvements ouverture/augmentation/reprise |
 | `NOTE 29` | lignes `10`, `13`, `15`, `19`, `22`, `25`, `30` | Charges et revenus financiers classes 67, 69, 77 et reprises financieres 797 |
 | `NOTE 30` | `B10:C10`, `B20:C20` | Charges et produits hors activites ordinaires classe 8 |
 | `NOTE 31` | formules `B18:C22`, `B29:C31` | Synthese cinq exercices reliee aux notes 21, 27A et au compte de resultat |
+| `NOTE 34` | formules `C10:D10` | Indicateur d'activite branche sur les ressources ordinaires SYSCEBNL de la note 21, pas sur un chiffre d'affaires commercial |
 
 Couverture de securite ajoutee :
 
@@ -93,6 +101,7 @@ Couverture de securite ajoutee :
 - les formules des fiches et notes sont conservees, mais leurs anciennes valeurs cachees sont supprimees pour forcer un recalcul propre a l'ouverture du classeur ;
 - les cellules de totaux, sous-totaux et nets restent des formules Excel du modele ;
 - le `TFT` conserve ses lignes de calcul, mais ses flux non calculables sans historique sont neutralises pour eviter les montants d'exemple.
+- le controle avant export signale la couverture automatique et les feuilles qualitatives ou sans source comptable fiable qui restent a revue manuelle si l'eglise est concernee.
 
 Cette regle evite qu'un montant du fichier exemple commercial survive dans un dossier fiscal d'eglise.
 
@@ -225,6 +234,7 @@ Il verifie avant generation :
 - application eventuelle des ajustements d'export ;
 - neutralisation des anciennes cellules du modele.
 - neutralisation des montants d'exemple dans les fiches et notes annexes.
+- couverture automatique du classeur et liste courte des feuilles restant a revue manuelle si applicables.
 
 Le bouton `Controles` affiche le rapport dans le dossier fiscal. Le bouton `Excel` execute aussi ce controle : si une anomalie bloquante existe, le rapport est affiche et l'export est refuse.
 

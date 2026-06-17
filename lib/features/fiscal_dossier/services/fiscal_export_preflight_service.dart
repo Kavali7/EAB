@@ -238,6 +238,17 @@ class FiscalExportPreflightEngine {
             'Les montants d exemple des fiches et notes annexes du modele seront neutralises avant generation.',
       ),
     );
+    issues.add(
+      FiscalExportPreflightIssue(
+        code: 'fiscal_excel_mapping_coverage',
+        severity: FiscalPreflightSeverity.info,
+        title: 'Couverture du modele Excel',
+        detail:
+            '${SyscebnlFiscalExcelMapper.automatedSheetNames.length} feuille(s) alimentee(s) automatiquement depuis le SYSCEBNL. '
+            '${SyscebnlFiscalExcelMapper.manualReviewSheetNames.length} feuille(s) qualitative(s) ou sans source comptable fiable restent a revue manuelle si applicables : '
+            '${_previewSheets(SyscebnlFiscalExcelMapper.manualReviewSheetNames)}.',
+      ),
+    );
 
     return FiscalExportPreflightReport(
       dateDebut: dateDebut,
@@ -271,6 +282,14 @@ class FiscalExportPreflightEngine {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
+  }
+
+  static String _previewSheets(List<String> sheets) {
+    const maxVisibleSheets = 8;
+    final visible = sheets.take(maxVisibleSheets).join(', ');
+    final remaining = sheets.length - maxVisibleSheets;
+    if (remaining <= 0) return visible;
+    return '$visible, +$remaining autre(s)';
   }
 }
 
