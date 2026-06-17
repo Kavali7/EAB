@@ -94,6 +94,27 @@ void main() {
   final note11 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 11')!),
   );
+  final note17 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 17')!),
+  );
+  final note21 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 21')!),
+  );
+  final note24 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 24')!),
+  );
+  final note26 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 26')!),
+  );
+  final note27a = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 27A')!),
+  );
+  final note29 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 29')!),
+  );
+  final note31 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 31')!),
+  );
 
   stdout.writeln('Prototype genere: ${output.path}');
   stdout.writeln('Feuilles conservees: ${_sheetCount(workbook)}');
@@ -118,6 +139,15 @@ void main() {
   stdout.writeln('NOTE 7!B12=${_cellValue(note7, 'B12')}');
   stdout.writeln('NOTE 11!C12=${_cellValue(note11, 'C12')}');
   stdout.writeln('NOTE 11!C21=${_cellValue(note11, 'C21')}');
+  stdout.writeln('NOTE 17!B10=${_cellValue(note17, 'B10')}');
+  stdout.writeln('NOTE 21!B37=${_cellValue(note21, 'B37')}');
+  stdout.writeln('NOTE 21!B38=${_cellFormula(note21, 'B38')}');
+  stdout.writeln('NOTE 24!B11=${_cellValue(note24, 'B11')}');
+  stdout.writeln('NOTE 26!B15=${_cellValue(note26, 'B15')}');
+  stdout.writeln('NOTE 27A!B11=${_cellValue(note27a, 'B11')}');
+  stdout.writeln('NOTE 29!B10=${_cellValue(note29, 'B10')}');
+  stdout.writeln('NOTE 31!B18=${_cellFormula(note31, 'B18')}');
+  stdout.writeln('NOTE 31!B22=${_cellFormula(note31, 'B22')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
@@ -222,10 +252,38 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
+      numero: '631',
+      intitule: 'Impots directs',
+      nature: 'charge',
+      totalDebit: 95000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
       numero: '645',
       intitule: 'Indemnites et aides',
       nature: 'charge',
       totalDebit: 500000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '661',
+      intitule: 'Remunerations directes',
+      nature: 'charge',
+      totalDebit: 1200000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '664',
+      intitule: 'Charges sociales',
+      nature: 'charge',
+      totalDebit: 240000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '671',
+      intitule: 'Interets financiers',
+      nature: 'charge',
+      totalDebit: 85000,
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
@@ -234,6 +292,13 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       nature: 'charge',
       totalDebit: 420000,
       totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '771',
+      intitule: 'Interets recus',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 30000,
     ),
   ];
 }
@@ -339,10 +404,38 @@ List<SyscebnlBalanceLine> _samplePreviousBalance() {
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
+      numero: '631',
+      intitule: 'Impots directs',
+      nature: 'charge',
+      totalDebit: 80000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
       numero: '645',
       intitule: 'Indemnites et aides',
       nature: 'charge',
       totalDebit: 450000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '661',
+      intitule: 'Remunerations directes',
+      nature: 'charge',
+      totalDebit: 1050000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '664',
+      intitule: 'Charges sociales',
+      nature: 'charge',
+      totalDebit: 210000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '671',
+      intitule: 'Interets financiers',
+      nature: 'charge',
+      totalDebit: 70000,
       totalCredit: 0,
     ),
     SyscebnlBalanceLine(
@@ -351,6 +444,13 @@ List<SyscebnlBalanceLine> _samplePreviousBalance() {
       nature: 'charge',
       totalDebit: 360000,
       totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '771',
+      intitule: 'Interets recus',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 20000,
     ),
   ];
 }

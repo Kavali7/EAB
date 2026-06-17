@@ -153,6 +153,44 @@ void main() {
 }
 
 Uint8List _buildMiniWorkbook() {
+  const sheetNames = [
+    'ACTIF',
+    'PASSIF',
+    'RESULTAT',
+    'TFT',
+    'FICHE R1 ',
+    'NOTE 6',
+    'NOTE 3A',
+    'NOTE 3C',
+    'NOTE 4',
+    'NOTE 7',
+    'NOTE 8',
+    'NOTE 11',
+    'NOTE 16A',
+    'NOTE 17',
+    'NOTE 18',
+    'NOTE 19',
+    'NOTE 20',
+    'NOTE 21',
+    'NOTE 22',
+    'NOTE 23',
+    'NOTE 24',
+    'NOTE 25',
+    'NOTE 26',
+    'NOTE 27A',
+    'NOTE 29',
+    'NOTE 30',
+    'NOTE 31',
+  ];
+  final sheetEntries = [
+    for (var i = 0; i < sheetNames.length; i++)
+      '    <sheet name="${sheetNames[i]}" sheetId="${i + 1}" r:id="rId${i + 1}"/>',
+  ].join('\n');
+  final relationshipEntries = [
+    for (var i = 0; i < sheetNames.length; i++)
+      '  <Relationship Id="rId${i + 1}" Type="worksheet" Target="worksheets/sheet${i + 1}.xml"/>',
+  ].join('\n');
+
   final archive = Archive()
     ..addFile(
       ArchiveFile.string(
@@ -164,18 +202,7 @@ Uint8List _buildMiniWorkbook() {
       ArchiveFile.string('xl/workbook.xml', '''
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="ACTIF" sheetId="1" r:id="rId1"/>
-    <sheet name="PASSIF" sheetId="2" r:id="rId2"/>
-    <sheet name="RESULTAT" sheetId="3" r:id="rId3"/>
-    <sheet name="TFT" sheetId="4" r:id="rId4"/>
-    <sheet name="FICHE R1 " sheetId="5" r:id="rId5"/>
-    <sheet name="NOTE 6" sheetId="6" r:id="rId6"/>
-    <sheet name="NOTE 3A" sheetId="7" r:id="rId7"/>
-    <sheet name="NOTE 3C" sheetId="8" r:id="rId8"/>
-    <sheet name="NOTE 4" sheetId="9" r:id="rId9"/>
-    <sheet name="NOTE 7" sheetId="10" r:id="rId10"/>
-    <sheet name="NOTE 8" sheetId="11" r:id="rId11"/>
-    <sheet name="NOTE 11" sheetId="12" r:id="rId12"/>
+$sheetEntries
   </sheets>
   <definedNames>
     <definedName name="_soNom">"Ancien"</definedName>
@@ -188,18 +215,7 @@ Uint8List _buildMiniWorkbook() {
     ..addFile(
       ArchiveFile.string('xl/_rels/workbook.xml.rels', '''
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="worksheet" Target="worksheets/sheet2.xml"/>
-  <Relationship Id="rId3" Type="worksheet" Target="worksheets/sheet3.xml"/>
-  <Relationship Id="rId4" Type="worksheet" Target="worksheets/sheet4.xml"/>
-  <Relationship Id="rId5" Type="worksheet" Target="worksheets/sheet5.xml"/>
-  <Relationship Id="rId6" Type="worksheet" Target="worksheets/sheet6.xml"/>
-  <Relationship Id="rId7" Type="worksheet" Target="worksheets/sheet7.xml"/>
-  <Relationship Id="rId8" Type="worksheet" Target="worksheets/sheet8.xml"/>
-  <Relationship Id="rId9" Type="worksheet" Target="worksheets/sheet9.xml"/>
-  <Relationship Id="rId10" Type="worksheet" Target="worksheets/sheet10.xml"/>
-  <Relationship Id="rId11" Type="worksheet" Target="worksheets/sheet11.xml"/>
-  <Relationship Id="rId12" Type="worksheet" Target="worksheets/sheet12.xml"/>
+$relationshipEntries
 </Relationships>
 '''),
     )
@@ -237,6 +253,12 @@ Uint8List _buildMiniWorkbook() {
         '<drawing>SYSCOHADA</drawing>',
       ),
     );
+
+  for (var sheetIndex = 13; sheetIndex <= sheetNames.length; sheetIndex++) {
+    archive.addFile(
+      ArchiveFile.string('xl/worksheets/sheet$sheetIndex.xml', _worksheetXml()),
+    );
+  }
 
   return ZipEncoder().encodeBytes(archive);
 }

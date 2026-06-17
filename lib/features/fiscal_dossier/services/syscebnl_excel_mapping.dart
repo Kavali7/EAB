@@ -756,6 +756,20 @@ class SyscebnlFiscalExcelMapper {
     yield* _note7MemberReceivables(lines, previousLines);
     yield* _note8OtherReceivables(lines, previousLines);
     yield* _note11CashAndBank(lines, previousLines);
+    yield* _note16aFinancialDebts(lines, previousLines);
+    yield* _note17SupplierDebts(lines, previousLines);
+    yield* _note18TaxAndSocialDebts(lines, previousLines);
+    yield* _note19OtherDebts(lines, previousLines);
+    yield* _note20TreasuryPassive(lines, previousLines);
+    yield* _note21Revenues(lines, previousLines);
+    yield* _note22Purchases(lines, previousLines);
+    yield* _note23Transports(lines, previousLines);
+    yield* _note24ExternalServices(lines, previousLines);
+    yield* _note25Taxes(lines, previousLines);
+    yield* _note26OtherCharges(lines, previousLines);
+    yield* _note27aStaffCosts(lines, previousLines);
+    yield* _note29FinancialIncomeAndCharges(lines, previousLines);
+    yield* _note30HaoIncomeAndCharges(lines, previousLines);
   }
 
   static Iterable<FiscalExcelFormula> _annexFormulas() sync* {
@@ -849,6 +863,114 @@ class SyscebnlFiscalExcelMapper {
         cell: 'E29',
         formula: '=E19+E27',
         label: 'Total general amortissements',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 21',
+        cell: 'B38',
+        formula: '=SUM(B35:B37)',
+        label: 'Total autres produits',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 21',
+        cell: 'C38',
+        formula: '=SUM(C35:C37)',
+        label: 'Total autres produits N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 19',
+        cell: 'B24',
+        formula: '=SUM(B17:B23)',
+        label: 'Total crediteurs divers',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 19',
+        cell: 'C24',
+        formula: '=SUM(C17:C23)',
+        label: 'Total crediteurs divers N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B18',
+        formula: "='NOTE 21'!B40",
+        label: 'Ressources ordinaires exercice courant',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C18',
+        formula: "='NOTE 21'!C40",
+        label: 'Ressources ordinaires exercice precedent',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B19',
+        formula: '=RESULTAT!E35+RESULTAT!E34',
+        label: 'Resultat ordinaire hors dotations',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C19',
+        formula: '=RESULTAT!F35+RESULTAT!F34',
+        label: 'Resultat ordinaire hors dotations N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B21',
+        formula: '=RESULTAT!E49',
+        label: 'Impots sur le resultat',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C21',
+        formula: '=RESULTAT!F49',
+        label: 'Impots sur le resultat N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B22',
+        formula: '=RESULTAT!E50',
+        label: 'Resultat net',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C22',
+        formula: '=RESULTAT!F50',
+        label: 'Resultat net N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B29',
+        formula: "='NOTE 27A'!B11+'NOTE 27A'!B12",
+        label: 'Masse salariale distribuee',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C29',
+        formula: "='NOTE 27A'!C11+'NOTE 27A'!C12",
+        label: 'Masse salariale distribuee N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B30',
+        formula: "='NOTE 27A'!B13+'NOTE 27A'!B16",
+        label: 'Avantages sociaux',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C30',
+        formula: "='NOTE 27A'!C13+'NOTE 27A'!C16",
+        label: 'Avantages sociaux N-1',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'B31',
+        formula: "='NOTE 27A'!B15",
+        label: 'Personnel exterieur facture',
+      ),
+      FiscalExcelFormula(
+        sheet: 'NOTE 31',
+        cell: 'C31',
+        formula: "='NOTE 27A'!C15",
+        label: 'Personnel exterieur facture N-1',
       ),
     ];
   }
@@ -1758,6 +1880,773 @@ class SyscebnlFiscalExcelMapper {
     );
   }
 
+  static Iterable<FiscalExcelCellValue> _note16aFinancialDebts(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 16A',
+      row: '8',
+      fieldKey: 'note16a.emprunts_etablissements_credit',
+      label: 'Emprunts et dettes financieres',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['16']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['16']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 16A',
+      currentCell: 'B38',
+      previousCell: 'C38',
+      fieldKey: 'note16a.autres_provisions',
+      label: 'Autres provisions pour risques et charges',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['19']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['19']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note17SupplierDebts(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 17',
+      currentCell: 'B10',
+      previousCell: 'C10',
+      fieldKey: 'note17.fournisseurs_dettes',
+      label: 'Fournisseurs dettes en compte',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['40']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['40']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 17',
+      currentCell: 'B17',
+      previousCell: 'C17',
+      fieldKey: 'note17.fournisseurs_avances',
+      label: 'Fournisseurs avances et acomptes',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['409']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['409']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note18TaxAndSocialDebts(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 18',
+      row: '12',
+      fieldKey: 'note18.personnel_remunerations_dues',
+      label: 'Personnel remunerations dues',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['42']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['42']),
+      ),
+    );
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 18',
+      row: '14',
+      fieldKey: 'note18.organismes_sociaux',
+      label: 'Dettes envers organismes sociaux',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['43']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['43']),
+      ),
+    );
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 18',
+      row: '20',
+      fieldKey: 'note18.etat_impots_taxes',
+      label: 'Dettes fiscales et taxes',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['44']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['44']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note19OtherDebts(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 19',
+      row: '12',
+      fieldKey: 'note19.membres_entites_liees',
+      label: 'Comptes courants membres et entites liees',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['45']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['45']),
+      ),
+    );
+    yield* _currentPreviousAndShortDebtValues(
+      sheet: 'NOTE 19',
+      row: '17',
+      fieldKey: 'note19.crediteurs_divers',
+      label: 'Crediteurs divers',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['46', '47', '48']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['46', '47', '48']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note20TreasuryPassive(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 20',
+      currentCell: 'B17',
+      previousCell: 'C17',
+      fieldKey: 'note20.banques_locales_passives',
+      label: 'Banques locales crediteurs',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['512'], nature: 'passif'),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['512'], nature: 'passif'),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 20',
+      currentCell: 'B21',
+      previousCell: 'C21',
+      fieldKey: 'note20.credits_tresorerie',
+      label: 'Credits de tresorerie',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['5'],
+          excludePrefixes: ['512'],
+          nature: 'passif',
+        ),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['5'],
+          excludePrefixes: ['512'],
+          nature: 'passif',
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note21Revenues(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 21',
+      currentCell: 'B35',
+      previousCell: 'C35',
+      fieldKey: 'note21.production_immobilisee',
+      label: 'Production immobilisee',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['72']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['72']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 21',
+      currentCell: 'B36',
+      previousCell: 'C36',
+      fieldKey: 'note21.subventions_exploitation',
+      label: 'Subventions d exploitation',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['74']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['74']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 21',
+      currentCell: 'B37',
+      previousCell: 'C37',
+      fieldKey: 'note21.ressources_ordinaires',
+      label: 'Ressources ordinaires d eglise',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['7'],
+          excludePrefixes: ['72', '74', '77', '78', '79'],
+        ),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['7'],
+          excludePrefixes: ['72', '74', '77', '78', '79'],
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note22Purchases(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 22',
+      currentCell: 'B16',
+      previousCell: 'C16',
+      fieldKey: 'note22.achats_matieres_fournitures',
+      label: 'Achats de matieres et fournitures liees',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['601']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['601']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 22',
+      currentCell: 'B31',
+      previousCell: 'C31',
+      fieldKey: 'note22.autres_achats',
+      label: 'Autres achats et prestations',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['60'], excludePrefixes: ['601']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['60'], excludePrefixes: ['601']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note23Transports(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 23',
+      currentCell: 'B14',
+      previousCell: 'C14',
+      fieldKey: 'note23.autres_transports',
+      label: 'Transports',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['624']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['624']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note24ExternalServices(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 24',
+      currentCell: 'B11',
+      previousCell: 'C11',
+      fieldKey: 'note24.locations',
+      label: 'Locations et charges locatives',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['613']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['613']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 24',
+      currentCell: 'B13',
+      previousCell: 'C13',
+      fieldKey: 'note24.entretien_maintenance',
+      label: 'Entretien, reparations et maintenance',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['615']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['615']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 24',
+      currentCell: 'B17',
+      previousCell: 'C17',
+      fieldKey: 'note24.telecommunications',
+      label: 'Frais de telecommunications',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['626']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['626']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 24',
+      currentCell: 'B18',
+      previousCell: 'C18',
+      fieldKey: 'note24.frais_bancaires',
+      label: 'Frais bancaires',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['627']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['627']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 24',
+      currentCell: 'B23',
+      previousCell: 'C23',
+      fieldKey: 'note24.autres_charges_externes',
+      label: 'Autres charges externes',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['61', '62'],
+          excludePrefixes: ['613', '615', '624', '626', '627'],
+        ),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['61', '62'],
+          excludePrefixes: ['613', '615', '624', '626', '627'],
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note25Taxes(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 25',
+      currentCell: 'B11',
+      previousCell: 'C11',
+      fieldKey: 'note25.impots_directs',
+      label: 'Impots et taxes directs',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['631']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['631']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 25',
+      currentCell: 'B12',
+      previousCell: 'C12',
+      fieldKey: 'note25.impots_indirects',
+      label: 'Impots et taxes indirects',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['632']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['632']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 25',
+      currentCell: 'B13',
+      previousCell: 'C13',
+      fieldKey: 'note25.droits_enregistrement',
+      label: 'Droits d enregistrement',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['633']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['633']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 25',
+      currentCell: 'B14',
+      previousCell: 'C14',
+      fieldKey: 'note25.penalites_amendes',
+      label: 'Penalites et amendes fiscales',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['637']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['637']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 25',
+      currentCell: 'B15',
+      previousCell: 'C15',
+      fieldKey: 'note25.autres_impots_taxes',
+      label: 'Autres impots et taxes',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['63'],
+          excludePrefixes: ['631', '632', '633', '637'],
+        ),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['63'],
+          excludePrefixes: ['631', '632', '633', '637'],
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note26OtherCharges(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 26',
+      currentCell: 'B10',
+      previousCell: 'C10',
+      fieldKey: 'note26.pertes_creances_membres',
+      label: 'Pertes sur creances membres et tiers',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['654']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['654']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 26',
+      currentCell: 'B15',
+      previousCell: 'C15',
+      fieldKey: 'note26.dons_aides_mecenat',
+      label: 'Dons, aides et mecenat accordes',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['645']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['645']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 26',
+      currentCell: 'B16',
+      previousCell: 'C16',
+      fieldKey: 'note26.autres_charges_diverses',
+      label: 'Autres charges diverses',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['64', '65'],
+          excludePrefixes: ['645', '654'],
+        ),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['64', '65'],
+          excludePrefixes: ['645', '654'],
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note27aStaffCosts(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 27A',
+      currentCell: 'B11',
+      previousCell: 'C11',
+      fieldKey: 'note27a.remunerations_directes',
+      label: 'Remunerations directes du personnel',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['661', '662', '663']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['661', '662', '663']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 27A',
+      currentCell: 'B13',
+      previousCell: 'C13',
+      fieldKey: 'note27a.charges_sociales',
+      label: 'Charges sociales',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['664', '668']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['664', '668']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 27A',
+      currentCell: 'B15',
+      previousCell: 'C15',
+      fieldKey: 'note27a.personnel_exterieur',
+      label: 'Personnel exterieur',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['667']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['667']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 27A',
+      currentCell: 'B16',
+      previousCell: 'C16',
+      fieldKey: 'note27a.autres_charges_sociales',
+      label: 'Autres charges de personnel',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['66'],
+          excludePrefixes: ['661', '662', '663', '664', '667', '668'],
+        ),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['66'],
+          excludePrefixes: ['661', '662', '663', '664', '667', '668'],
+        ),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note29FinancialIncomeAndCharges(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B10',
+      previousCell: 'C10',
+      fieldKey: 'note29.interets_emprunts',
+      label: 'Interets des emprunts',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['671']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['671']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B13',
+      previousCell: 'C13',
+      fieldKey: 'note29.autres_interets_charges',
+      label: 'Autres interets et charges financieres',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(
+          prefixes: ['67'],
+          excludePrefixes: ['671', '676'],
+        ),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(
+          prefixes: ['67'],
+          excludePrefixes: ['671', '676'],
+        ),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B15',
+      previousCell: 'C15',
+      fieldKey: 'note29.pertes_change',
+      label: 'Pertes de change',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['676']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['676']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B19',
+      previousCell: 'C19',
+      fieldKey: 'note29.dotations_financieres',
+      label: 'Dotations financieres',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['69']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['69']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B22',
+      previousCell: 'C22',
+      fieldKey: 'note29.interets_prets_creances',
+      label: 'Interets de prets et creances diverses',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['771']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['771']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B25',
+      previousCell: 'C25',
+      fieldKey: 'note29.revenus_placement',
+      label: 'Autres revenus financiers',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['77'], excludePrefixes: ['771']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['77'], excludePrefixes: ['771']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 29',
+      currentCell: 'B30',
+      previousCell: 'C30',
+      fieldKey: 'note29.reprises_financieres',
+      label: 'Reprises financieres',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['797']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['797']),
+      ),
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _note30HaoIncomeAndCharges(
+    List<SyscebnlBalanceLine> lines,
+    List<SyscebnlBalanceLine> previousLines,
+  ) sync* {
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 30',
+      currentCell: 'B10',
+      previousCell: 'C10',
+      fieldKey: 'note30.charges_hao',
+      label: 'Charges hors activites ordinaires',
+      current: _debitBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['81']),
+      ),
+      previous: _debitBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['81']),
+      ),
+    );
+    yield* _currentPreviousValues(
+      sheet: 'NOTE 30',
+      currentCell: 'B20',
+      previousCell: 'C20',
+      fieldKey: 'note30.produits_hao',
+      label: 'Produits hors activites ordinaires',
+      current: _creditBySelector(
+        lines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['82']),
+      ),
+      previous: _creditBySelector(
+        previousLines,
+        const _AccountSelector(prefixes: ['8'], excludePrefixes: ['82']),
+      ),
+    );
+  }
+
   static Iterable<FiscalExcelCellValue> _zeroSourceValues() sync* {
     yield* _zeros('ACTIF', const [
       'D11',
@@ -2203,6 +3092,32 @@ class SyscebnlFiscalExcelMapper {
       'excel.$fieldKey.previous',
       '$label exercice precedent',
       previous,
+    );
+  }
+
+  static Iterable<FiscalExcelCellValue> _currentPreviousAndShortDebtValues({
+    required String sheet,
+    required String row,
+    required String fieldKey,
+    required String label,
+    required double current,
+    required double previous,
+  }) sync* {
+    yield* _currentPreviousValues(
+      sheet: sheet,
+      currentCell: 'B$row',
+      previousCell: 'C$row',
+      fieldKey: fieldKey,
+      label: label,
+      current: current,
+      previous: previous,
+    );
+    yield _value(
+      sheet,
+      'F$row',
+      'excel.$fieldKey.moins_un_an',
+      '$label a un an au plus',
+      current,
     );
   }
 

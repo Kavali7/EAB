@@ -67,6 +67,21 @@ Premiere couverture des annexes :
 | `NOTE 7` | `B12:C12`, `E12` | Creances membres et tiers debiteurs classe 4, courant, N-1 et part a un an au plus |
 | `NOTE 8` | lignes `14`, `15`, `16`, `18`, `20` | Autres creances : personnel, organismes sociaux, Etat, entites liees et autres debiteurs |
 | `NOTE 11` | `C12:D12`, `C18:D18`, `C21:D23` | Disponibilites : banque, etablissements financiers, caisse, Mobile Money et regies d'avance |
+| `NOTE 16A` | `B8:C8`, `F8`, `B38:C38` | Emprunts classe 16 et provisions pour risques classe 19, avec classement court terme par defaut faute d'echeancier detaille |
+| `NOTE 17` | `B10:C10`, `B17:C17` | Fournisseurs classe 40 et avances fournisseurs classe 409 |
+| `NOTE 18` | lignes `12`, `14`, `20` | Dettes personnel, organismes sociaux et Etat classes 42, 43 et 44, classees a un an au plus par defaut |
+| `NOTE 19` | lignes `12`, `17`, formules `B24:C24` | Autres dettes classes 45 a 48, avec total crediteurs divers recalcule |
+| `NOTE 20` | `B17:C17`, `B21:C21` | Tresorerie passive : banques locales crediteurs et autres credits de tresorerie classe 5 |
+| `NOTE 21` | `B35:C38` | Ressources ordinaires SYSCEBNL : production immobilisee, subventions et produits d'eglise classe 7 |
+| `NOTE 22` | `B16:C16`, `B31:C31` | Achats de fournitures classe 601 et autres achats classe 60 |
+| `NOTE 23` | `B14:C14` | Transports classe 624 |
+| `NOTE 24` | lignes `11`, `13`, `17`, `18`, `23` | Services exterieurs : locations, maintenance, telecommunications, frais bancaires et autres charges externes |
+| `NOTE 25` | lignes `11` a `15` | Impots et taxes classe 63 par familles |
+| `NOTE 26` | lignes `10`, `15`, `16` | Pertes sur creances, aides/dons accordes et autres charges diverses classes 64/65 |
+| `NOTE 27A` | lignes `11`, `13`, `15`, `16` | Charges de personnel classe 66 : remunerations, charges sociales, personnel exterieur et autres charges |
+| `NOTE 29` | lignes `10`, `13`, `15`, `19`, `22`, `25`, `30` | Charges et revenus financiers classes 67, 69, 77 et reprises financieres 797 |
+| `NOTE 30` | `B10:C10`, `B20:C20` | Charges et produits hors activites ordinaires classe 8 |
+| `NOTE 31` | formules `B18:C22`, `B29:C31` | Synthese cinq exercices reliee aux notes 21, 27A et au compte de resultat |
 
 Couverture de securite ajoutee :
 
@@ -155,7 +170,7 @@ Sortie locale non versionnee :
 
 Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele, affiche les cellules injectees principales et passe l'audit des libelles SYSCEBNL.
 
-Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises ou remplaces par des donnees SYSCEBNL reelles, par exemple `FICHE R1!AQ14`, `NOTE 3A!H23`, `NOTE 3C!C22`, `NOTE 6!B12`, `NOTE 7!B12` et `NOTE 11!C12`.
+Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises ou remplaces par des donnees SYSCEBNL reelles, par exemple `FICHE R1!AQ14`, `NOTE 3A!H23`, `NOTE 3C!C22`, `NOTE 6!B12`, `NOTE 7!B12`, `NOTE 11!C12`, `NOTE 21!B37`, `NOTE 24!B11`, `NOTE 27A!B11` et `NOTE 31!B18`.
 
 ## Ajustements avant generation
 
