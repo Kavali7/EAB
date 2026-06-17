@@ -9,11 +9,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/file_downloader.dart';
 import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
+import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_preflight_dialog.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
 import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
@@ -29,6 +31,7 @@ class FiscalDossiersScreen extends ConsumerStatefulWidget {
 
 class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
   final _dateFormat = DateFormat('dd/MM/yyyy');
+  String? _exportingDossierId;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +149,7 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
       columns: [
         EabColumn<FiscalDossier>(
           label: 'Dossier',
-          flex: 3,
+          flex: 2,
           sortKeyExtractor: (d) => d.label ?? '',
           cellBuilder: (d) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +174,7 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
         ),
         EabColumn<FiscalDossier>(
           label: 'Perimetre',
-          flex: 2,
+          flex: 1,
           sortKeyExtractor: (d) => _unitLabel(unitById, d.churchUnitId),
           cellBuilder: (d) => Text(
             _unitLabel(unitById, d.churchUnitId),
@@ -196,10 +199,23 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
         ),
         EabColumn<FiscalDossier>(
           label: 'Actions',
-          fixedWidth: 112,
+          fixedWidth: 156,
           cellBuilder: (d) => Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              IconButton(
+                icon: _exportingDossierId == d.id
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.table_view_outlined, size: 20),
+                tooltip: 'Controler et exporter Excel',
+                onPressed: _exportingDossierId == null
+                    ? () => _exportExcel(d, unitById[d.churchUnitId])
+                    : null,
+              ),
               IconButton(
                 icon: const Icon(Icons.edit_outlined, size: 20),
                 tooltip: 'Ouvrir',
@@ -244,11 +260,96 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
         dateFormat: _dateFormat,
         statusChip: _statusChip(dossiers[index].status),
         onOpen: () => _openDossier(dossiers[index]),
+        onExportExcel: () => _exportExcel(
+          dossiers[index],
+          unitById[dossiers[index].churchUnitId],
+        ),
+        isExporting: _exportingDossierId == dossiers[index].id,
         onDelete: dossiers[index].status == FiscalDossierStatus.draft
             ? () => _confirmDelete(dossiers[index])
             : null,
       ),
     );
+  }
+
+  Future<void> _exportExcel(
+    FiscalDossier dossier,
+    ChurchUnit? churchUnit,
+  ) async {
+    if (_exportingDossierId != null) return;
+    setState(() => _exportingDossierId = dossier.id);
+    try {
+      final repo = ref.read(fiscalRepositoryProvider);
+      final valuesMap = await repo.getValues(dossier.id);
+      final flatValues = <String, dynamic>{};
+      for (final entry in valuesMap.entries) {
+        flatValues[entry.key] = entry.value.value;
+      }
+
+      final preflight = await ref
+          .read(fiscalExportPreflightServiceProvider)
+          .buildReport(dossier: dossier, values: flatValues);
+
+      if (!mounted) return;
+      setState(() => _exportingDossierId = null);
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => FiscalPreflightDialog(
+          report: preflight,
+          allowExport: preflight.canExport,
+          confirmLabel: 'Telecharger Excel',
+        ),
+      );
+      if (confirmed != true) return;
+
+      if (!mounted) return;
+      setState(() => _exportingDossierId = dossier.id);
+
+      final organization = await ref.read(currentOrganizationProvider.future);
+      if (organization == null) {
+        throw StateError('Organisation courante introuvable.');
+      }
+
+      final resolvedUnit =
+          churchUnit ??
+          _findUnit(
+            await ref.read(churchUnitsProvider.future),
+            dossier.churchUnitId,
+          );
+      final export = await ref
+          .read(fiscalExcelExportServiceProvider)
+          .buildDossierExport(
+            dossier: dossier,
+            organization: organization,
+            values: flatValues,
+            churchUnit: resolvedUnit,
+          );
+
+      await downloadBytes(
+        bytes: export.bytes,
+        filename: export.filename,
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
+              'du perimetre fiscal, ${export.audit.adjustmentCount} '
+              'ajustement(s), debit ${export.audit.totalDebit}, '
+              'credit ${export.audit.totalCredit}.',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      _showActionError(e, prefix: 'Erreur Excel');
+    } finally {
+      if (mounted) setState(() => _exportingDossierId = null);
+    }
   }
 
   void _openDossier(FiscalDossier dossier) {
@@ -437,6 +538,27 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
     if (confirmed == true) {
       await ref.read(fiscalDossiersProvider.notifier).deleteDossier(dossier.id);
     }
+  }
+
+  void _showActionError(Object error, {String prefix = 'Erreur'}) {
+    if (!mounted) return;
+    final raw = error.toString();
+    final lower = raw.toLowerCase();
+    final isPermissionError =
+        raw.contains('42501') ||
+        lower.contains('droit insuffisant') ||
+        lower.contains('permission');
+    final message = isPermissionError
+        ? 'Action bloquee par les permissions hierarchiques de ce perimetre.'
+        : '$prefix : $raw';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isPermissionError
+            ? AppColors.warning
+            : AppColors.error,
+      ),
+    );
   }
 
   ChurchUnit? _findUnit(List<ChurchUnit> units, String? id) {
@@ -720,6 +842,8 @@ class _DossierCard extends StatelessWidget {
     required this.dateFormat,
     required this.statusChip,
     required this.onOpen,
+    required this.onExportExcel,
+    required this.isExporting,
     this.onDelete,
   });
 
@@ -728,6 +852,8 @@ class _DossierCard extends StatelessWidget {
   final DateFormat dateFormat;
   final Widget statusChip;
   final VoidCallback onOpen;
+  final VoidCallback onExportExcel;
+  final bool isExporting;
   final VoidCallback? onDelete;
 
   @override
@@ -817,6 +943,18 @@ class _DossierCard extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Controler et exporter Excel',
+                    onPressed: isExporting ? null : onExportExcel,
+                    icon: isExporting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.table_view_outlined, size: 20),
                   ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
