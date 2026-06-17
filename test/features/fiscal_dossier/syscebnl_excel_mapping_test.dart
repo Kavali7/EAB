@@ -294,5 +294,234 @@ void main() {
         '=RESULTAT!F50+RESULTAT!F34-RESULTAT!F33-RESULTAT!F37',
       );
     });
+
+    test('alimente les annexes fiscales prioritaires depuis les balances', () {
+      final mapping = SyscebnlFiscalExcelMapper.fromBalance(
+        const [
+          SyscebnlBalanceLine(
+            numero: '201',
+            intitule: 'Frais de developpement',
+            nature: 'actif',
+            totalDebit: 3000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '213',
+            intitule: 'Batiments',
+            nature: 'actif',
+            totalDebit: 10000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '214',
+            intitule: 'Amenagements',
+            nature: 'actif',
+            totalDebit: 400,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '2813',
+            intitule: 'Amortissements batiments',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 1000,
+          ),
+          SyscebnlBalanceLine(
+            numero: '26',
+            intitule: 'Titres de participation',
+            nature: 'actif',
+            totalDebit: 150,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '27',
+            intitule: 'Depot',
+            nature: 'actif',
+            totalDebit: 75,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '31',
+            intitule: 'Stocks',
+            nature: 'actif',
+            totalDebit: 500,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '411',
+            intitule: 'Creances membres',
+            nature: 'actif',
+            totalDebit: 1000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '421',
+            intitule: 'Creances personnel',
+            nature: 'actif',
+            totalDebit: 50,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '431',
+            intitule: 'Creances sociales',
+            nature: 'actif',
+            totalDebit: 20,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '441',
+            intitule: 'Creances Etat',
+            nature: 'actif',
+            totalDebit: 60,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '451',
+            intitule: 'Creances entites liees',
+            nature: 'actif',
+            totalDebit: 70,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '471',
+            intitule: 'Autres debiteurs',
+            nature: 'actif',
+            totalDebit: 80,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '5121',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 900,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '531',
+            intitule: 'Caisse',
+            nature: 'actif',
+            totalDebit: 120,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '55',
+            intitule: 'Mobile money',
+            nature: 'actif',
+            totalDebit: 60,
+            totalCredit: 0,
+          ),
+        ],
+        previousLines: const [
+          SyscebnlBalanceLine(
+            numero: '201',
+            intitule: 'Frais de developpement',
+            nature: 'actif',
+            totalDebit: 2000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '213',
+            intitule: 'Batiments',
+            nature: 'actif',
+            totalDebit: 8000,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '214',
+            intitule: 'Amenagements',
+            nature: 'actif',
+            totalDebit: 500,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '2813',
+            intitule: 'Amortissements batiments',
+            nature: 'passif',
+            totalDebit: 0,
+            totalCredit: 700,
+          ),
+          SyscebnlBalanceLine(
+            numero: '26',
+            intitule: 'Titres de participation',
+            nature: 'actif',
+            totalDebit: 100,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '31',
+            intitule: 'Stocks',
+            nature: 'actif',
+            totalDebit: 300,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '411',
+            intitule: 'Creances membres',
+            nature: 'actif',
+            totalDebit: 800,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '421',
+            intitule: 'Creances personnel',
+            nature: 'actif',
+            totalDebit: 40,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '431',
+            intitule: 'Creances sociales',
+            nature: 'actif',
+            totalDebit: 10,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '5121',
+            intitule: 'Banque',
+            nature: 'actif',
+            totalDebit: 700,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '531',
+            intitule: 'Caisse',
+            nature: 'actif',
+            totalDebit: 90,
+            totalCredit: 0,
+          ),
+          SyscebnlBalanceLine(
+            numero: '55',
+            intitule: 'Mobile money',
+            nature: 'actif',
+            totalDebit: 30,
+            totalCredit: 0,
+          ),
+        ],
+      );
+
+      expect(mapping.valueFor('NOTE 3A', 'B23'), 8000);
+      expect(mapping.valueFor('NOTE 3A', 'C23'), 2000);
+      expect(mapping.valueFor('NOTE 3A', 'F25'), 100);
+      expect(mapping.valueFor('NOTE 3A', 'H23'), 10000);
+      expect(mapping.formulaFor('NOTE 3A', 'H20'), '=SUM(H21:H27)');
+      expect(mapping.valueFor('NOTE 3C', 'B22'), 700);
+      expect(mapping.valueFor('NOTE 3C', 'C22'), 300);
+      expect(mapping.formulaFor('NOTE 3C', 'E22'), '=B22+C22-D22');
+      expect(mapping.valueFor('NOTE 4', 'B13'), 150);
+      expect(mapping.valueFor('NOTE 4', 'C13'), 100);
+      expect(mapping.valueFor('NOTE 4', 'B17'), 75);
+      expect(mapping.valueFor('NOTE 6', 'B12'), 500);
+      expect(mapping.valueFor('NOTE 6', 'C12'), 300);
+      expect(mapping.valueFor('NOTE 7', 'B12'), 1000);
+      expect(mapping.valueFor('NOTE 7', 'C12'), 800);
+      expect(mapping.valueFor('NOTE 7', 'E12'), 1000);
+      expect(mapping.valueFor('NOTE 8', 'B14'), 50);
+      expect(mapping.valueFor('NOTE 8', 'C14'), 40);
+      expect(mapping.valueFor('NOTE 8', 'E20'), 80);
+      expect(mapping.valueFor('NOTE 11', 'C12'), 900);
+      expect(mapping.valueFor('NOTE 11', 'D12'), 700);
+      expect(mapping.valueFor('NOTE 11', 'C21'), 120);
+      expect(mapping.valueFor('NOTE 11', 'C22'), 60);
+    });
   });
 }

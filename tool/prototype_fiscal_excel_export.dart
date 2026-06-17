@@ -79,8 +79,20 @@ void main() {
   final ficheR1 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'FICHE R1')!),
   );
+  final note3a = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 3A')!),
+  );
+  final note3c = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 3C')!),
+  );
   final note6 = XmlDocument.parse(
     _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 6')!),
+  );
+  final note7 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 7')!),
+  );
+  final note11 = XmlDocument.parse(
+    _entryText(outputArchive, _sheetPathByTrim(sheetPaths, 'NOTE 11')!),
   );
 
   stdout.writeln('Prototype genere: ${output.path}');
@@ -100,7 +112,12 @@ void main() {
   stdout.writeln('TFT!I14=${_cellFormula(tft, 'I14')}');
   stdout.writeln('TFT!I40=${_cellFormula(tft, 'I40')}');
   stdout.writeln('FICHE R1!AQ14=${_cellValue(ficheR1, 'AQ14')}');
+  stdout.writeln('NOTE 3A!H23=${_cellValue(note3a, 'H23')}');
+  stdout.writeln('NOTE 3C!C22=${_cellValue(note3c, 'C22')}');
   stdout.writeln('NOTE 6!B12=${_cellValue(note6, 'B12')}');
+  stdout.writeln('NOTE 7!B12=${_cellValue(note7, 'B12')}');
+  stdout.writeln('NOTE 11!C12=${_cellValue(note11, 'C12')}');
+  stdout.writeln('NOTE 11!C21=${_cellValue(note11, 'C21')}');
   stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
@@ -147,6 +164,13 @@ List<SyscebnlBalanceLine> _sampleBalance() {
       nature: 'actif',
       totalDebit: 300000,
       totalCredit: 50000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '31',
+      intitule: 'Stocks de fournitures',
+      nature: 'actif',
+      totalDebit: 175000,
+      totalCredit: 0,
     ),
     SyscebnlBalanceLine(
       numero: '5121',
@@ -257,6 +281,13 @@ List<SyscebnlBalanceLine> _samplePreviousBalance() {
       nature: 'actif',
       totalDebit: 240000,
       totalCredit: 20000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '31',
+      intitule: 'Stocks de fournitures',
+      nature: 'actif',
+      totalDebit: 125000,
+      totalCredit: 0,
     ),
     SyscebnlBalanceLine(
       numero: '5121',

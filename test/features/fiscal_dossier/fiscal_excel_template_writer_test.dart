@@ -170,6 +170,12 @@ Uint8List _buildMiniWorkbook() {
     <sheet name="TFT" sheetId="4" r:id="rId4"/>
     <sheet name="FICHE R1 " sheetId="5" r:id="rId5"/>
     <sheet name="NOTE 6" sheetId="6" r:id="rId6"/>
+    <sheet name="NOTE 3A" sheetId="7" r:id="rId7"/>
+    <sheet name="NOTE 3C" sheetId="8" r:id="rId8"/>
+    <sheet name="NOTE 4" sheetId="9" r:id="rId9"/>
+    <sheet name="NOTE 7" sheetId="10" r:id="rId10"/>
+    <sheet name="NOTE 8" sheetId="11" r:id="rId11"/>
+    <sheet name="NOTE 11" sheetId="12" r:id="rId12"/>
   </sheets>
   <definedNames>
     <definedName name="_soNom">"Ancien"</definedName>
@@ -188,6 +194,12 @@ Uint8List _buildMiniWorkbook() {
   <Relationship Id="rId4" Type="worksheet" Target="worksheets/sheet4.xml"/>
   <Relationship Id="rId5" Type="worksheet" Target="worksheets/sheet5.xml"/>
   <Relationship Id="rId6" Type="worksheet" Target="worksheets/sheet6.xml"/>
+  <Relationship Id="rId7" Type="worksheet" Target="worksheets/sheet7.xml"/>
+  <Relationship Id="rId8" Type="worksheet" Target="worksheets/sheet8.xml"/>
+  <Relationship Id="rId9" Type="worksheet" Target="worksheets/sheet9.xml"/>
+  <Relationship Id="rId10" Type="worksheet" Target="worksheets/sheet10.xml"/>
+  <Relationship Id="rId11" Type="worksheet" Target="worksheets/sheet11.xml"/>
+  <Relationship Id="rId12" Type="worksheet" Target="worksheets/sheet12.xml"/>
 </Relationships>
 '''),
     )
@@ -207,6 +219,12 @@ Uint8List _buildMiniWorkbook() {
         _annexWorksheetXml('B12', 'D12', '52704386', secondCellRef: 'C12'),
       ),
     )
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet7.xml', _worksheetXml()))
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet8.xml', _worksheetXml()))
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet9.xml', _worksheetXml()))
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet10.xml', _worksheetXml()))
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet11.xml', _worksheetXml()))
+    ..addFile(ArchiveFile.string('xl/worksheets/sheet12.xml', _worksheetXml()))
     ..addFile(
       ArchiveFile.string(
         'xl/sharedStrings.xml',

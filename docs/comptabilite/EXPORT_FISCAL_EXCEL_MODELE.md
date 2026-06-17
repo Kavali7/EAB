@@ -56,6 +56,18 @@ Premiere couverture du mapping :
 | `RESULTAT` | `E44`, `E46` | Produits et charges hors activites ordinaires classe 8 |
 | `TFT` | `H14` | Formule de capacite d'autofinancement : resultat net + dotations - reprises |
 
+Premiere couverture des annexes :
+
+| Feuille | Cellules | Regle SYSCEBNL |
+| --- | --- | --- |
+| `NOTE 3A` | lignes immobilisations, colonnes `B`, `C`, `F`, `H` | Immobilisations brutes : N-1, acquisitions nettes, sorties et cloture par famille de comptes 20, 21, 213, 214-217, 218, 244-245, 238, 26 et 27 |
+| `NOTE 3C` | lignes amortissements, colonnes `B`, `C`, `D` | Amortissements cumules : N-1, dotations nettes et reductions par comptes 280, 281 et 284 |
+| `NOTE 4` | `B13:C13`, `B17:C17` | Immobilisations financieres courantes et N-1 : titres de participation classe 26 et autres immobilisations financieres classe 27 |
+| `NOTE 6` | `B12:C12` | Stocks et en-cours classe 3, courant et N-1 |
+| `NOTE 7` | `B12:C12`, `E12` | Creances membres et tiers debiteurs classe 4, courant, N-1 et part a un an au plus |
+| `NOTE 8` | lignes `14`, `15`, `16`, `18`, `20` | Autres creances : personnel, organismes sociaux, Etat, entites liees et autres debiteurs |
+| `NOTE 11` | `C12:D12`, `C18:D18`, `C21:D23` | Disponibilites : banque, etablissements financiers, caisse, Mobile Money et regies d'avance |
+
 Couverture de securite ajoutee :
 
 - toutes les cellules sources numeriques des feuilles `ACTIF`, `PASSIF`, `RESULTAT` et `TFT` sont ecrasees par le generateur ;
@@ -143,7 +155,7 @@ Sortie locale non versionnee :
 
 Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele, affiche les cellules injectees principales et passe l'audit des libelles SYSCEBNL.
 
-Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises, par exemple `FICHE R1!AQ14` et `NOTE 6!B12`.
+Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises ou remplaces par des donnees SYSCEBNL reelles, par exemple `FICHE R1!AQ14`, `NOTE 3A!H23`, `NOTE 3C!C22`, `NOTE 6!B12`, `NOTE 7!B12` et `NOTE 11!C12`.
 
 ## Ajustements avant generation
 
