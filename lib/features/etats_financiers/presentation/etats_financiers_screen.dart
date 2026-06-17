@@ -11,6 +11,7 @@ import 'package:printing/printing.dart';
 import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/core/theme.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
+import 'package:eab/providers/user_profile_providers.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/context_header.dart';
@@ -37,6 +38,7 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   DateTime? _dateFin;
   bool _isLoading = false;
   String? _loadedOrgId;
+  String? _loadedChurchUnitId;
 
   List<LigneBalance> _balance = [];
   List<LigneResultat> _resultat = [];
@@ -61,26 +63,35 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   Future<void> _loadAll() async {
     final org = ref.read(currentOrganizationProvider).value;
     if (org == null) return;
+    final churchUnitId = ref.read(churchUnitActiveIdProvider);
 
     setState(() {
       _isLoading = true;
       _loadedOrgId = org.id;
+      _loadedChurchUnitId = churchUnitId;
     });
     final repo = ref.read(reportsRepositoryProvider);
     try {
       final results = await Future.wait([
         repo.fetchBalanceGenerale(
           org.id,
+          churchUnitId: churchUnitId,
           dateDebut: _dateDebut,
           dateFin: _dateFin,
         ),
         repo.fetchCompteResultat(
           org.id,
+          churchUnitId: churchUnitId,
           dateDebut: _dateDebut,
           dateFin: _dateFin,
         ),
-        repo.fetchBilan(org.id, dateFin: _dateFin),
-        repo.fetchGrandLivre(org.id, dateDebut: _dateDebut, dateFin: _dateFin),
+        repo.fetchBilan(org.id, churchUnitId: churchUnitId, dateFin: _dateFin),
+        repo.fetchGrandLivre(
+          org.id,
+          churchUnitId: churchUnitId,
+          dateDebut: _dateDebut,
+          dateFin: _dateFin,
+        ),
       ]);
       setState(() {
         _balance = results[0] as List<LigneBalance>;
@@ -161,7 +172,12 @@ class _EtatsFinanciersScreenState extends ConsumerState<EtatsFinanciersScreen>
   @override
   Widget build(BuildContext context) {
     final org = ref.watch(currentOrganizationProvider).value;
-    if (org != null && _loadedOrgId != org.id && !_isLoading) {
+    final churchUnitId = ref.watch(churchUnitActiveIdProvider);
+    final mustReload =
+        org != null &&
+        (_loadedOrgId != org.id || _loadedChurchUnitId != churchUnitId) &&
+        !_isLoading;
+    if (mustReload) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _loadAll();
       });

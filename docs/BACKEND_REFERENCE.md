@@ -1288,6 +1288,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `report_compte_resultat(UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Compte de resultat : produits (cl.7) - charges (cl.6), filtre par droits hierarchiques |
 | `report_bilan(UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan simplifie SYSCEBNL : actif (cl.2-5) / passif (cl.1,4), filtre par droits hierarchiques |
 | `report_grand_livre(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre : mouvements par compte avec solde cumule, filtre par droits hierarchiques |
+| `financial_statement_scope_contains_entry(UUID, UUID, UUID)` | SQL | DEFINER STABLE | Verifie qu'une ecriture appartient au perimetre actif demande pour les etats financiers |
+| `report_balance_generale_scoped(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Balance generale filtree par droits hierarchiques et par unite active optionnelle |
+| `report_compte_resultat_scoped(UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Compte de resultat filtre par droits hierarchiques et par unite active optionnelle |
+| `report_bilan_scoped(UUID, UUID, DATE)` | plpgsql | DEFINER STABLE | Bilan SYSCEBNL filtre par droits hierarchiques et par unite active optionnelle |
+| `report_grand_livre_scoped(UUID, UUID, UUID, DATE, DATE)` | plpgsql | DEFINER STABLE | Grand livre filtre par droits hierarchiques, unite active optionnelle et compte optionnel |
 | `global_search(UUID, TEXT, INTEGER)` | plpgsql | DEFINER STABLE | Recherche globale : membres (trigrammes), programmes, écritures |
 | `get_church_unit_descendants(UUID)` | SQL | STABLE | Retourne recursivement une unite d'eglise et toutes ses sous-unites |
 | `is_church_unit_ancestor(UUID, UUID)` | SQL | STABLE | Verifie qu'une unite est ancetre d'une autre dans `church_units` |
@@ -1787,6 +1792,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-17 | Agent IA | **Migration 00036** : Ajout des RPC `*_scoped` pour filtrer la balance, le compte de resultat, le bilan et le grand livre par unite active en plus des droits hierarchiques `financial_statements`. Ajout d'une note de conception pour l'export fiscal Excel base sur le modele officiel. |
 | 2026-06-16 | Agent IA | **Correctif 00035** : Remplacement du backfill initial des `church_unit_id` de `fiscal_dossiers` et `imported_trial_balances` par des sous-requetes correlees idempotentes, afin que la migration puisse etre relancee apres creation partielle des colonnes/index. |
 | 2026-06-16 | Agent IA | **Migration 00035** : Application effective de la matrice d'autorisations hierarchiques aux RLS `fiscal_dossiers`, `fiscal_dossier_values`, `imported_trial_balances` et `imported_trial_balance_lines`. Ajout des helpers RLS `financial_statements`/`exports`, rattachement a `church_units`, controle du workflow fiscal, filtrage hierarchique des RPC de rapports financiers et test SQL E2E. |
 | 2026-06-16 | Agent IA | **Migration 00034** : Application effective de la matrice d'autorisations hierarchiques aux RLS `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables` et `releves_bancaires`. Ajout des helpers RLS comptables, trigger de workflow pour validation/cloture des ecritures, correction du trigger de suppression des ecritures brouillon et test SQL E2E. |

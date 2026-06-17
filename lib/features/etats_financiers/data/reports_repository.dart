@@ -33,16 +33,16 @@ class LigneBalance {
   });
 
   factory LigneBalance.fromJson(Map<String, dynamic> j) => LigneBalance(
-        compteId: j['compte_id'] ?? '',
-        numero: j['numero'] ?? '',
-        intitule: j['intitule'] ?? '',
-        nature: j['nature'] ?? '',
-        niveau: j['niveau'] ?? 1,
-        totalDebit: (j['total_debit'] as num?)?.toDouble() ?? 0,
-        totalCredit: (j['total_credit'] as num?)?.toDouble() ?? 0,
-        soldeDebiteur: (j['solde_debiteur'] as num?)?.toDouble() ?? 0,
-        soldeCrediteur: (j['solde_crediteur'] as num?)?.toDouble() ?? 0,
-      );
+    compteId: j['compte_id'] ?? '',
+    numero: j['numero'] ?? '',
+    intitule: j['intitule'] ?? '',
+    nature: j['nature'] ?? '',
+    niveau: j['niveau'] ?? 1,
+    totalDebit: (j['total_debit'] as num?)?.toDouble() ?? 0,
+    totalCredit: (j['total_credit'] as num?)?.toDouble() ?? 0,
+    soldeDebiteur: (j['solde_debiteur'] as num?)?.toDouble() ?? 0,
+    soldeCrediteur: (j['solde_crediteur'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// Ligne du compte de résultat.
@@ -60,17 +60,18 @@ class LigneResultat {
   });
 
   factory LigneResultat.fromJson(Map<String, dynamic> j) => LigneResultat(
-        section: j['section'] ?? '',
-        numero: j['numero'] ?? '',
-        intitule: j['intitule'] ?? '',
-        montant: (j['montant'] as num?)?.toDouble() ?? 0,
-      );
+    section: j['section'] ?? '',
+    numero: j['numero'] ?? '',
+    intitule: j['intitule'] ?? '',
+    montant: (j['montant'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// Ligne du bilan.
 class LigneBilan {
   final String section; // 'actif' ou 'passif'
-  final String sousSection; // 'immobilisations', 'circulant', 'fonds_propres', 'dettes'
+  final String
+  sousSection; // 'immobilisations', 'circulant', 'fonds_propres', 'dettes'
   final String numero;
   final String intitule;
   final double solde;
@@ -84,12 +85,12 @@ class LigneBilan {
   });
 
   factory LigneBilan.fromJson(Map<String, dynamic> j) => LigneBilan(
-        section: j['section'] ?? '',
-        sousSection: j['sous_section'] ?? '',
-        numero: j['numero'] ?? '',
-        intitule: j['intitule'] ?? '',
-        solde: (j['solde'] as num?)?.toDouble() ?? 0,
-      );
+    section: j['section'] ?? '',
+    sousSection: j['sous_section'] ?? '',
+    numero: j['numero'] ?? '',
+    intitule: j['intitule'] ?? '',
+    solde: (j['solde'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// Ligne du grand livre.
@@ -119,17 +120,17 @@ class LigneGrandLivre {
   });
 
   factory LigneGrandLivre.fromJson(Map<String, dynamic> j) => LigneGrandLivre(
-        compteNumero: j['compte_numero'] ?? '',
-        compteIntitule: j['compte_intitule'] ?? '',
-        ecritureDate: DateTime.parse(j['ecriture_date']),
-        ecritureLibelle: j['ecriture_libelle'] ?? '',
-        referencePiece: j['reference_piece'],
-        journalCode: j['journal_code'] ?? '',
-        ligneLibelle: j['ligne_libelle'],
-        debit: (j['debit'] as num?)?.toDouble() ?? 0,
-        credit: (j['credit'] as num?)?.toDouble() ?? 0,
-        soldeCumule: (j['solde_cumule'] as num?)?.toDouble() ?? 0,
-      );
+    compteNumero: j['compte_numero'] ?? '',
+    compteIntitule: j['compte_intitule'] ?? '',
+    ecritureDate: DateTime.parse(j['ecriture_date']),
+    ecritureLibelle: j['ecriture_libelle'] ?? '',
+    referencePiece: j['reference_piece'],
+    journalCode: j['journal_code'] ?? '',
+    ligneLibelle: j['ligne_libelle'],
+    debit: (j['debit'] as num?)?.toDouble() ?? 0,
+    credit: (j['credit'] as num?)?.toDouble() ?? 0,
+    soldeCumule: (j['solde_cumule'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// Repository des états financiers.
@@ -141,60 +142,80 @@ class ReportsRepository {
 
   Future<List<LigneBalance>> fetchBalanceGenerale(
     String orgId, {
+    String? churchUnitId,
     DateTime? dateDebut,
     DateTime? dateFin,
   }) async {
-    final data = await _sb.rpc('report_balance_generale', params: {
-      'p_org_id': orgId,
-      if (dateDebut != null)
-        'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
-      if (dateFin != null)
-        'p_date_fin': dateFin.toIso8601String().substring(0, 10),
-    });
+    final data = await _sb.rpc(
+      'report_balance_generale_scoped',
+      params: {
+        'p_org_id': orgId,
+        'p_church_unit_id': churchUnitId,
+        if (dateDebut != null)
+          'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
+        if (dateFin != null)
+          'p_date_fin': dateFin.toIso8601String().substring(0, 10),
+      },
+    );
     return (data as List).map((e) => LigneBalance.fromJson(e)).toList();
   }
 
   Future<List<LigneResultat>> fetchCompteResultat(
     String orgId, {
+    String? churchUnitId,
     DateTime? dateDebut,
     DateTime? dateFin,
   }) async {
-    final data = await _sb.rpc('report_compte_resultat', params: {
-      'p_org_id': orgId,
-      if (dateDebut != null)
-        'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
-      if (dateFin != null)
-        'p_date_fin': dateFin.toIso8601String().substring(0, 10),
-    });
+    final data = await _sb.rpc(
+      'report_compte_resultat_scoped',
+      params: {
+        'p_org_id': orgId,
+        'p_church_unit_id': churchUnitId,
+        if (dateDebut != null)
+          'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
+        if (dateFin != null)
+          'p_date_fin': dateFin.toIso8601String().substring(0, 10),
+      },
+    );
     return (data as List).map((e) => LigneResultat.fromJson(e)).toList();
   }
 
   Future<List<LigneBilan>> fetchBilan(
     String orgId, {
+    String? churchUnitId,
     DateTime? dateFin,
   }) async {
-    final data = await _sb.rpc('report_bilan', params: {
-      'p_org_id': orgId,
-      if (dateFin != null)
-        'p_date_fin': dateFin.toIso8601String().substring(0, 10),
-    });
+    final data = await _sb.rpc(
+      'report_bilan_scoped',
+      params: {
+        'p_org_id': orgId,
+        'p_church_unit_id': churchUnitId,
+        if (dateFin != null)
+          'p_date_fin': dateFin.toIso8601String().substring(0, 10),
+      },
+    );
     return (data as List).map((e) => LigneBilan.fromJson(e)).toList();
   }
 
   Future<List<LigneGrandLivre>> fetchGrandLivre(
     String orgId, {
+    String? churchUnitId,
     String? compteId,
     DateTime? dateDebut,
     DateTime? dateFin,
   }) async {
-    final data = await _sb.rpc('report_grand_livre', params: {
-      'p_org_id': orgId,
-      if (compteId != null) 'p_compte_id': compteId,
-      if (dateDebut != null)
-        'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
-      if (dateFin != null)
-        'p_date_fin': dateFin.toIso8601String().substring(0, 10),
-    });
+    final data = await _sb.rpc(
+      'report_grand_livre_scoped',
+      params: {
+        'p_org_id': orgId,
+        'p_church_unit_id': churchUnitId,
+        if (compteId != null) 'p_compte_id': compteId,
+        if (dateDebut != null)
+          'p_date_debut': dateDebut.toIso8601String().substring(0, 10),
+        if (dateFin != null)
+          'p_date_fin': dateFin.toIso8601String().substring(0, 10),
+      },
+    );
     return (data as List).map((e) => LigneGrandLivre.fromJson(e)).toList();
   }
 }
