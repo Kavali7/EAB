@@ -1,5 +1,7 @@
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 
+/// Perimetre central utilise par les listes et KPI visibles.
+/// Garde les ecrans alignes entre l'ancienne assemblee et la hierarchie flexible.
 class ChurchUnitScope {
   ChurchUnitScope._({
     required this.activeChurchUnitId,
