@@ -21,6 +21,8 @@ class FiscalExcelTemplateWriter {
     required Uint8List templateBytes,
     required SyscebnlFiscalExcelMapping mapping,
     Map<String, String> definedNames = const {},
+    Map<String, String> textReplacements = const {},
+    List<RegExp> forbiddenTextPatterns = const [],
   }) {
     final archive = ZipDecoder().decodeBytes(templateBytes);
     final files = {for (final file in archive.files) file.name: file};
@@ -80,9 +82,16 @@ class FiscalExcelTemplateWriter {
       }
 
       final replacement = replacements[file.name];
-      final outputFile = replacement == null
-          ? ArchiveFile.bytes(file.name, _readBytes(file))
-          : ArchiveFile.bytes(file.name, replacement);
+      final rawBytes = replacement ?? _readBytes(file);
+      final outputBytes = _isXmlPart(file.name)
+          ? _sanitizeXmlPart(
+              file.name,
+              rawBytes,
+              textReplacements,
+              forbiddenTextPatterns,
+            )
+          : rawBytes;
+      final outputFile = ArchiveFile.bytes(file.name, outputBytes);
       outputFile.compression = file.compression;
       outputFile.compressionLevel = file.compressionLevel;
       outputFile.comment = file.comment;
@@ -343,6 +352,39 @@ class FiscalExcelTemplateWriter {
 
   static Uint8List _encodeXml(XmlDocument document) {
     return Uint8List.fromList(utf8.encode(document.toXmlString()));
+  }
+
+  static bool _isXmlPart(String path) {
+    return path.endsWith('.xml') || path.endsWith('.rels');
+  }
+
+  static Uint8List _sanitizeXmlPart(
+    String path,
+    Uint8List bytes,
+    Map<String, String> textReplacements,
+    List<RegExp> forbiddenTextPatterns,
+  ) {
+    var text = utf8.decode(bytes);
+    for (final entry in textReplacements.entries) {
+      text = text.replaceAll(entry.key, entry.value);
+    }
+
+    final forbidden = <String>[];
+    for (final pattern in forbiddenTextPatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        forbidden.add('${pattern.pattern} dans $path');
+      }
+    }
+
+    if (forbidden.isNotEmpty) {
+      throw FormatException(
+        'Export fiscal refuse: libelles incompatibles avec le SYSCEBNL '
+        'ou le contexte eglise detectes (${forbidden.join(', ')}).',
+      );
+    }
+
+    return Uint8List.fromList(utf8.encode(text));
   }
 }
 

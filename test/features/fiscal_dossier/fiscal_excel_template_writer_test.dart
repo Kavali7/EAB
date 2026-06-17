@@ -56,10 +56,22 @@ void main() {
           templateBytes: template,
           mapping: mapping,
           definedNames: {'_soNom': 'Eglise Test', '_soId': 'NIF-TEST'},
+          textReplacements: const {
+            'SYSCOHADA': 'SYSCEBNL',
+            'société': 'organisation',
+          },
+          forbiddenTextPatterns: [RegExp('SYSCOHADA'), RegExp('société')],
         );
 
         final archive = ZipDecoder().decodeBytes(output);
-        expect(_entryText(archive, 'xl/drawings/drawing1.xml'), '<drawing/>');
+        expect(
+          _entryText(archive, 'xl/drawings/drawing1.xml'),
+          '<drawing>SYSCEBNL</drawing>',
+        );
+        expect(
+          _entryText(archive, 'xl/sharedStrings.xml'),
+          contains('Modele SYSCEBNL organisation'),
+        );
 
         final workbook = XmlDocument.parse(
           _entryText(archive, 'xl/workbook.xml'),
@@ -98,6 +110,17 @@ void main() {
         );
       },
     );
+
+    test('refuse un classeur qui conserve un libelle interdit', () {
+      expect(
+        () => FiscalExcelTemplateWriter.write(
+          templateBytes: _buildMiniWorkbook(),
+          mapping: const SyscebnlFiscalExcelMapping(values: [], formulas: []),
+          forbiddenTextPatterns: [RegExp('SYSCOHADA')],
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }
 
@@ -140,7 +163,18 @@ Uint8List _buildMiniWorkbook() {
     ..addFile(ArchiveFile.string('xl/worksheets/sheet2.xml', _worksheetXml()))
     ..addFile(ArchiveFile.string('xl/worksheets/sheet3.xml', _worksheetXml()))
     ..addFile(ArchiveFile.string('xl/worksheets/sheet4.xml', _worksheetXml()))
-    ..addFile(ArchiveFile.string('xl/drawings/drawing1.xml', '<drawing/>'));
+    ..addFile(
+      ArchiveFile.string(
+        'xl/sharedStrings.xml',
+        '<sst><si><t>Modele SYSCOHADA société</t></si></sst>',
+      ),
+    )
+    ..addFile(
+      ArchiveFile.string(
+        'xl/drawings/drawing1.xml',
+        '<drawing>SYSCOHADA</drawing>',
+      ),
+    );
 
   return ZipEncoder().encodeBytes(archive);
 }

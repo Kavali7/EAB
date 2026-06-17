@@ -8,6 +8,10 @@ Fichier modele actuel :
 
 `Exempele de bilan pour une societe a but lucratif 2025.xlsx`
 
+Copie applicative versionnee :
+
+`assets/templates/fiscal_syscebnl_template.xlsx`
+
 ## Constat sur le modele
 
 Le classeur contient 56 feuilles :
@@ -75,7 +79,8 @@ Le prototype de generation utilise une ecriture OOXML minimale :
 Le fichier `.xlsx` est traite comme une archive zip. Le writer copie toutes les entrees du modele et remplace seulement :
 
 - `xl/workbook.xml` pour les noms Excel globaux et le recalcul des formules ;
-- les XML des feuilles ciblees pour les cellules sources et formules SYSCEBNL.
+- les XML des feuilles ciblees pour les cellules sources et formules SYSCEBNL ;
+- les libelles incompatibles dans les parties XML du classeur, via le dictionnaire SYSCEBNL.
 
 Cette approche evite de recreer le classeur avec une librairie tableur qui pourrait perdre les dessins, styles, mises en page ou objets non supportes. Les parties non modifiees, y compris les dessins et relations, restent dans l'archive.
 
@@ -89,7 +94,28 @@ Le test verifie :
 - l'ecriture de formules sans le `=` initial dans le XML Excel ;
 - la conservation du style d'une cellule existante ;
 - le remplacement des noms Excel globaux ;
-- la conservation d'une partie dessin non modifiee.
+- la conservation d'une partie dessin non modifiee ;
+- le refus d'un classeur qui conserve une occurrence interdite.
+
+## Export depuis l'application
+
+Le service applicatif est :
+
+`lib/features/fiscal_dossier/services/fiscal_excel_export_service.dart`
+
+Regles verrouillees :
+
+- l'export refuse tout dossier sans `church_unit_id` ;
+- la balance est lue via `report_balance_generale_scoped`, avec `organization_id`, `church_unit_id`, `date_debut` et `date_fin` du dossier ;
+- le fichier Excel est genere depuis l'asset `assets/templates/fiscal_syscebnl_template.xlsx` ;
+- les noms Excel globaux portent l'organisation, le sigle, le NIF, la devise, l'exercice et le perimetre ;
+- le fichier est refuse si une occurrence interdite reste presente apres nettoyage.
+
+Dictionnaire et audit des libelles :
+
+`lib/features/fiscal_dossier/services/fiscal_excel_sanitization.dart`
+
+Termes bloques notamment : `SYSCOHADA`, `OHADA`, `societe`, `commercial`, `marchandise`, `vente`, `capital`, `dividende`, `actionnaire`.
 
 Prototype manuel sur le modele local :
 
@@ -99,9 +125,9 @@ dart run tool/prototype_fiscal_excel_export.dart
 
 Sortie locale non versionnee :
 
-`build/prototypes/dossier_fiscal_syscebnl_prototype.xlsx`
+`build/prototypes/dossier_fiscal_syscebnl_prototype_<timestamp>.xlsx`
 
-Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele et affiche les cellules injectees principales.
+Le prototype controle que le classeur genere conserve le meme nombre d'entrees zip que le modele, affiche les cellules injectees principales et passe l'audit des libelles SYSCEBNL.
 
 ## Ajustements avant generation
 

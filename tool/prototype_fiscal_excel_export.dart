@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_excel_sanitization.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_excel_template_writer.dart';
 import 'package:eab/features/fiscal_dossier/services/syscebnl_excel_mapping.dart';
 import 'package:xml/xml.dart';
@@ -21,7 +22,7 @@ void main() {
 
   final outputDir = Directory('build/prototypes')..createSync(recursive: true);
   final output = File(
-    '${outputDir.path}/dossier_fiscal_syscebnl_prototype.xlsx',
+    '${outputDir.path}/dossier_fiscal_syscebnl_prototype_${DateTime.now().millisecondsSinceEpoch}.xlsx',
   );
 
   final mapping = SyscebnlFiscalExcelMapper.fromBalance(_sampleBalance());
@@ -37,6 +38,8 @@ void main() {
       '_ExerFin1': '31/12/2025',
       '_Duree': 'Duree (en mois) 12',
     },
+    textReplacements: syscebnlFiscalExcelTextReplacements,
+    forbiddenTextPatterns: syscebnlFiscalExcelForbiddenPatterns,
   );
   output.writeAsBytesSync(bytes);
 
@@ -76,6 +79,7 @@ void main() {
   stdout.writeln('ACTIF!E18=${_cellValue(actif, 'E18')}');
   stdout.writeln('PASSIF!D19=${_cellFormula(passif, 'D19')}');
   stdout.writeln('RESULTAT!E20=${_cellValue(resultat, 'E20')}');
+  stdout.writeln('Audit libelles SYSCEBNL: OK');
 }
 
 List<SyscebnlBalanceLine> _sampleBalance() {

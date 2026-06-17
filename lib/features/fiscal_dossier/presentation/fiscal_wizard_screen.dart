@@ -9,12 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/file_downloader.dart';
+import 'package:eab/features/church_units/application/church_units_provider.dart';
+import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/features/fiscal_dossier/application/fiscal_providers.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_service.dart';
+import 'package:eab/features/organization/application/organization_providers.dart';
 
 class FiscalWizardScreen extends ConsumerStatefulWidget {
   final String dossierId;
@@ -167,6 +171,13 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         onPressed: _isLoading ? null : () => _exportPdf(dossier),
         icon: const Icon(Icons.picture_as_pdf, size: 18),
         label: const Text('PDF'),
+        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+      ),
+      const SizedBox(width: 4),
+      TextButton.icon(
+        onPressed: _isLoading ? null : () => _exportExcel(dossier),
+        icon: const Icon(Icons.table_chart_outlined, size: 18),
+        label: const Text('Excel'),
         style: TextButton.styleFrom(foregroundColor: AppColors.primary),
       ),
       if (!isLocked) ...[
@@ -402,6 +413,12 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
               label: 'PDF',
               icon: Icons.picture_as_pdf_outlined,
               onPressed: _isLoading ? null : () => _exportPdf(dossier),
+            ),
+            const SizedBox(width: 8),
+            _CommandButton(
+              label: 'Excel',
+              icon: Icons.table_chart_outlined,
+              onPressed: _isLoading ? null : () => _exportExcel(dossier),
             ),
             if (!isLocked) ...[
               const SizedBox(width: 8),
@@ -735,6 +752,56 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     }
   }
 
+  Future<void> _exportExcel(FiscalDossier dossier) async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(fiscalRepositoryProvider);
+      final valuesMap = await repo.getValues(dossier.id);
+      final flatValues = <String, dynamic>{};
+      for (final entry in valuesMap.entries) {
+        flatValues[entry.key] = entry.value.value;
+      }
+      flatValues.addAll(_localValues);
+
+      final organization = await ref.read(currentOrganizationProvider.future);
+      if (organization == null) {
+        throw StateError('Organisation courante introuvable.');
+      }
+      final units = await ref.read(churchUnitsProvider.future);
+      final export = await ref
+          .read(fiscalExcelExportServiceProvider)
+          .buildDossierExport(
+            dossier: dossier,
+            organization: organization,
+            values: flatValues,
+            churchUnit: _findChurchUnit(units, dossier.churchUnitId),
+          );
+
+      await downloadBytes(
+        bytes: export.bytes,
+        filename: export.filename,
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
+              'du perimetre fiscal.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showActionError(e, prefix: 'Erreur Excel');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   // ═════════════════════════════════════════════════════════════════════════
   // Helpers
   // ═════════════════════════════════════════════════════════════════════════
@@ -756,6 +823,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         backgroundColor: isPermissionError ? Colors.orange : Colors.red,
       ),
     );
+  }
+
+  ChurchUnit? _findChurchUnit(List<ChurchUnit> units, String? id) {
+    if (id == null) return null;
+    for (final unit in units) {
+      if (unit.id == id) return unit;
+    }
+    return null;
   }
 
   Widget _pageIcon(FiscalTemplatePage page, bool hasError) {

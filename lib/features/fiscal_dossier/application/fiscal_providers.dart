@@ -4,8 +4,10 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/services/supabase_data_service.dart';
+import 'package:eab/features/etats_financiers/application/reports_providers.dart';
 import 'package:eab/features/fiscal_dossier/data/fiscal_dossier_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_excel_export_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Repository provider
@@ -13,6 +15,12 @@ import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 
 final fiscalRepositoryProvider = Provider<FiscalDossierRepository>((ref) {
   return FiscalDossierRepository(SupabaseDataService());
+});
+
+final fiscalExcelExportServiceProvider = Provider<FiscalExcelExportService>((
+  ref,
+) {
+  return FiscalExcelExportService(ref.watch(reportsRepositoryProvider));
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
