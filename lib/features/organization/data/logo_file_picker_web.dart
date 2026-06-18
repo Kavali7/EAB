@@ -31,8 +31,8 @@ Future<PickedLogoFile?> pickLogoFile() {
     });
 
     reader.onLoadEnd.first.then((_) {
-      final result = reader.result;
-      if (result is! ByteBuffer) {
+      final bytes = _bytesFromReaderResult(reader.result);
+      if (bytes == null) {
         if (!completer.isCompleted) {
           completer.completeError(StateError('Format de fichier illisible.'));
         }
@@ -41,11 +41,7 @@ Future<PickedLogoFile?> pickLogoFile() {
 
       if (!completer.isCompleted) {
         completer.complete(
-          PickedLogoFile(
-            name: file.name,
-            bytes: Uint8List.view(result),
-            mimeType: file.type,
-          ),
+          PickedLogoFile(name: file.name, bytes: bytes, mimeType: file.type),
         );
       }
     });
@@ -55,4 +51,11 @@ Future<PickedLogoFile?> pickLogoFile() {
 
   input.click();
   return completer.future;
+}
+
+Uint8List? _bytesFromReaderResult(Object? result) {
+  if (result is ByteBuffer) return Uint8List.view(result);
+  if (result is Uint8List) return result;
+  if (result is List<int>) return Uint8List.fromList(result);
+  return null;
 }
