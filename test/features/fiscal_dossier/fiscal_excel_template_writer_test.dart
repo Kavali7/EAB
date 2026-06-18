@@ -1,14 +1,19 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xml/xml.dart';
 
+import 'package:eab/features/fiscal_dossier/services/fiscal_excel_sanitization.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_excel_template_writer.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_organization_identity.dart';
 import 'package:eab/features/fiscal_dossier/services/syscebnl_excel_mapping.dart';
+import 'package:eab/features/organization/data/organization_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('FiscalExcelTemplateWriter', () {
     test(
       'ecrit les cellules SYSCEBNL sans supprimer les parties du modele',
@@ -85,6 +90,8 @@ void main() {
         final actif = XmlDocument.parse(
           _entryText(archive, 'xl/worksheets/sheet1.xml'),
         );
+        expect(_cellValue(actif, 'A1'), 'Eglise Test');
+        expect(_cellType(actif, 'A1'), 'str');
         expect(_cellValue(actif, 'D16'), '500000');
         expect(_cellValue(actif, 'D18'), '2000000');
         expect(_cellValue(actif, 'E18'), '300000');
@@ -148,6 +155,90 @@ void main() {
       expect(_cellValue(note, 'C12'), '0');
       expect(_cellFormula(note, 'D12'), 'SUM(B12:B12)');
       expect(_cellValue(note, 'D12'), isNull);
+    });
+
+    test('nettoie le modele fiscal reel des donnees exemples', () async {
+      final template = await rootBundle.load(
+        'assets/templates/fiscal_syscebnl_template.xlsx',
+      );
+      final identity = FiscalOrganizationIdentity.from(
+        organization: const Organization(
+          id: 'org-1',
+          nom: 'Eglise Apostolique du Benin',
+          sigle: 'EAB',
+          adresse: '01 BP 100 Cotonou',
+          telephone: '+229 01 00 00 00 00',
+          email: 'contact@eab.test',
+          parametres: {
+            OrganizationFiscalProfile.paramKey: {
+              'ifu': '1202600000001',
+              'registration_number': 'ASS-REL-2026-001',
+              'tax_center': 'Centre des impots des organisations religieuses',
+              'deposit_center': 'Centre de depot des organisations religieuses',
+              'head_office_address': '01 BP 100 Cotonou',
+              'activity_description': 'Activites cultuelles et communautaires',
+              'legal_representative_name': 'Georges Guidan',
+              'legal_representative_title': 'President national',
+              'legal_representative_phone': '+229 01 00 00 00 00',
+              'accountant_name': 'Comptable Demo',
+              'accountant_title': 'Comptable responsable',
+              'bank_name': 'Banque de demonstration',
+              'bank_account_label': 'Compte principal',
+            },
+          },
+        ),
+        values: const {'exercice.label': 'Exercice 2026'},
+        periodStart: DateTime(2026),
+        periodEnd: DateTime(2026, 12, 31),
+        previousPeriodEnd: DateTime(2025, 12, 31),
+      );
+
+      final output = FiscalExcelTemplateWriter.write(
+        templateBytes: template.buffer.asUint8List(),
+        mapping: const SyscebnlFiscalExcelMapping(values: [], formulas: []),
+        definedNames: identity.definedNames(),
+        textReplacements: {
+          ...syscebnlFiscalExcelTextReplacements,
+          ...identity.textReplacements(),
+        },
+        forbiddenTextPatterns: syscebnlFiscalExcelForbiddenPatterns,
+        neutralizeNumericSheetPatterns:
+            syscebnlFiscalExcelNeutralizedSheetPatterns,
+      );
+
+      final archive = ZipDecoder().decodeBytes(output);
+      final allXml = archive.files
+          .where((file) => file.name.endsWith('.xml'))
+          .map((file) => utf8.decode(file.readBytes() ?? Uint8List(0)))
+          .join('\n');
+
+      for (final forbidden in [
+        'CECOTRA',
+        'AKODA',
+        'ALIDOU',
+        '3201810353457',
+        'RB/ABC/18 B 2310',
+        'CIME ATL',
+        'BIIC',
+        'SOUROU',
+        'import-export',
+      ]) {
+        expect(
+          allXml.toLowerCase(),
+          isNot(contains(forbidden.toLowerCase())),
+          reason: 'Ancienne donnee modele restante: $forbidden',
+        );
+      }
+
+      final workbook = XmlDocument.parse(
+        _entryText(archive, 'xl/workbook.xml'),
+      );
+      expect(_definedName(workbook, '_nSo'), '"Eglise Apostolique du Benin"');
+      expect(_definedName(workbook, '_soNumFisc'), '"1202600000001"');
+      expect(
+        _definedName(workbook, '_Ville'),
+        '"Centre des impots des organisations religieuses"',
+      );
     });
   });
 }
@@ -296,6 +387,7 @@ String _worksheetXml() {
   return '''
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <sheetData>
+    <row r="1"><c r="A1" t="str"><f>_soNom</f><v>Cecotra</v></c></row>
     <row r="16"><c r="D16" s="7"><v>0</v></c></row>
     <row r="18"><c r="D18"><v>0</v></c><c r="E18"><v>0</v></c></row>
     <row r="19"><c r="D19"><v>0</v></c></row>
@@ -329,6 +421,10 @@ String? _cellFormula(XmlDocument doc, String ref) {
 
 String? _cellStyle(XmlDocument doc, String ref) {
   return _cell(doc, ref)?.getAttribute('s');
+}
+
+String? _cellType(XmlDocument doc, String ref) {
+  return _cell(doc, ref)?.getAttribute('t');
 }
 
 XmlElement? _cell(XmlDocument doc, String ref) {

@@ -903,7 +903,56 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       flatValues.addAll(_localValues);
 
       // Déterminer le nom de l'org
-      final orgName = dossier.label ?? 'Dossier fiscal';
+      final organization = await ref.read(currentOrganizationProvider.future);
+      if (organization == null) {
+        throw StateError('Organisation courante introuvable.');
+      }
+      final fiscal = organization.fiscalProfile;
+      _putIfBlank(flatValues, 'org.name', organization.nom);
+      _putIfBlank(flatValues, 'org.sigle', organization.sigle);
+      _putIfBlank(flatValues, 'org.nif', fiscal.ifu);
+      _putIfBlank(
+        flatValues,
+        'org.address',
+        fiscal.headOfficeAddress ?? organization.adresse,
+      );
+      _putIfBlank(flatValues, 'currency', organization.devise);
+      _putIfBlank(flatValues, 'fiscal.tax_center', fiscal.taxCenter);
+      _putIfBlank(flatValues, 'fiscal.deposit_center', fiscal.depositCenter);
+      _putIfBlank(
+        flatValues,
+        'fiscal.registration_number',
+        fiscal.registrationNumber,
+      );
+      _putIfBlank(flatValues, 'fiscal.country', fiscal.country);
+      _putIfBlank(
+        flatValues,
+        'fiscal.activity_description',
+        fiscal.activityDescription,
+      );
+      _putIfBlank(
+        flatValues,
+        'responsable.nom',
+        fiscal.legalRepresentativeName,
+      );
+      _putIfBlank(
+        flatValues,
+        'responsable.qualite',
+        fiscal.legalRepresentativeTitle,
+      );
+      _putIfBlank(
+        flatValues,
+        'responsable.telephone',
+        fiscal.legalRepresentativePhone,
+      );
+      _putIfBlank(flatValues, 'accountant.name', fiscal.accountantName);
+      _putIfBlank(flatValues, 'accountant.title', fiscal.accountantTitle);
+      _putIfBlank(flatValues, 'accountant.phone', fiscal.accountantPhone);
+      _putIfBlank(flatValues, 'accountant.email', fiscal.accountantEmail);
+      _putIfBlank(flatValues, 'bank.name', fiscal.bankName);
+      _putIfBlank(flatValues, 'bank.account_label', fiscal.bankAccountLabel);
+
+      final orgName = organization.nom;
 
       // Watermark si brouillon
       final watermark = dossier.status == FiscalDossierStatus.draft
@@ -999,6 +1048,13 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   // ═════════════════════════════════════════════════════════════════════════
   // Helpers
   // ═════════════════════════════════════════════════════════════════════════
+
+  void _putIfBlank(Map<String, dynamic> values, String key, String? value) {
+    final clean = value?.trim();
+    if (clean == null || clean.isEmpty) return;
+    final current = values[key]?.toString().trim();
+    if (current == null || current.isEmpty) values[key] = clean;
+  }
 
   void _showActionError(Object error, {String prefix = 'Erreur'}) {
     if (!mounted) return;

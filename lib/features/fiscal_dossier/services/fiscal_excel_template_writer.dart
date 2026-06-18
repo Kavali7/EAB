@@ -86,6 +86,16 @@ class FiscalExcelTemplateWriter {
       for (final formula in formulasBySheet[sheetName] ?? const []) {
         _setFormulaCell(sheetDoc, formula.cell, formula.formula);
       }
+      _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
+      replacements[sheetPath] = _encodeXml(sheetDoc);
+    }
+
+    for (final sheetPath in sheetPaths.values) {
+      if (replacements.containsKey(sheetPath)) continue;
+      final sheetFile = files[sheetPath];
+      if (sheetFile == null) continue;
+      final sheetDoc = XmlDocument.parse(_readText(sheetFile));
+      _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
 
@@ -258,6 +268,35 @@ class FiscalExcelTemplateWriter {
     );
   }
 
+  static void _syncDefinedNameFormulaCaches(
+    XmlDocument sheetDoc,
+    Map<String, String> definedNames,
+  ) {
+    if (definedNames.isEmpty) return;
+
+    for (final cell in sheetDoc.findAllElements('c')) {
+      final formula = cell.findElements('f').firstOrNull;
+      if (formula == null) continue;
+
+      final formulaName = formula.innerText.trim().replaceFirst(
+        RegExp(r'^='),
+        '',
+      );
+      final value = definedNames[formulaName];
+      if (value == null) continue;
+
+      _setAttribute(cell, 't', 'str');
+      var valueElement = cell.findElements('v').firstOrNull;
+      if (valueElement == null) {
+        valueElement = XmlElement(XmlName('v'));
+        cell.children.add(valueElement);
+      }
+      valueElement.children
+        ..clear()
+        ..add(XmlText(value));
+    }
+  }
+
   static void _neutralizeNumericConstants(XmlDocument sheetDoc) {
     for (final cell in sheetDoc.findAllElements('c')) {
       final hasFormula = cell.findElements('f').isNotEmpty;
@@ -410,7 +449,7 @@ class FiscalExcelTemplateWriter {
   ) {
     var text = utf8.decode(bytes);
     for (final entry in textReplacements.entries) {
-      text = text.replaceAll(entry.key, entry.value);
+      text = text.replaceAll(entry.key, _escapeXmlText(entry.value));
     }
 
     final forbidden = <String>[];
@@ -429,6 +468,14 @@ class FiscalExcelTemplateWriter {
     }
 
     return Uint8List.fromList(utf8.encode(text));
+  }
+
+  static String _escapeXmlText(String value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
   }
 }
 

@@ -73,6 +73,16 @@ const Map<String, String> syscebnlFiscalExcelTextReplacements = {
 };
 
 final List<RegExp> syscebnlFiscalExcelForbiddenPatterns = [
+  RegExp('CECOTRA', caseSensitive: false),
+  RegExp('AKODA ALIDOU', caseSensitive: false),
+  RegExp('Ernest Cyrille A\\. SOUROU', caseSensitive: false),
+  RegExp('3201810353457'),
+  RegExp('RB/ABC/18 B 2310', caseSensitive: false),
+  RegExp('ILOT 1842', caseSensitive: false),
+  RegExp('AB-CLAVI', caseSensitive: false),
+  RegExp('CIME ATL', caseSensitive: false),
+  RegExp('import-export', caseSensitive: false),
+  RegExp('CENTRE DES IMP[OÔ]TS DE COTONOU', caseSensitive: false),
   RegExp('SYSCOHADA', caseSensitive: false),
   RegExp(r'\bOHADA\b', caseSensitive: false),
   RegExp('soci\u00e9t\u00e9', caseSensitive: false),

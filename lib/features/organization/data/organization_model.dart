@@ -38,6 +38,10 @@ class Organization {
   final Map<String, dynamic>? parametres;
   final DateTime? createdAt;
 
+  OrganizationFiscalProfile get fiscalProfile {
+    return OrganizationFiscalProfile.fromOrganization(this);
+  }
+
   factory Organization.fromJson(Map<String, dynamic> json) {
     return Organization(
       id: json['id'] as String,
@@ -144,4 +148,107 @@ class Organization {
   }
 
   bool get hasPendingOnboardingSteps => onboardingSkippedSteps.isNotEmpty;
+}
+
+class OrganizationFiscalProfile {
+  const OrganizationFiscalProfile({
+    this.ifu,
+    this.registrationNumber,
+    this.taxCenter,
+    this.depositCenter,
+    this.country,
+    this.headOfficeAddress,
+    this.activityDescription,
+    this.legalRepresentativeName,
+    this.legalRepresentativeTitle,
+    this.legalRepresentativePhone,
+    this.accountantName,
+    this.accountantTitle,
+    this.accountantPhone,
+    this.accountantEmail,
+    this.bankName,
+    this.bankAccountLabel,
+  });
+
+  static const paramKey = 'fiscal_identity';
+
+  final String? ifu;
+  final String? registrationNumber;
+  final String? taxCenter;
+  final String? depositCenter;
+  final String? country;
+  final String? headOfficeAddress;
+  final String? activityDescription;
+  final String? legalRepresentativeName;
+  final String? legalRepresentativeTitle;
+  final String? legalRepresentativePhone;
+  final String? accountantName;
+  final String? accountantTitle;
+  final String? accountantPhone;
+  final String? accountantEmail;
+  final String? bankName;
+  final String? bankAccountLabel;
+
+  factory OrganizationFiscalProfile.fromOrganization(Organization org) {
+    final raw = org.parametres?[paramKey] ?? org.parametres?['fiscal'];
+    final data = raw is Map<String, dynamic>
+        ? raw
+        : raw is Map
+        ? Map<String, dynamic>.from(raw)
+        : const <String, dynamic>{};
+
+    return OrganizationFiscalProfile(
+      ifu: _read(data, 'ifu'),
+      registrationNumber: _read(data, 'registration_number'),
+      taxCenter: _read(data, 'tax_center'),
+      depositCenter: _read(data, 'deposit_center'),
+      country: _read(data, 'country'),
+      headOfficeAddress: _read(data, 'head_office_address') ?? org.adresse,
+      activityDescription: _read(data, 'activity_description'),
+      legalRepresentativeName: _read(data, 'legal_representative_name'),
+      legalRepresentativeTitle: _read(data, 'legal_representative_title'),
+      legalRepresentativePhone: _read(data, 'legal_representative_phone'),
+      accountantName: _read(data, 'accountant_name'),
+      accountantTitle: _read(data, 'accountant_title'),
+      accountantPhone: _read(data, 'accountant_phone'),
+      accountantEmail: _read(data, 'accountant_email'),
+      bankName: _read(data, 'bank_name'),
+      bankAccountLabel: _read(data, 'bank_account_label'),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'ifu': ifu,
+      'registration_number': registrationNumber,
+      'tax_center': taxCenter,
+      'deposit_center': depositCenter,
+      'country': country,
+      'head_office_address': headOfficeAddress,
+      'activity_description': activityDescription,
+      'legal_representative_name': legalRepresentativeName,
+      'legal_representative_title': legalRepresentativeTitle,
+      'legal_representative_phone': legalRepresentativePhone,
+      'accountant_name': accountantName,
+      'accountant_title': accountantTitle,
+      'accountant_phone': accountantPhone,
+      'accountant_email': accountantEmail,
+      'bank_name': bankName,
+      'bank_account_label': bankAccountLabel,
+    }..removeWhere((_, value) => value == null || value.toString().isEmpty);
+  }
+
+  static Map<String, dynamic> mergeIntoParametres(
+    Map<String, dynamic>? current,
+    OrganizationFiscalProfile profile,
+  ) {
+    return {...?current, paramKey: profile.toJson()};
+  }
+
+  static String? _read(Map<String, dynamic> data, String key) {
+    final value = data[key];
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
 }

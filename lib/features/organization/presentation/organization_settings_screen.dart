@@ -43,6 +43,22 @@ class _OrganizationSettingsScreenState
   final _siteCtrl = TextEditingController();
   final _couleurPrimaireCtrl = TextEditingController();
   final _couleurSecondaireCtrl = TextEditingController();
+  final _fiscalIfuCtrl = TextEditingController();
+  final _fiscalRegistreCtrl = TextEditingController();
+  final _fiscalCentreImpotsCtrl = TextEditingController();
+  final _fiscalCentreDepotCtrl = TextEditingController();
+  final _fiscalPaysCtrl = TextEditingController();
+  final _fiscalSiegeCtrl = TextEditingController();
+  final _fiscalActiviteCtrl = TextEditingController();
+  final _fiscalRepresentantNomCtrl = TextEditingController();
+  final _fiscalRepresentantTitreCtrl = TextEditingController();
+  final _fiscalRepresentantTelCtrl = TextEditingController();
+  final _fiscalComptableNomCtrl = TextEditingController();
+  final _fiscalComptableTitreCtrl = TextEditingController();
+  final _fiscalComptableTelCtrl = TextEditingController();
+  final _fiscalComptableEmailCtrl = TextEditingController();
+  final _fiscalBanqueCtrl = TextEditingController();
+  final _fiscalCompteBancaireCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
   String? _inviteChurchUnitId;
@@ -84,6 +100,22 @@ class _OrganizationSettingsScreenState
     _siteCtrl.dispose();
     _couleurPrimaireCtrl.dispose();
     _couleurSecondaireCtrl.dispose();
+    _fiscalIfuCtrl.dispose();
+    _fiscalRegistreCtrl.dispose();
+    _fiscalCentreImpotsCtrl.dispose();
+    _fiscalCentreDepotCtrl.dispose();
+    _fiscalPaysCtrl.dispose();
+    _fiscalSiegeCtrl.dispose();
+    _fiscalActiviteCtrl.dispose();
+    _fiscalRepresentantNomCtrl.dispose();
+    _fiscalRepresentantTitreCtrl.dispose();
+    _fiscalRepresentantTelCtrl.dispose();
+    _fiscalComptableNomCtrl.dispose();
+    _fiscalComptableTitreCtrl.dispose();
+    _fiscalComptableTelCtrl.dispose();
+    _fiscalComptableEmailCtrl.dispose();
+    _fiscalBanqueCtrl.dispose();
+    _fiscalCompteBancaireCtrl.dispose();
     _inviteEmailCtrl.dispose();
     super.dispose();
   }
@@ -99,6 +131,25 @@ class _OrganizationSettingsScreenState
     _siteCtrl.text = org.siteWeb ?? '';
     _couleurPrimaireCtrl.text = org.couleurPrimaire ?? '#1B2A4A';
     _couleurSecondaireCtrl.text = org.couleurSecondaire ?? '#D4A843';
+    final fiscal = org.fiscalProfile;
+    _fiscalIfuCtrl.text = fiscal.ifu ?? '';
+    _fiscalRegistreCtrl.text = fiscal.registrationNumber ?? '';
+    _fiscalCentreImpotsCtrl.text = fiscal.taxCenter ?? '';
+    _fiscalCentreDepotCtrl.text = fiscal.depositCenter ?? '';
+    _fiscalPaysCtrl.text = fiscal.country ?? 'REPUBLIQUE DU BENIN';
+    _fiscalSiegeCtrl.text = fiscal.headOfficeAddress ?? org.adresse ?? '';
+    _fiscalActiviteCtrl.text = fiscal.activityDescription ?? '';
+    _fiscalRepresentantNomCtrl.text = fiscal.legalRepresentativeName ?? '';
+    _fiscalRepresentantTitreCtrl.text =
+        fiscal.legalRepresentativeTitle ?? 'Representant legal';
+    _fiscalRepresentantTelCtrl.text = fiscal.legalRepresentativePhone ?? '';
+    _fiscalComptableNomCtrl.text = fiscal.accountantName ?? '';
+    _fiscalComptableTitreCtrl.text =
+        fiscal.accountantTitle ?? 'Comptable responsable';
+    _fiscalComptableTelCtrl.text = fiscal.accountantPhone ?? '';
+    _fiscalComptableEmailCtrl.text = fiscal.accountantEmail ?? '';
+    _fiscalBanqueCtrl.text = fiscal.bankName ?? '';
+    _fiscalCompteBancaireCtrl.text = fiscal.bankAccountLabel ?? '';
   }
 
   Future<void> _save(Organization org) async {
@@ -124,7 +175,10 @@ class _OrganizationSettingsScreenState
         email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         siteWeb: _siteCtrl.text.trim().isEmpty ? null : _siteCtrl.text.trim(),
         devise: org.devise,
-        parametres: org.parametres,
+        parametres: OrganizationFiscalProfile.mergeIntoParametres(
+          org.parametres,
+          _fiscalProfileFromCurrentValues(),
+        ),
         createdAt: org.createdAt,
       );
       final repo = ref.read(organizationRepositoryProvider);
@@ -411,6 +465,8 @@ class _OrganizationSettingsScreenState
                           _themeSection(compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
                           _contactSection(),
+                          const SizedBox(height: AppSpacing.cardGap),
+                          _fiscalIdentitySection(compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
                           _saveActions(org, compact: compact),
                           const SizedBox(height: AppSpacing.xl),
@@ -701,6 +757,135 @@ class _OrganizationSettingsScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _fiscalIdentitySection({required bool compact}) {
+    return SectionCard(
+      title: 'Identite fiscale & signataires',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Ces informations remplacent toutes les donnees du modele dans le dossier fiscal Excel ou PDF.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Numero IFU',
+                controller: _fiscalIfuCtrl,
+                helper: 'Requis pour un dossier fiscal deposable.',
+              ),
+              EabTextField(
+                label: 'Reference administrative',
+                controller: _fiscalRegistreCtrl,
+                helper: 'Registre, agrement ou identifiant reconnu.',
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Centre des impots',
+                controller: _fiscalCentreImpotsCtrl,
+              ),
+              EabTextField(
+                label: 'Centre de depot',
+                controller: _fiscalCentreDepotCtrl,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(label: 'Pays', controller: _fiscalPaysCtrl),
+              EabTextField(label: 'Siege fiscal', controller: _fiscalSiegeCtrl),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          EabTextField(
+            label: 'Activite principale',
+            controller: _fiscalActiviteCtrl,
+            maxLines: compact ? 3 : 2,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Representant legal'),
+          const SizedBox(height: AppSpacing.sm),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Nom complet',
+                controller: _fiscalRepresentantNomCtrl,
+              ),
+              EabTextField(
+                label: 'Qualite',
+                controller: _fiscalRepresentantTitreCtrl,
+              ),
+              EabTextField(
+                label: 'Telephone',
+                controller: _fiscalRepresentantTelCtrl,
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Comptable responsable'),
+          const SizedBox(height: AppSpacing.sm),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Nom complet',
+                controller: _fiscalComptableNomCtrl,
+              ),
+              EabTextField(
+                label: 'Qualite',
+                controller: _fiscalComptableTitreCtrl,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Telephone comptable',
+                controller: _fiscalComptableTelCtrl,
+                keyboardType: TextInputType.phone,
+              ),
+              EabTextField(
+                label: 'Email comptable',
+                controller: _fiscalComptableEmailCtrl,
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Banque de reference'),
+          const SizedBox(height: AppSpacing.sm),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(label: 'Banque', controller: _fiscalBanqueCtrl),
+              EabTextField(
+                label: 'Compte ou intitule bancaire',
+                controller: _fiscalCompteBancaireCtrl,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _subsectionTitle(String title) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
     );
   }
 
@@ -1133,7 +1318,41 @@ class _OrganizationSettingsScreenState
     ].any((value) => value.trim().isNotEmpty)) {
       steps.add('contact');
     }
+    if ([
+      _fiscalIfuCtrl.text,
+      _fiscalCentreImpotsCtrl.text,
+      _fiscalRepresentantNomCtrl.text,
+      _fiscalComptableNomCtrl.text,
+    ].any((value) => value.trim().isNotEmpty)) {
+      steps.add('fiscal_identity');
+    }
     return steps;
+  }
+
+  OrganizationFiscalProfile _fiscalProfileFromCurrentValues() {
+    return OrganizationFiscalProfile(
+      ifu: _nullIfBlank(_fiscalIfuCtrl.text),
+      registrationNumber: _nullIfBlank(_fiscalRegistreCtrl.text),
+      taxCenter: _nullIfBlank(_fiscalCentreImpotsCtrl.text),
+      depositCenter: _nullIfBlank(_fiscalCentreDepotCtrl.text),
+      country: _nullIfBlank(_fiscalPaysCtrl.text),
+      headOfficeAddress: _nullIfBlank(_fiscalSiegeCtrl.text),
+      activityDescription: _nullIfBlank(_fiscalActiviteCtrl.text),
+      legalRepresentativeName: _nullIfBlank(_fiscalRepresentantNomCtrl.text),
+      legalRepresentativeTitle: _nullIfBlank(_fiscalRepresentantTitreCtrl.text),
+      legalRepresentativePhone: _nullIfBlank(_fiscalRepresentantTelCtrl.text),
+      accountantName: _nullIfBlank(_fiscalComptableNomCtrl.text),
+      accountantTitle: _nullIfBlank(_fiscalComptableTitreCtrl.text),
+      accountantPhone: _nullIfBlank(_fiscalComptableTelCtrl.text),
+      accountantEmail: _nullIfBlank(_fiscalComptableEmailCtrl.text),
+      bankName: _nullIfBlank(_fiscalBanqueCtrl.text),
+      bankAccountLabel: _nullIfBlank(_fiscalCompteBancaireCtrl.text),
+    );
+  }
+
+  String? _nullIfBlank(String value) {
+    final clean = value.trim();
+    return clean.isEmpty ? null : clean;
   }
 
   String _logoContentType(PickedLogoFile file) {

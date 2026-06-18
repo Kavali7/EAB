@@ -10,6 +10,7 @@ import 'fiscal_export_balance_loader.dart';
 import 'fiscal_export_adjustments.dart';
 import 'fiscal_excel_template_writer.dart';
 import 'fiscal_excel_sanitization.dart';
+import 'fiscal_organization_identity.dart';
 import 'syscebnl_excel_mapping.dart';
 
 class FiscalExcelExport {
@@ -124,19 +125,23 @@ class FiscalExcelExportService {
       adjustedBalance.lines,
       previousLines: previousAdjustedBalance?.lines ?? const [],
     );
+    final identity = FiscalOrganizationIdentity.from(
+      organization: organization,
+      values: values,
+      periodStart: dateDebut,
+      periodEnd: dateFin,
+      previousPeriodEnd: previousPeriod.end,
+      churchUnit: churchUnit,
+    );
     final templateBytes = await rootBundle.load(templateAssetPath);
     final bytes = FiscalExcelTemplateWriter.write(
       templateBytes: templateBytes.buffer.asUint8List(),
       mapping: mapping,
-      definedNames: _definedNames(
-        organization,
-        values,
-        dateDebut,
-        dateFin,
-        previousPeriod.end,
-        churchUnit,
-      ),
-      textReplacements: syscebnlFiscalExcelTextReplacements,
+      definedNames: identity.definedNames(),
+      textReplacements: {
+        ...syscebnlFiscalExcelTextReplacements,
+        ...identity.textReplacements(),
+      },
       forbiddenTextPatterns: syscebnlFiscalExcelForbiddenPatterns,
       neutralizeNumericSheetPatterns:
           syscebnlFiscalExcelNeutralizedSheetPatterns,
@@ -164,40 +169,6 @@ class FiscalExcelExportService {
     );
   }
 
-  static Map<String, String> _definedNames(
-    Organization organization,
-    Map<String, dynamic> values,
-    DateTime dateDebut,
-    DateTime dateFin,
-    DateTime previousDateFin,
-    ChurchUnit? churchUnit,
-  ) {
-    final orgName = _stringValue(values['org.name']) ?? organization.nom;
-    final orgSigle = _stringValue(values['org.sigle']) ?? organization.sigle;
-    final orgNif = _stringValue(values['org.nif']) ?? '';
-    final orgAddress =
-        _stringValue(values['org.address']) ?? organization.adresse ?? '';
-    final currency = _stringValue(values['currency']) ?? organization.devise;
-    final exerciceLabel =
-        _stringValue(values['exercice.label']) ?? 'Exercice ${dateFin.year}';
-
-    return {
-      '_soNom': orgName,
-      '_soId': orgNif,
-      '_soSigle': orgSigle ?? '',
-      '_soAdresse': orgAddress,
-      '_Perimetre': churchUnit == null
-          ? 'Perimetre non renseigne'
-          : '${churchUnit.typeLabel} - ${churchUnit.nom}',
-      '_Devise': currency,
-      '_ExerClos': '$exerciceLabel clos le ${_formatDate(dateFin)}',
-      '_ExerDeb': _formatDate(dateDebut),
-      '_ExerFin': _formatDate(dateFin),
-      '_ExerFin1': _formatDate(previousDateFin),
-      '_Duree': 'Duree (en mois) ${_monthDuration(dateDebut, dateFin)}',
-    };
-  }
-
   static DateTime? _dateValue(dynamic value) {
     final raw = _stringValue(value);
     if (raw == null || raw.isEmpty) return null;
@@ -223,17 +194,6 @@ class FiscalExcelExportService {
     if (value == null) return null;
     if (value is String) return value.trim();
     return value.toString().trim();
-  }
-
-  static String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
-  }
-
-  static int _monthDuration(DateTime start, DateTime end) {
-    final months = (end.year - start.year) * 12 + end.month - start.month + 1;
-    return months < 1 ? 1 : months;
   }
 
   static _FiscalPeriod _previousPeriod(DateTime start, DateTime end) {
