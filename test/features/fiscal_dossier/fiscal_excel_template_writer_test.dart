@@ -157,45 +157,51 @@ void main() {
       expect(_cellValue(note, 'D12'), isNull);
     });
 
-    test('nettoie le modele fiscal reel des donnees exemples', () async {
+    test('nettoie le modele fiscal reel pour le dossier EAB 2025', () async {
       final template = await rootBundle.load(
         'assets/templates/fiscal_syscebnl_template.xlsx',
       );
       final identity = FiscalOrganizationIdentity.from(
         organization: const Organization(
           id: 'org-1',
-          nom: 'Eglise Apostolique du Benin',
+          nom: '\u00c9glise Apostolique du B\u00e9nin',
           sigle: 'EAB',
-          adresse: '01 BP 100 Cotonou',
+          adresse: 'Cotonou, Littoral, Benin',
           telephone: '+229 01 00 00 00 00',
-          email: 'contact@eab.test',
+          email: 'contact.demo@example.com',
           parametres: {
             OrganizationFiscalProfile.paramKey: {
-              'ifu': '1202600000001',
-              'registration_number': 'ASS-REL-2026-001',
-              'tax_center': 'Centre des impots des organisations religieuses',
-              'deposit_center': 'Centre de depot des organisations religieuses',
-              'head_office_address': '01 BP 100 Cotonou',
-              'activity_description': 'Activites cultuelles et communautaires',
-              'legal_representative_name': 'Georges Guidan',
-              'legal_representative_title': 'President national',
+              'ifu': '3202600000001',
+              'registration_number': 'EAB-DEMO-2026-001',
+              'tax_center':
+                  'Centre des impots des organisations religieuses - Cotonou',
+              'deposit_center': 'Direction generale des impots - Cotonou',
+              'head_office_address': 'Cotonou, Littoral, Benin',
+              'activity_description':
+                  'Organisation religieuse a but non lucratif',
+              'legal_representative_name': 'Georges GUIDAN',
+              'legal_representative_title':
+                  'Representant legal de demonstration',
               'legal_representative_phone': '+229 01 00 00 00 00',
-              'accountant_name': 'Comptable Demo',
-              'accountant_title': 'Comptable responsable',
-              'bank_name': 'Banque de demonstration',
-              'bank_account_label': 'Compte principal',
+              'accountant_name': 'Comptable Demo Eglise',
+              'accountant_title': 'Comptable responsable des etats SYSCEBNL',
+              'accountant_phone': '+229 01 00 00 00 01',
+              'accountant_email': 'comptable.demo@example.com',
+              'bank_name': 'Banque Demo Benin',
+              'bank_account_label': 'Compte principal de demonstration',
             },
           },
         ),
-        values: const {'exercice.label': 'Exercice 2026'},
-        periodStart: DateTime(2026),
-        periodEnd: DateTime(2026, 12, 31),
-        previousPeriodEnd: DateTime(2025, 12, 31),
+        values: const {'exercice.label': 'Exercice comptable 2025'},
+        periodStart: DateTime(2025),
+        periodEnd: DateTime(2025, 12, 31),
+        previousPeriodEnd: DateTime(2024, 12, 31),
       );
+      final mapping = SyscebnlFiscalExcelMapper.fromBalance(_eabDemoBalance());
 
       final output = FiscalExcelTemplateWriter.write(
         templateBytes: template.buffer.asUint8List(),
-        mapping: const SyscebnlFiscalExcelMapping(values: [], formulas: []),
+        mapping: mapping,
         definedNames: identity.definedNames(),
         textReplacements: {
           ...syscebnlFiscalExcelTextReplacements,
@@ -233,14 +239,64 @@ void main() {
       final workbook = XmlDocument.parse(
         _entryText(archive, 'xl/workbook.xml'),
       );
-      expect(_definedName(workbook, '_nSo'), '"Eglise Apostolique du Benin"');
-      expect(_definedName(workbook, '_soNumFisc'), '"1202600000001"');
+      expect(
+        _definedName(workbook, '_nSo'),
+        '"\u00c9glise Apostolique du B\u00e9nin"',
+      );
+      expect(_definedName(workbook, '_soNumFisc'), '"3202600000001"');
       expect(
         _definedName(workbook, '_Ville'),
-        '"Centre des impots des organisations religieuses"',
+        '"Centre des impots des organisations religieuses - Cotonou"',
       );
+      expect(_definedName(workbook, '_ExerFin'), '"31/12/2025"');
+      expect(allXml, contains('\u00c9glise Apostolique du B\u00e9nin'));
+      expect(allXml, contains('Georges GUIDAN'));
+      expect(allXml, contains('Comptable Demo Eglise'));
+      expect(allXml, contains('150000'));
+      expect(allXml, contains('80000'));
+      expect(allXml, contains('30000'));
     });
   });
+}
+
+List<SyscebnlBalanceLine> _eabDemoBalance() {
+  return const [
+    SyscebnlBalanceLine(
+      numero: '531',
+      intitule: 'Caisse',
+      nature: 'actif',
+      totalDebit: 150000,
+      totalCredit: 30000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '5121',
+      intitule: 'Banque - Compte principal',
+      nature: 'actif',
+      totalDebit: 0,
+      totalCredit: 80000,
+    ),
+    SyscebnlBalanceLine(
+      numero: '613',
+      intitule: 'Loyers et locations',
+      nature: 'charge',
+      totalDebit: 80000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '645',
+      intitule: 'Indemnites et aides',
+      nature: 'charge',
+      totalDebit: 30000,
+      totalCredit: 0,
+    ),
+    SyscebnlBalanceLine(
+      numero: '702',
+      intitule: 'Offrandes de culte',
+      nature: 'produit',
+      totalDebit: 0,
+      totalCredit: 150000,
+    ),
+  ];
 }
 
 Uint8List _buildMiniWorkbook() {
