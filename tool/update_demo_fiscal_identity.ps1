@@ -15,6 +15,57 @@ function Assert-EnvValue {
   return $value.TrimEnd("/")
 }
 
+function Get-ProjectRefFromUrl {
+  param([string]$Url)
+
+  if ($Url -match "https://([a-z0-9]+)\.supabase\.co") {
+    return $Matches[1]
+  }
+
+  return ""
+}
+
+function Get-AppSupabaseRef {
+  $configPath = Join-Path $PSScriptRoot "..\lib\core\config\supabase_config.dart"
+  $content = Get-Content -LiteralPath $configPath -Raw
+  if ($content -match "https://([a-z0-9]+)\.supabase\.co") {
+    return $Matches[1]
+  }
+
+  throw "Impossible de lire le projet Supabase configure dans l'application."
+}
+
+function Decode-JwtPayload {
+  param([string]$Jwt)
+
+  if ([string]::IsNullOrWhiteSpace($Jwt) -or -not $Jwt.Contains(".")) {
+    throw "Cle Supabase invalide ou absente."
+  }
+
+  $payload = $Jwt.Split(".")[1].Replace("-", "+").Replace("_", "/")
+  switch ($payload.Length % 4) {
+    2 { $payload += "==" }
+    3 { $payload += "=" }
+  }
+
+  $json = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload))
+  return $json | ConvertFrom-Json
+}
+
+function Assert-SupabaseProjectMatchesApp {
+  $appRef = Get-AppSupabaseRef
+  $urlRef = Get-ProjectRefFromUrl $script:SupabaseUrl
+  $servicePayload = Decode-JwtPayload $script:ServiceRoleKey
+
+  if ($servicePayload.role -ne "service_role") {
+    throw "SUPABASE_SERVICE_ROLE_KEY ne contient pas une cle service_role."
+  }
+
+  if ($urlRef -ne $appRef -or $servicePayload.ref -ne $appRef) {
+    throw "Projet Supabase incoherent. Application=$appRef, SUPABASE_URL=$urlRef, SERVICE_ROLE=$($servicePayload.ref). Corrigez les variables d'environnement avant execution."
+  }
+}
+
 function Invoke-SupabaseRest {
   param(
     [string]$Method,
@@ -121,6 +172,7 @@ function Coalesce-Text {
 
 $script:SupabaseUrl = Assert-EnvValue "SUPABASE_URL"
 $script:ServiceRoleKey = Assert-EnvValue "SUPABASE_SERVICE_ROLE_KEY"
+Assert-SupabaseProjectMatchesApp
 
 $select = "id,name,sigle,adresse,telephone,email,site_web,devise,parametres"
 $organizations = @(Invoke-SupabaseRest -Method "GET" -Path "/rest/v1/organizations?select=$select&order=created_at.asc")
