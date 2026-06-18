@@ -254,4 +254,16 @@ class FiscalDossierRepository {
   Future<void> deleteImport(String importId) async {
     await _sb.from('imported_trial_balances').delete().eq('id', importId);
   }
+
+  /// Recupere les lignes d'une balance importee.
+  Future<List<ImportedTrialBalanceLine>> getImportLines(String importId) async {
+    final data = await _sb
+        .from('imported_trial_balance_lines')
+        .select()
+        .eq('import_id', importId)
+        .order('account_number');
+    return (data as List)
+        .map((e) => ImportedTrialBalanceLine.fromJson(e))
+        .toList();
+  }
 }

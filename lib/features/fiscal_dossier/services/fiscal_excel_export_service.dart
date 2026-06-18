@@ -2,9 +2,11 @@ import 'package:flutter/services.dart';
 
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/etats_financiers/data/reports_repository.dart';
+import 'package:eab/features/fiscal_dossier/data/fiscal_dossier_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/organization/data/organization_model.dart';
 
+import 'fiscal_export_balance_loader.dart';
 import 'fiscal_export_adjustments.dart';
 import 'fiscal_excel_template_writer.dart';
 import 'fiscal_excel_sanitization.dart';
@@ -37,6 +39,7 @@ class FiscalExcelExportAudit {
     required this.totalDebit,
     required this.totalCredit,
     required this.injectedCellCount,
+    required this.usedImportedCurrentBalance,
   });
 
   final String organizationId;
@@ -52,15 +55,22 @@ class FiscalExcelExportAudit {
   final double totalDebit;
   final double totalCredit;
   final int injectedCellCount;
+  final bool usedImportedCurrentBalance;
 }
 
 class FiscalExcelExportService {
-  const FiscalExcelExportService(this._reportsRepository);
+  FiscalExcelExportService(
+    ReportsRepository reportsRepository,
+    FiscalDossierRepository fiscalRepository,
+  ) : _balanceLoader = FiscalExportBalanceLoader.fromRepositories(
+        reportsRepository,
+        fiscalRepository,
+      );
 
   static const templateAssetPath =
       'assets/templates/fiscal_syscebnl_template.xlsx';
 
-  final ReportsRepository _reportsRepository;
+  final FiscalExportBalanceLoader _balanceLoader;
 
   Future<FiscalExcelExport> buildDossierExport({
     required FiscalDossier dossier,
@@ -88,33 +98,26 @@ class FiscalExcelExportService {
       );
     }
 
-    final balance = await _reportsRepository.fetchBalanceGenerale(
-      dossier.organizationId,
-      churchUnitId: churchUnitId,
+    final previousPeriod = _previousPeriod(dateDebut, dateFin);
+    final balanceData = await _balanceLoader.load(
+      dossier: dossier,
       dateDebut: dateDebut,
       dateFin: dateFin,
-    );
-    final previousPeriod = _previousPeriod(dateDebut, dateFin);
-    final previousBalance = await _reportsRepository.fetchBalanceGenerale(
-      dossier.organizationId,
-      churchUnitId: churchUnitId,
-      dateDebut: previousPeriod.start,
-      dateFin: previousPeriod.end,
+      previousDateDebut: previousPeriod.start,
+      previousDateFin: previousPeriod.end,
     );
 
     final adjustments = FiscalExportAdjustmentCodec.decode(
       values[FiscalExportAdjustmentCodec.fieldKey],
     );
     final adjustedBalance = FiscalExportAdjustmentEngine.apply(
-      balanceLines: balance.map(_toSyscebnlLine).toList(growable: false),
+      balanceLines: balanceData.currentLines,
       adjustments: adjustments,
     );
-    final previousAdjustedBalance = previousBalance.isEmpty
+    final previousAdjustedBalance = balanceData.previousLines.isEmpty
         ? null
         : FiscalExportAdjustmentEngine.apply(
-            balanceLines: previousBalance
-                .map(_toSyscebnlLine)
-                .toList(growable: false),
+            balanceLines: balanceData.previousLines,
             adjustments: const [],
           );
     final mapping = SyscebnlFiscalExcelMapper.fromBalance(
@@ -149,32 +152,16 @@ class FiscalExcelExportService {
         dateFin: dateFin,
         previousDateDebut: previousPeriod.start,
         previousDateFin: previousPeriod.end,
-        balanceLineCount: balance.length,
-        previousBalanceLineCount: previousBalance.length,
+        balanceLineCount: balanceData.currentLines.length,
+        previousBalanceLineCount: balanceData.previousLines.length,
         adjustmentCount: adjustedBalance.adjustmentCount,
         adjustmentLineCount: adjustedBalance.adjustmentLineCount,
         totalDebit: adjustedBalance.totalDebit,
         totalCredit: adjustedBalance.totalCredit,
         injectedCellCount: mapping.values.length + mapping.formulas.length,
+        usedImportedCurrentBalance: balanceData.usedImportedCurrentBalance,
       ),
     );
-  }
-
-  static SyscebnlBalanceLine _toSyscebnlLine(LigneBalance line) {
-    final nature = line.nature.trim().toLowerCase();
-    return SyscebnlBalanceLine(
-      numero: line.numero,
-      intitule: line.intitule,
-      nature: nature.isNotEmpty ? nature : _natureFromBalance(line),
-      totalDebit: line.totalDebit,
-      totalCredit: line.totalCredit,
-    );
-  }
-
-  static String _natureFromBalance(LigneBalance line) {
-    if (line.soldeDebiteur > line.soldeCrediteur) return 'actif';
-    if (line.soldeCrediteur > line.soldeDebiteur) return 'passif';
-    return '';
   }
 
   static Map<String, String> _definedNames(

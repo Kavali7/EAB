@@ -333,11 +333,14 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
       );
 
       if (mounted) {
+        final sourceLabel = export.audit.usedImportedCurrentBalance
+            ? 'de la balance importee'
+            : 'du perimetre fiscal';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
-              'du perimetre fiscal, ${export.audit.adjustmentCount} '
+              '$sourceLabel, ${export.audit.adjustmentCount} '
               'ajustement(s), debit ${export.audit.totalDebit}, '
               'credit ${export.audit.totalCredit}.',
             ),

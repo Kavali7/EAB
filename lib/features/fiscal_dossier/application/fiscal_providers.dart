@@ -21,12 +21,18 @@ final fiscalRepositoryProvider = Provider<FiscalDossierRepository>((ref) {
 final fiscalExcelExportServiceProvider = Provider<FiscalExcelExportService>((
   ref,
 ) {
-  return FiscalExcelExportService(ref.watch(reportsRepositoryProvider));
+  return FiscalExcelExportService(
+    ref.watch(reportsRepositoryProvider),
+    ref.watch(fiscalRepositoryProvider),
+  );
 });
 
 final fiscalExportPreflightServiceProvider =
     Provider<FiscalExportPreflightService>((ref) {
-      return FiscalExportPreflightService(ref.watch(reportsRepositoryProvider));
+      return FiscalExportPreflightService(
+        ref.watch(reportsRepositoryProvider),
+        ref.watch(fiscalRepositoryProvider),
+      );
     });
 
 // ─────────────────────────────────────────────────────────────────────────────

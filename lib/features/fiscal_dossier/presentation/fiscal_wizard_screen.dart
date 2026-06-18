@@ -159,6 +159,13 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
           style: TextButton.styleFrom(foregroundColor: AppColors.primary),
         ),
         const SizedBox(width: 4),
+        TextButton.icon(
+          onPressed: _isLoading ? null : () => _prefillFromImport(dossier),
+          icon: const Icon(Icons.upload_file_outlined, size: 18),
+          label: const Text('Balance importee'),
+          style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+        ),
+        const SizedBox(width: 4),
         // Valider
         TextButton.icon(
           onPressed: _isLoading ? null : () => _validate(dossier),
@@ -416,6 +423,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
                 label: 'Pre-remplir',
                 icon: Icons.auto_fix_high,
                 onPressed: _isLoading ? null : () => _prefill(dossier),
+              ),
+              const SizedBox(width: 8),
+              _CommandButton(
+                label: 'Balance',
+                icon: Icons.upload_file_outlined,
+                onPressed: _isLoading
+                    ? null
+                    : () => _prefillFromImport(dossier),
               ),
               const SizedBox(width: 8),
               _CommandButton(
@@ -746,6 +761,53 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     }
   }
 
+  Future<void> _prefillFromImport(FiscalDossier dossier) async {
+    try {
+      final imports = await ref.read(fiscalImportsProvider.future);
+      if (!mounted) return;
+      if (imports.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucune balance importee disponible.'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+        return;
+      }
+
+      final selected = await showDialog<ImportedTrialBalance>(
+        context: context,
+        builder: (_) => _ImportBalancePickerDialog(imports: imports),
+      );
+      if (selected == null) return;
+
+      if (!mounted) return;
+      setState(() => _isLoading = true);
+      final repo = ref.read(fiscalRepositoryProvider);
+      final result = await repo.prefillFromImport(dossier.id, selected.id);
+
+      ref.invalidate(fiscalValuesProvider(dossier.id));
+      ref.invalidate(currentFiscalDossierProvider(dossier.id));
+      ref.invalidate(fiscalDossiersProvider);
+      _localValues.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Balance importee liee : ${result['filled']} champs remplis.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showActionError(e, prefix: 'Erreur balance importee');
+    } finally {
+      if (mounted && _isLoading) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _validate(FiscalDossier dossier) async {
     // D'abord sauvegarder
     await _saveCurrentPage(dossier);
@@ -911,11 +973,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       );
 
       if (mounted) {
+        final sourceLabel = export.audit.usedImportedCurrentBalance
+            ? 'de la balance importee'
+            : 'du perimetre fiscal';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Excel SYSCEBNL genere : ${export.audit.balanceLineCount} lignes '
-              'du perimetre fiscal, ${export.audit.adjustmentCount} '
+              '$sourceLabel, ${export.audit.adjustmentCount} '
               'ajustement(s), debit ${export.audit.totalDebit}, '
               'credit ${export.audit.totalCredit}, '
               'N-1 ${export.audit.previousBalanceLineCount} lignes.',
@@ -980,6 +1045,73 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       default:
         return const Icon(Icons.description_outlined, size: 18);
     }
+  }
+}
+
+class _ImportBalancePickerDialog extends StatelessWidget {
+  const _ImportBalancePickerDialog({required this.imports});
+
+  final List<ImportedTrialBalance> imports;
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedImports = [...imports]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return AlertDialog(
+      title: const Text('Choisir une balance importee'),
+      content: SizedBox(
+        width: 520,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 420),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: sortedImports.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = sortedImports[index];
+              final title = item.exerciceLabel?.trim().isNotEmpty == true
+                  ? item.exerciceLabel!.trim()
+                  : item.filename ?? 'Balance importee';
+              final subtitle = [
+                '${item.lineCount} ligne(s)',
+                'Debit ${_formatImportAmount(item.totalDebit)}',
+                'Credit ${_formatImportAmount(item.totalCredit)}',
+              ].join(' - ');
+
+              return ListTile(
+                leading: const Icon(Icons.upload_file_outlined),
+                title: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () => Navigator.of(context).pop(item),
+              );
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
+      ],
+    );
+  }
+
+  static String _formatImportAmount(double value) {
+    final rounded = value.roundToDouble();
+    if ((value - rounded).abs() < 0.01) {
+      return rounded.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
   }
 }
 
