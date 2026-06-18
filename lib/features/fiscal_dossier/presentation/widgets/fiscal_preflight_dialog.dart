@@ -133,8 +133,8 @@ class FiscalPreflightDialog extends StatelessWidget {
         children: [
           Text(
             report.canExport
-                ? 'Le fichier Excel peut etre genere.'
-                : 'Le fichier Excel ne doit pas etre genere tant que les points bloquants ne sont pas corriges.',
+                ? 'Le fichier fiscal peut etre genere.'
+                : 'Le fichier fiscal ne doit pas etre genere tant que les points bloquants ne sont pas corriges.',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),

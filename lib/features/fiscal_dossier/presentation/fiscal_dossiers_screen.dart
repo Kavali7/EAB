@@ -286,9 +286,17 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
         flatValues[entry.key] = entry.value.value;
       }
 
+      final organization = await ref.read(currentOrganizationProvider.future);
+      if (organization == null) {
+        throw StateError('Organisation courante introuvable.');
+      }
       final preflight = await ref
           .read(fiscalExportPreflightServiceProvider)
-          .buildReport(dossier: dossier, values: flatValues);
+          .buildReport(
+            dossier: dossier,
+            values: flatValues,
+            organization: organization,
+          );
 
       if (!mounted) return;
       setState(() => _exportingDossierId = null);
@@ -304,11 +312,6 @@ class _FiscalDossiersScreenState extends ConsumerState<FiscalDossiersScreen> {
 
       if (!mounted) return;
       setState(() => _exportingDossierId = dossier.id);
-
-      final organization = await ref.read(currentOrganizationProvider.future);
-      if (organization == null) {
-        throw StateError('Organisation courante introuvable.');
-      }
 
       final resolvedUnit =
           churchUnit ??

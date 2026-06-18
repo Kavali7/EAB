@@ -1,6 +1,7 @@
 import 'package:eab/features/etats_financiers/data/reports_repository.dart';
 import 'package:eab/features/fiscal_dossier/data/fiscal_dossier_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
+import 'package:eab/features/organization/data/organization_model.dart';
 
 import 'fiscal_export_balance_loader.dart';
 import 'fiscal_export_adjustments.dart';
@@ -81,8 +82,9 @@ class FiscalExportPreflightEngine {
     required List<SyscebnlBalanceLine> previousBalanceLines,
     required List<FiscalExportAdjustment> adjustments,
     bool usedImportedCurrentBalance = false,
+    List<FiscalExportPreflightIssue> fiscalIdentityIssues = const [],
   }) {
-    final issues = <FiscalExportPreflightIssue>[];
+    final issues = <FiscalExportPreflightIssue>[...fiscalIdentityIssues];
 
     if (churchUnitId == null || churchUnitId.trim().isEmpty) {
       issues.add(
@@ -283,6 +285,75 @@ class FiscalExportPreflightEngine {
     );
   }
 
+  static List<FiscalExportPreflightIssue> buildFiscalIdentityIssues(
+    Organization? organization,
+  ) {
+    if (organization == null) {
+      return const [
+        FiscalExportPreflightIssue(
+          code: 'missing_organization',
+          severity: FiscalPreflightSeverity.blocking,
+          title: 'Organisation introuvable',
+          detail:
+              'Impossible de controler l identite fiscale sans organisation courante.',
+        ),
+      ];
+    }
+
+    final fiscal = organization.fiscalProfile;
+    final blockingMissing = <String>[
+      if (_isBlank(organization.nom)) 'nom de l organisation',
+      if (_isBlank(fiscal.ifu)) 'numero IFU',
+      if (_isBlank(fiscal.taxCenter)) 'centre des impots',
+      if (_isBlank(fiscal.headOfficeAddress ?? organization.adresse))
+        'siege fiscal',
+      if (_isBlank(fiscal.legalRepresentativeName)) 'nom du representant legal',
+      if (_isBlank(fiscal.legalRepresentativeTitle))
+        'qualite du representant legal',
+      if (_isBlank(fiscal.accountantName)) 'nom du comptable responsable',
+      if (_isBlank(fiscal.accountantTitle)) 'qualite du comptable responsable',
+    ];
+
+    final recommendedMissing = <String>[
+      if (_isBlank(fiscal.registrationNumber)) 'reference administrative',
+      if (_isBlank(fiscal.depositCenter)) 'centre de depot',
+      if (_isBlank(fiscal.activityDescription)) 'activite principale',
+      if (_isBlank(fiscal.legalRepresentativePhone))
+        'telephone du representant legal',
+      if (_isBlank(fiscal.accountantPhone) && _isBlank(fiscal.accountantEmail))
+        'contact du comptable',
+      if (_isBlank(fiscal.bankName)) 'banque de reference',
+      if (_isBlank(fiscal.bankAccountLabel)) 'compte ou intitule bancaire',
+    ];
+
+    return [
+      if (blockingMissing.isNotEmpty)
+        FiscalExportPreflightIssue(
+          code: 'incomplete_fiscal_identity',
+          severity: FiscalPreflightSeverity.blocking,
+          title: 'Identite fiscale incomplete',
+          detail:
+              'Renseignez dans Parametres organisation : ${blockingMissing.join(', ')}.',
+        ),
+      if (recommendedMissing.isNotEmpty)
+        FiscalExportPreflightIssue(
+          code: 'recommended_fiscal_identity_fields',
+          severity: FiscalPreflightSeverity.warning,
+          title: 'Informations fiscales recommandees',
+          detail:
+              'Pour un dossier plus complet, ajoutez aussi : ${recommendedMissing.join(', ')}.',
+        ),
+      if (blockingMissing.isEmpty)
+        const FiscalExportPreflightIssue(
+          code: 'fiscal_identity_ready',
+          severity: FiscalPreflightSeverity.info,
+          title: 'Identite fiscale prete',
+          detail:
+              'Les champs fiscaux essentiels de l organisation sont renseignes.',
+        ),
+    ];
+  }
+
   static double _totalDebit(List<SyscebnlBalanceLine> lines) {
     return _round(lines.fold<double>(0, (sum, line) => sum + line.totalDebit));
   }
@@ -306,6 +377,8 @@ class FiscalExportPreflightEngine {
     if (remaining <= 0) return visible;
     return '$visible, +$remaining autre(s)';
   }
+
+  static bool _isBlank(String? value) => value == null || value.trim().isEmpty;
 }
 
 class FiscalExportPreflightService {
@@ -322,6 +395,7 @@ class FiscalExportPreflightService {
   Future<FiscalExportPreflightReport> buildReport({
     required FiscalDossier dossier,
     required Map<String, dynamic> values,
+    Organization? organization,
   }) async {
     final dateFin =
         _dateValue(values['exercice.date_fin']) ??
@@ -351,6 +425,8 @@ class FiscalExportPreflightService {
         values[FiscalExportAdjustmentCodec.fieldKey],
       ),
       usedImportedCurrentBalance: balanceData.usedImportedCurrentBalance,
+      fiscalIdentityIssues:
+          FiscalExportPreflightEngine.buildFiscalIdentityIssues(organization),
     );
   }
 

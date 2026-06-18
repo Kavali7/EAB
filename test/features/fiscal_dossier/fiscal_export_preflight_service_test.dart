@@ -6,6 +6,7 @@ import 'package:eab/features/fiscal_dossier/services/fiscal_export_balance_loade
 import 'package:eab/features/fiscal_dossier/services/fiscal_export_adjustments.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_export_preflight_service.dart';
 import 'package:eab/features/fiscal_dossier/services/syscebnl_excel_mapping.dart';
+import 'package:eab/features/organization/data/organization_model.dart';
 
 void main() {
   group('FiscalExportPreflightEngine', () {
@@ -28,6 +29,70 @@ void main() {
         contains('missing_scope'),
       );
     });
+
+    test('bloque une identite fiscale essentielle incomplete', () {
+      final report = FiscalExportPreflightEngine.build(
+        churchUnitId: 'unit-1',
+        dateDebut: DateTime.utc(2026),
+        dateFin: DateTime.utc(2026, 12, 31),
+        previousDateDebut: DateTime.utc(2025),
+        previousDateFin: DateTime.utc(2025, 12, 31),
+        balanceLines: _balancedLines,
+        previousBalanceLines: const [],
+        adjustments: const [],
+        fiscalIdentityIssues:
+            FiscalExportPreflightEngine.buildFiscalIdentityIssues(
+              const Organization(id: 'org-1', nom: 'Eglise Test'),
+            ),
+      );
+
+      expect(report.canExport, isFalse);
+      expect(
+        report.issues.map((issue) => issue.code),
+        contains('incomplete_fiscal_identity'),
+      );
+    });
+
+    test(
+      'valide le controle identite fiscale quand les champs sont complets',
+      () {
+        final issues = FiscalExportPreflightEngine.buildFiscalIdentityIssues(
+          const Organization(
+            id: 'org-1',
+            nom: 'Eglise Test',
+            parametres: {
+              OrganizationFiscalProfile.paramKey: {
+                'ifu': '1202600000001',
+                'registration_number': 'ASS-2026-001',
+                'tax_center': 'Centre des impots',
+                'deposit_center': 'Centre de depot',
+                'head_office_address': '01 BP 100 Cotonou',
+                'activity_description': 'Activites cultuelles',
+                'legal_representative_name': 'Responsable Test',
+                'legal_representative_title': 'President',
+                'legal_representative_phone': '+229 01 00 00 00 00',
+                'accountant_name': 'Comptable Test',
+                'accountant_title': 'Comptable responsable',
+                'accountant_email': 'comptable@test.local',
+                'bank_name': 'Banque Test',
+                'bank_account_label': 'Compte principal',
+              },
+            },
+          ),
+        );
+
+        expect(
+          issues.where(
+            (issue) => issue.severity == FiscalPreflightSeverity.blocking,
+          ),
+          isEmpty,
+        );
+        expect(
+          issues.map((issue) => issue.code),
+          contains('fiscal_identity_ready'),
+        );
+      },
+    );
 
     test('bloque une balance non equilibree', () {
       final report = FiscalExportPreflightEngine.build(
@@ -339,3 +404,20 @@ FiscalDossier _dossier({String? importId}) {
     updatedAt: DateTime.utc(2026),
   );
 }
+
+const _balancedLines = [
+  SyscebnlBalanceLine(
+    numero: '512',
+    intitule: 'Banque',
+    nature: 'actif',
+    totalDebit: 1000,
+    totalCredit: 0,
+  ),
+  SyscebnlBalanceLine(
+    numero: '701',
+    intitule: 'Dimes',
+    nature: 'produit',
+    totalDebit: 0,
+    totalCredit: 1000,
+  ),
+];

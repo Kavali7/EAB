@@ -718,9 +718,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       }
       flatValues.addAll(_localValues);
 
+      final organization = await ref.read(currentOrganizationProvider.future);
       final report = await ref
           .read(fiscalExportPreflightServiceProvider)
-          .buildReport(dossier: dossier, values: flatValues);
+          .buildReport(
+            dossier: dossier,
+            values: flatValues,
+            organization: organization,
+          );
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -907,6 +912,22 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       if (organization == null) {
         throw StateError('Organisation courante introuvable.');
       }
+      final pdfPreflight = await ref
+          .read(fiscalExportPreflightServiceProvider)
+          .buildReport(
+            dossier: dossier,
+            values: flatValues,
+            organization: organization,
+          );
+      if (!pdfPreflight.canExport) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        await showDialog<void>(
+          context: context,
+          builder: (_) => FiscalPreflightDialog(report: pdfPreflight),
+        );
+        return;
+      }
       final fiscal = organization.fiscalProfile;
       _putIfBlank(flatValues, 'org.name', organization.nom);
       _putIfBlank(flatValues, 'org.sigle', organization.sigle);
@@ -987,9 +1008,17 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
       }
       flatValues.addAll(_localValues);
 
+      final organization = await ref.read(currentOrganizationProvider.future);
+      if (organization == null) {
+        throw StateError('Organisation courante introuvable.');
+      }
       final preflight = await ref
           .read(fiscalExportPreflightServiceProvider)
-          .buildReport(dossier: dossier, values: flatValues);
+          .buildReport(
+            dossier: dossier,
+            values: flatValues,
+            organization: organization,
+          );
       if (!preflight.canExport) {
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -1000,10 +1029,6 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         return;
       }
 
-      final organization = await ref.read(currentOrganizationProvider.future);
-      if (organization == null) {
-        throw StateError('Organisation courante introuvable.');
-      }
       final units = await ref.read(churchUnitsProvider.future);
       final export = await ref
           .read(fiscalExcelExportServiceProvider)
