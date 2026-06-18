@@ -267,13 +267,10 @@ class DashboardScreenV2 extends ConsumerWidget {
   Color _colorForMarital(String label) {
     switch (label) {
       case 'Marie':
-      case 'MariÃ©':
         return AppColors.teal;
       case 'Celibataire':
-      case 'CÃ©libataire':
         return AppColors.indigo;
       case 'Divorce':
-      case 'DivorcÃ©':
         return Colors.blueGrey;
       case 'Veuf/Veuve':
         return Colors.brown;
