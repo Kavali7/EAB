@@ -39,13 +39,12 @@ class FiscalExcelTemplateWriter {
     final workbookDoc = XmlDocument.parse(_readText(workbookFile));
     final relsDoc = XmlDocument.parse(_readText(relsFile));
     final sheetPaths = _resolveWorksheetPaths(workbookDoc, relsDoc);
+    final sharedStrings = _readSharedStrings(files);
 
     _applyDefinedNames(workbookDoc, definedNames);
     _forceFormulaRecalculation(workbookDoc);
 
-    final replacements = <String, Uint8List>{
-      workbookPath: _encodeXml(workbookDoc),
-    };
+    final replacements = <String, Uint8List>{};
 
     final valuesBySheet = <String, List<FiscalExcelCellValue>>{};
     for (final value in mapping.values) {
@@ -98,6 +97,15 @@ class FiscalExcelTemplateWriter {
       _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
+
+    _applyWorksheetPrintAreas(
+      workbookDoc,
+      sheetPaths,
+      files,
+      replacements,
+      sharedStrings,
+    );
+    replacements[workbookPath] = _encodeXml(workbookDoc);
 
     final outputArchive = Archive();
     for (final file in archive.files) {
@@ -179,24 +187,7 @@ class FiscalExcelTemplateWriter {
   ) {
     if (definedNames.isEmpty) return;
 
-    var definedNamesElement = workbookDoc
-        .findAllElements('definedNames')
-        .cast<XmlElement?>()
-        .firstWhere((element) => element != null, orElse: () => null);
-
-    if (definedNamesElement == null) {
-      definedNamesElement = XmlElement(XmlName('definedNames'));
-      final workbook = workbookDoc.rootElement;
-      final calcPr = workbook.findElements('calcPr').firstOrNull;
-      if (calcPr != null) {
-        workbook.children.insert(
-          workbook.children.indexOf(calcPr),
-          definedNamesElement,
-        );
-      } else {
-        workbook.children.add(definedNamesElement);
-      }
-    }
+    final definedNamesElement = _ensureDefinedNamesElement(workbookDoc);
 
     for (final entry in definedNames.entries) {
       final existing = definedNamesElement
@@ -220,6 +211,69 @@ class FiscalExcelTemplateWriter {
     }
   }
 
+  static void _applyWorksheetPrintAreas(
+    XmlDocument workbookDoc,
+    Map<String, String> sheetPaths,
+    Map<String, ArchiveFile> files,
+    Map<String, Uint8List> replacements,
+    List<String> sharedStrings,
+  ) {
+    final definedNamesElement = _ensureDefinedNamesElement(workbookDoc);
+    definedNamesElement.children.removeWhere((node) {
+      if (node is! XmlElement || node.name.local != 'definedName') {
+        return false;
+      }
+      final name = node.getAttribute('name');
+      return name == 'Print_Area' || name == '_xlnm.Print_Area';
+    });
+
+    final entries = sheetPaths.entries.toList(growable: false);
+    for (var index = 0; index < entries.length; index += 1) {
+      final entry = entries[index];
+      final sheetBytes =
+          replacements[entry.value] ?? _readBytes(files[entry.value]!);
+      final sheetDoc = XmlDocument.parse(utf8.decode(sheetBytes));
+      final usedRange = _worksheetUsedRange(sheetDoc, sharedStrings);
+      if (usedRange == null) continue;
+
+      definedNamesElement.children.add(
+        XmlElement(
+          XmlName('definedName'),
+          [
+            XmlAttribute(XmlName('name'), '_xlnm.Print_Area'),
+            XmlAttribute(XmlName('localSheetId'), '$index'),
+          ],
+          [
+            XmlText(
+              '${_quoteSheetName(entry.key)}!${_absoluteRange(usedRange)}',
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  static XmlElement _ensureDefinedNamesElement(XmlDocument workbookDoc) {
+    final existing = workbookDoc
+        .findAllElements('definedNames')
+        .cast<XmlElement?>()
+        .firstWhere((element) => element != null, orElse: () => null);
+    if (existing != null) return existing;
+
+    final definedNamesElement = XmlElement(XmlName('definedNames'));
+    final workbook = workbookDoc.rootElement;
+    final calcPr = workbook.findElements('calcPr').firstOrNull;
+    if (calcPr != null) {
+      workbook.children.insert(
+        workbook.children.indexOf(calcPr),
+        definedNamesElement,
+      );
+    } else {
+      workbook.children.add(definedNamesElement);
+    }
+    return definedNamesElement;
+  }
+
   static void _forceFormulaRecalculation(XmlDocument workbookDoc) {
     final workbook = workbookDoc.rootElement;
     var calcPr = workbook.findElements('calcPr').firstOrNull;
@@ -238,6 +292,12 @@ class FiscalExcelTemplateWriter {
     double value,
   ) {
     final cell = _ensureCell(sheetDoc, cellRef);
+    if (cell.findElements('f').isNotEmpty) {
+      cell.children.removeWhere(
+        (node) => node is XmlElement && node.name.local == 'v',
+      );
+      return;
+    }
     _removeAttribute(cell, 't');
     cell.children.removeWhere(
       (node) =>
@@ -255,6 +315,12 @@ class FiscalExcelTemplateWriter {
     String formula,
   ) {
     final cell = _ensureCell(sheetDoc, cellRef);
+    if (_belongsToSharedFormula(sheetDoc, cellRef)) {
+      cell.children.removeWhere(
+        (node) => node is XmlElement && node.name.local == 'v',
+      );
+      return;
+    }
     _removeAttribute(cell, 't');
     cell.children.removeWhere(
       (node) =>
@@ -265,6 +331,116 @@ class FiscalExcelTemplateWriter {
       XmlElement(XmlName('f'), [], [
         XmlText(formula.replaceFirst(RegExp(r'^='), '')),
       ]),
+    );
+  }
+
+  static String? _worksheetUsedRange(
+    XmlDocument sheetDoc,
+    List<String> sharedStrings,
+  ) {
+    int? minColumn;
+    int? maxColumn;
+    int? minRow;
+    int? maxRow;
+
+    for (final cell in sheetDoc.findAllElements('c')) {
+      final cellRef = cell.getAttribute('r');
+      if (cellRef == null || cellRef.isEmpty) continue;
+
+      if (!_cellHasPrintableContent(cell, sharedStrings)) continue;
+
+      final parsed = _parseCellRef(cellRef);
+      minColumn = minColumn == null || parsed.column < minColumn
+          ? parsed.column
+          : minColumn;
+      maxColumn = maxColumn == null || parsed.column > maxColumn
+          ? parsed.column
+          : maxColumn;
+      minRow = minRow == null || parsed.row < minRow ? parsed.row : minRow;
+      maxRow = maxRow == null || parsed.row > maxRow ? parsed.row : maxRow;
+    }
+
+    if (minColumn == null ||
+        maxColumn == null ||
+        minRow == null ||
+        maxRow == null) {
+      return null;
+    }
+
+    return '${_columnName(minColumn)}$minRow:${_columnName(maxColumn)}$maxRow';
+  }
+
+  static bool _cellHasPrintableContent(
+    XmlElement cell,
+    List<String> sharedStrings,
+  ) {
+    if (cell.findElements('f').isNotEmpty) return true;
+
+    final type = cell.getAttribute('t');
+    final valueElement = cell.findElements('v').firstOrNull;
+    if (type == 's') {
+      final sharedStringIndex = int.tryParse(valueElement?.innerText ?? '');
+      if (sharedStringIndex == null ||
+          sharedStringIndex < 0 ||
+          sharedStringIndex >= sharedStrings.length) {
+        return false;
+      }
+      return sharedStrings[sharedStringIndex].trim().isNotEmpty;
+    }
+
+    if (type == 'inlineStr') {
+      return cell
+          .findAllElements('t')
+          .any((element) => element.innerText.trim().isNotEmpty);
+    }
+
+    final value = valueElement?.innerText.trim();
+    if (value != null && value.isNotEmpty) return true;
+    return cell
+        .findAllElements('t')
+        .any((element) => element.innerText.trim().isNotEmpty);
+  }
+
+  static bool _belongsToSharedFormula(XmlDocument sheetDoc, String cellRef) {
+    final target = _parseCellRef(cellRef);
+    for (final formulaCell in sheetDoc.findAllElements('c')) {
+      final formula = formulaCell.findElements('f').firstOrNull;
+      if (formula == null) continue;
+      if (formula.getAttribute('t') != 'shared') continue;
+      if (formulaCell.getAttribute('r') == cellRef) return true;
+
+      final range = formula.getAttribute('ref');
+      if (range == null || range.isEmpty) continue;
+      if (_rangeContainsCell(range, target)) return true;
+    }
+    return false;
+  }
+
+  static bool _rangeContainsCell(String range, _CellRef cell) {
+    final parts = range.split(':');
+    if (parts.isEmpty || parts.length > 2) return false;
+    final start = _parseCellRef(parts.first);
+    final end = _parseCellRef(parts.length == 1 ? parts.first : parts.last);
+    final minColumn = start.column < end.column ? start.column : end.column;
+    final maxColumn = start.column > end.column ? start.column : end.column;
+    final minRow = start.row < end.row ? start.row : end.row;
+    final maxRow = start.row > end.row ? start.row : end.row;
+    return cell.column >= minColumn &&
+        cell.column <= maxColumn &&
+        cell.row >= minRow &&
+        cell.row <= maxRow;
+  }
+
+  static _CellRef _parseCellRef(String cellRef) {
+    final normalized = cellRef.replaceAll(r'$', '');
+    final column = normalized.replaceAll(RegExp(r'\d'), '');
+    final rowMatch = RegExp(r'\d+').firstMatch(normalized);
+    if (column.isEmpty || rowMatch == null) {
+      throw FormatException('Reference de cellule invalide: $cellRef');
+    }
+    return _CellRef(
+      column: _columnIndex(column),
+      row: int.parse(rowMatch.group(0)!),
     );
   }
 
@@ -403,6 +579,39 @@ class FiscalExcelTemplateWriter {
     return index;
   }
 
+  static String _columnName(int index) {
+    if (index <= 0) {
+      throw FormatException('Index de colonne Excel invalide: $index');
+    }
+
+    var value = index;
+    final codeUnits = <int>[];
+    while (value > 0) {
+      value -= 1;
+      codeUnits.insert(0, 65 + value % 26);
+      value ~/= 26;
+    }
+    return String.fromCharCodes(codeUnits);
+  }
+
+  static String _absoluteRange(String range) {
+    final parts = range.split(':');
+    if (parts.isEmpty || parts.length > 2) {
+      throw FormatException('Plage Excel invalide: $range');
+    }
+    final start = _parseCellRef(parts.first);
+    final end = _parseCellRef(parts.length == 1 ? parts.first : parts.last);
+    return '${_absoluteCellRef(start)}:${_absoluteCellRef(end)}';
+  }
+
+  static String _absoluteCellRef(_CellRef cell) {
+    return r'$' + _columnName(cell.column) + r'$' + cell.row.toString();
+  }
+
+  static String _quoteSheetName(String sheetName) {
+    return "'${sheetName.replaceAll("'", "''")}'";
+  }
+
   static void _setAttribute(XmlElement element, String name, String value) {
     _removeAttribute(element, name);
     element.attributes.add(XmlAttribute(XmlName(name), value));
@@ -431,6 +640,20 @@ class FiscalExcelTemplateWriter {
       throw FormatException('Fichier Excel illisible: ${file.name}');
     }
     return bytes;
+  }
+
+  static List<String> _readSharedStrings(Map<String, ArchiveFile> files) {
+    final file = files['xl/sharedStrings.xml'];
+    if (file == null) return const [];
+
+    final doc = XmlDocument.parse(_readText(file));
+    return doc
+        .findAllElements('si')
+        .map(
+          (item) =>
+              item.findAllElements('t').map((text) => text.innerText).join(),
+        )
+        .toList(growable: false);
   }
 
   static Uint8List _encodeXml(XmlDocument document) {
@@ -477,6 +700,13 @@ class FiscalExcelTemplateWriter {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;');
   }
+}
+
+class _CellRef {
+  const _CellRef({required this.column, required this.row});
+
+  final int column;
+  final int row;
 }
 
 extension _FirstOrNullExtension<E> on Iterable<E> {
