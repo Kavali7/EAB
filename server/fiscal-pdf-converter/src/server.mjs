@@ -38,7 +38,10 @@ app.use((req, res, next) => {
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
-    converter: "libreoffice",
+    converter:
+      process.platform === "win32"
+        ? "libreoffice-with-excel-com-fallback"
+        : "libreoffice",
     verifySupabaseJwt,
     maxUploadBytes,
   });
@@ -65,26 +68,25 @@ app.post("/convert", async (req, res) => {
     }
 
     const safeBaseName = sanitizeFilename(filename).replace(/\.xlsx$/i, "");
+    console.log(
+      JSON.stringify({
+        event: "convert_start",
+        filename: safeBaseName,
+        bytes: xlsxBytes.length,
+      }),
+    );
     const tempDir = await mkdtemp(join(tmpdir(), "eab-fiscal-pdf-"));
     try {
       const inputPath = join(tempDir, `${safeBaseName}.xlsx`);
       const outputPath = join(tempDir, `${safeBaseName}.pdf`);
       await writeFile(inputPath, xlsxBytes);
 
-      await execFileAsync(
-        "soffice",
-        [
-          "--headless",
-          "--nologo",
-          "--nofirststartwizard",
-          "--convert-to",
-          "pdf",
-          "--outdir",
-          tempDir,
-          inputPath,
-        ],
-        { timeout: conversionTimeoutMs },
-      );
+      await convertWorkbookToPdf({
+        inputPath,
+        outputPath,
+        outputDir: tempDir,
+        timeout: conversionTimeoutMs,
+      });
 
       const pdfBytes = await readFile(outputPath);
       res.setHeader("Content-Type", "application/pdf");
@@ -93,12 +95,27 @@ app.post("/convert", async (req, res) => {
         "Content-Disposition",
         `attachment; filename="${safeBaseName}.pdf"`,
       );
+      console.log(
+        JSON.stringify({
+          event: "convert_success",
+          filename: safeBaseName,
+          bytes: pdfBytes.length,
+        }),
+      );
       res.send(pdfBytes);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
   } catch (error) {
     const status = error.statusCode || 500;
+    console.error(
+      JSON.stringify({
+        event: "convert_error",
+        status,
+        code: error.code,
+        message: error.message,
+      }),
+    );
     res.status(status).json({
       error: error.code || "conversion_failed",
       message:
@@ -156,4 +173,74 @@ function sanitizeFilename(filename) {
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "");
   return clean.endsWith(".xlsx") ? clean : `${clean || "dossier_fiscal"}.xlsx`;
+}
+
+async function convertWorkbookToPdf({ inputPath, outputPath, outputDir, timeout }) {
+  try {
+    await execFileAsync(
+      "soffice",
+      [
+        "--headless",
+        "--nologo",
+        "--nofirststartwizard",
+        "--convert-to",
+        "pdf",
+        "--outdir",
+        outputDir,
+        inputPath,
+      ],
+      { timeout },
+    );
+    return;
+  } catch (error) {
+    if (!canFallbackToExcelCom(error)) throw error;
+  }
+
+  await convertWithExcelCom({ inputPath, outputPath, timeout });
+}
+
+function canFallbackToExcelCom(error) {
+  return process.platform === "win32" && error?.code === "ENOENT";
+}
+
+async function convertWithExcelCom({ inputPath, outputPath, timeout }) {
+  const scriptPath = `${outputPath}.ps1`;
+  const script = `
+param([string]$InputWorkbook, [string]$OutputPdf)
+$ErrorActionPreference = 'Stop'
+$excel = $null
+$workbook = $null
+try {
+  $excel = New-Object -ComObject Excel.Application
+  $excel.Visible = $false
+  $excel.DisplayAlerts = $false
+  $workbook = $excel.Workbooks.Open($InputWorkbook, 3, $true)
+  $workbook.ExportAsFixedFormat(0, $OutputPdf)
+  $workbook.Close($false)
+} finally {
+  if ($workbook -ne $null) {
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($workbook) | Out-Null
+  }
+  if ($excel -ne $null) {
+    $excel.Quit()
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+  }
+  [GC]::Collect()
+  [GC]::WaitForPendingFinalizers()
+}
+`;
+  await writeFile(scriptPath, script, "utf8");
+  await execFileAsync(
+    "powershell.exe",
+    [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      scriptPath,
+      inputPath,
+      outputPath,
+    ],
+    { timeout },
+  );
 }

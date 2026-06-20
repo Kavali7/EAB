@@ -25,6 +25,10 @@ VERIFY_SUPABASE_JWT=false ALLOWED_ORIGINS=http://127.0.0.1:8081 npm start
 ```
 
 LibreOffice doit etre installe localement et disponible via `soffice`.
+Sur Windows uniquement, si `soffice` est absent, le service tente un fallback
+Excel COM pour les tests locaux. Ce fallback suppose que Microsoft Excel est
+installe sur la machine et ne remplace pas le mode Docker/LibreOffice recommande
+en production.
 
 ## Docker
 
