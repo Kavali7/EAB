@@ -988,8 +988,26 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         watermark: watermark,
       );
 
-      // Ouvrir la prévisualisation
-      await FiscalPdfService.preview(doc, 'Dossier Fiscal — $orgName');
+      final pdfBytes = await doc.save();
+      await downloadBytes(
+        bytes: pdfBytes,
+        filename: _fiscalDownloadFilename(
+          organizationSigle: organization.sigle,
+          organizationName: organization.nom,
+          dateFin: flatValues['exercice.date_fin']?.toString(),
+          extension: 'pdf',
+        ),
+        mimeType: 'application/pdf',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF fiscal généré.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       _showActionError(e, prefix: 'Erreur PDF');
     } finally {
@@ -1079,6 +1097,47 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
     if (clean == null || clean.isEmpty) return;
     final current = values[key]?.toString().trim();
     if (current == null || current.isEmpty) values[key] = clean;
+  }
+
+  String _fiscalDownloadFilename({
+    required String? organizationSigle,
+    required String organizationName,
+    required String? dateFin,
+    required String extension,
+  }) {
+    final orgLabel = organizationSigle?.trim().isNotEmpty == true
+        ? organizationSigle!.trim()
+        : organizationName.trim();
+    final year = DateTime.tryParse(dateFin ?? '')?.year.toString();
+    final base = [
+      'dossier_fiscal_syscebnl',
+      orgLabel,
+      if (year != null) year,
+    ].join('_');
+    return '${_slugFilename(base)}.$extension';
+  }
+
+  String _slugFilename(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll('à', 'a')
+        .replaceAll('â', 'a')
+        .replaceAll('ä', 'a')
+        .replaceAll('ç', 'c')
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('ë', 'e')
+        .replaceAll('î', 'i')
+        .replaceAll('ï', 'i')
+        .replaceAll('ô', 'o')
+        .replaceAll('ö', 'o')
+        .replaceAll('ù', 'u')
+        .replaceAll('û', 'u')
+        .replaceAll('ü', 'u')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 
   void _showActionError(Object error, {String prefix = 'Erreur'}) {
