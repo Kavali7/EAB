@@ -90,6 +90,7 @@ void main() {
         final actif = XmlDocument.parse(
           _entryText(archive, 'xl/worksheets/sheet1.xml'),
         );
+        expect(_printHorizontalCentered(actif), isTrue);
         expect(_cellValue(actif, 'A1'), 'Eglise Test');
         expect(_cellType(actif, 'A1'), 'str');
         expect(_cellValue(actif, 'D16'), '500000');
@@ -255,6 +256,22 @@ void main() {
       expect(allXml, contains('150000'));
       expect(allXml, contains('80000'));
       expect(allXml, contains('30000'));
+
+      for (final file in archive.files.where(
+        (file) =>
+            file.name.startsWith('xl/worksheets/') &&
+            file.name.endsWith('.xml'),
+      )) {
+        final sheet = XmlDocument.parse(
+          utf8.decode(file.readBytes() ?? Uint8List(0)),
+        );
+        expect(
+          _printHorizontalCentered(sheet),
+          isTrue,
+          reason:
+              '${file.name} doit rester centre horizontalement a l impression',
+        );
+      }
     });
   });
 }
@@ -481,6 +498,14 @@ String? _cellStyle(XmlDocument doc, String ref) {
 
 String? _cellType(XmlDocument doc, String ref) {
   return _cell(doc, ref)?.getAttribute('t');
+}
+
+bool _printHorizontalCentered(XmlDocument doc) {
+  return doc.rootElement
+          .findElements('printOptions')
+          .firstOrNull
+          ?.getAttribute('horizontalCentered') ==
+      '1';
 }
 
 XmlElement? _cell(XmlDocument doc, String ref) {

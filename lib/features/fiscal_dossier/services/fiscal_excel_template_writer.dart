@@ -86,6 +86,7 @@ class FiscalExcelTemplateWriter {
         _setFormulaCell(sheetDoc, formula.cell, formula.formula);
       }
       _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
+      _ensureHorizontalPrintCentering(sheetDoc);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
 
@@ -95,6 +96,7 @@ class FiscalExcelTemplateWriter {
       if (sheetFile == null) continue;
       final sheetDoc = XmlDocument.parse(_readText(sheetFile));
       _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
+      _ensureHorizontalPrintCentering(sheetDoc);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
 
@@ -284,6 +286,27 @@ class FiscalExcelTemplateWriter {
     _setAttribute(calcPr, 'calcMode', 'auto');
     _setAttribute(calcPr, 'fullCalcOnLoad', '1');
     _setAttribute(calcPr, 'forceFullCalc', '1');
+  }
+
+  static void _ensureHorizontalPrintCentering(XmlDocument sheetDoc) {
+    final worksheet = sheetDoc.rootElement;
+    var printOptions = worksheet.findElements('printOptions').firstOrNull;
+    if (printOptions == null) {
+      printOptions = XmlElement(XmlName('printOptions'));
+      final beforeElement =
+          worksheet.findElements('pageMargins').firstOrNull ??
+          worksheet.findElements('pageSetup').firstOrNull ??
+          worksheet.findElements('headerFooter').firstOrNull;
+      if (beforeElement != null) {
+        worksheet.children.insert(
+          worksheet.children.indexOf(beforeElement),
+          printOptions,
+        );
+      } else {
+        worksheet.children.add(printOptions);
+      }
+    }
+    _setAttribute(printOptions, 'horizontalCentered', '1');
   }
 
   static void _setNumericCell(
