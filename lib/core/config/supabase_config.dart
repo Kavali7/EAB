@@ -12,4 +12,13 @@ class SupabaseConfig {
 
   /// Activer le mode debug (logs détaillés)
   static const bool debugMode = true;
+
+  /// Service de conversion Excel -> PDF pour les dossiers fiscaux officiels.
+  ///
+  /// A fournir au build web avec :
+  /// `--dart-define=FISCAL_PDF_CONVERTER_URL=https://votre-service`
+  static const String fiscalPdfConverterUrl = String.fromEnvironment(
+    'FISCAL_PDF_CONVERTER_URL',
+    defaultValue: '',
+  );
 }

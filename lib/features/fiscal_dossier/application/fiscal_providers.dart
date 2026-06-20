@@ -3,12 +3,14 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:eab/core/config/supabase_config.dart';
 import 'package:eab/core/services/supabase_data_service.dart';
 import 'package:eab/features/etats_financiers/application/reports_providers.dart';
 import 'package:eab/features/fiscal_dossier/data/fiscal_dossier_repository.dart';
 import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_excel_export_service.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_export_preflight_service.dart';
+import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_conversion_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Repository provider
@@ -34,6 +36,14 @@ final fiscalExportPreflightServiceProvider =
         ref.watch(fiscalRepositoryProvider),
       );
     });
+
+final fiscalPdfConversionServiceProvider = Provider<FiscalPdfConversionService>(
+  (ref) {
+    return FiscalPdfConversionService(
+      converterUrl: SupabaseConfig.fiscalPdfConverterUrl,
+    );
+  },
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Templates

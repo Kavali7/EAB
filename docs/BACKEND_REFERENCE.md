@@ -1813,6 +1813,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les acces descendants aux references comptables, ecritures, budgets, immobilisations et releves doivent passer par les helpers RLS granulaires de `00034`; la validation/cloture des ecritures est aussi controlee par trigger.
 - Les acces descendants aux dossiers fiscaux, balances importees, rapports financiers et exports doivent passer par les helpers RLS granulaires de `00035`; le workflow fiscal est aussi controle par trigger.
 - Les exports fiscaux Excel doivent utiliser des dates d'exercice valides issues de `exercices_comptables` ou des champs `fiscal_dossier_values` synchronises par `00037`; une periode inversee doit rester bloquee par le preflight applicatif.
+- Les exports PDF fiscaux officiels doivent etre produits depuis le classeur Excel final via `server/fiscal-pdf-converter` et `FISCAL_PDF_CONVERTER_URL`; le PDF applicatif historique ne doit pas etre utilise pour un depot fiscal.
 
 ---
 
@@ -1820,6 +1821,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-20 | Agent IA | **Export PDF fiscal officiel** : ajout du service deployable `server/fiscal-pdf-converter` pour convertir le classeur Excel SYSCEBNL final en PDF via LibreOffice headless, avec verification Supabase Auth optionnelle, et raccordement du bouton PDF a `FISCAL_PDF_CONVERTER_URL`. Sans URL configuree, l'application bloque l'export PDF officiel au lieu de generer un PDF approximatif. |
 | 2026-06-17 | Agent IA | **Migration 00037** : Synchronisation automatique des champs `exercice.date_debut` et `exercice.date_fin` des dossiers fiscaux depuis l'exercice comptable, backfill des dossiers existants et correction limite des inversions annuelles evidentes pour proteger l'export Excel fiscal. |
 | 2026-06-17 | Agent IA | **Migration 00036** : Ajout des RPC `*_scoped` pour filtrer la balance, le compte de resultat, le bilan et le grand livre par unite active en plus des droits hierarchiques `financial_statements`. Ajout d'une note de conception pour l'export fiscal Excel base sur le modele officiel. |
 | 2026-06-16 | Agent IA | **Correctif 00035** : Remplacement du backfill initial des `church_unit_id` de `fiscal_dossiers` et `imported_trial_balances` par des sous-requetes correlees idempotentes, afin que la migration puisse etre relancee apres creation partielle des colonnes/index. |

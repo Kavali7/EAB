@@ -161,6 +161,29 @@ Regles verrouillees :
 - les noms Excel globaux portent l'organisation, le sigle, le NIF, la devise, l'exercice et le perimetre ;
 - le fichier est refuse si une occurrence interdite reste presente apres nettoyage.
 
+## Export PDF officiel
+
+Le PDF fiscal officiel est produit exclusivement a partir du classeur Excel final.
+L'ancien PDF reconstruit directement depuis les champs du formulaire ne doit pas
+etre utilise pour un depot fiscal, car il ne garantit ni les 56 feuilles du modele,
+ni les formules, ni les zones d'impression attendues.
+
+Flux attendu :
+
+1. generation du fichier Excel SYSCEBNL depuis `assets/templates/fiscal_syscebnl_template.xlsx` ;
+2. controle des occurrences interdites, de l'equilibre debit/credit et du perimetre actif ;
+3. envoi du classeur au service `server/fiscal-pdf-converter` ;
+4. conversion LibreOffice headless en PDF, avec les zones d'impression du classeur ;
+5. telechargement du PDF par l'utilisateur.
+
+Le frontend lit l'URL du service via :
+
+`FISCAL_PDF_CONVERTER_URL`
+
+Si cette variable de build est absente, l'application bloque volontairement le
+bouton PDF et demande de deployer le convertisseur. Le fichier Excel reste
+exportable et reste la source officielle du PDF.
+
 Dictionnaire et audit des libelles :
 
 `lib/features/fiscal_dossier/services/fiscal_excel_sanitization.dart`

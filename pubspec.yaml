@@ -49,6 +49,7 @@ dependencies:
   xml: ^6.6.1
   google_fonts: ^6.2.1
   sentry_flutter: ^8.13.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

@@ -19,7 +19,6 @@ import 'package:eab/features/fiscal_dossier/domain/fiscal_models.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_field_widget.dart';
 import 'package:eab/features/fiscal_dossier/presentation/widgets/fiscal_preflight_dialog.dart';
 import 'package:eab/features/fiscal_dossier/services/fiscal_export_adjustments.dart';
-import 'package:eab/features/fiscal_dossier/services/fiscal_pdf_service.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
 
 class FiscalWizardScreen extends ConsumerStatefulWidget {
@@ -894,20 +893,14 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   Future<void> _exportPdf(FiscalDossier dossier) async {
     setState(() => _isLoading = true);
     try {
-      // Charger les pages template
       final repo = ref.read(fiscalRepositoryProvider);
-      final pages = await repo.getTemplatePages(dossier.templateId);
       final valuesMap = await repo.getValues(dossier.id);
-
-      // Convertir les valeurs en map simple fieldKey -> value
       final flatValues = <String, dynamic>{};
       for (final entry in valuesMap.entries) {
         flatValues[entry.key] = entry.value.value;
       }
-      // Merger les valeurs locales (non encore sauvegardées)
       flatValues.addAll(_localValues);
 
-      // Déterminer le nom de l'org
       final organization = await ref.read(currentOrganizationProvider.future);
       if (organization == null) {
         throw StateError('Organisation courante introuvable.');
@@ -928,82 +921,38 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
         );
         return;
       }
-      final fiscal = organization.fiscalProfile;
-      _putIfBlank(flatValues, 'org.name', organization.nom);
-      _putIfBlank(flatValues, 'org.sigle', organization.sigle);
-      _putIfBlank(flatValues, 'org.nif', fiscal.ifu);
-      _putIfBlank(
-        flatValues,
-        'org.address',
-        fiscal.headOfficeAddress ?? organization.adresse,
-      );
-      _putIfBlank(flatValues, 'currency', organization.devise);
-      _putIfBlank(flatValues, 'fiscal.tax_center', fiscal.taxCenter);
-      _putIfBlank(flatValues, 'fiscal.deposit_center', fiscal.depositCenter);
-      _putIfBlank(
-        flatValues,
-        'fiscal.registration_number',
-        fiscal.registrationNumber,
-      );
-      _putIfBlank(flatValues, 'fiscal.country', fiscal.country);
-      _putIfBlank(
-        flatValues,
-        'fiscal.activity_description',
-        fiscal.activityDescription,
-      );
-      _putIfBlank(
-        flatValues,
-        'responsable.nom',
-        fiscal.legalRepresentativeName,
-      );
-      _putIfBlank(
-        flatValues,
-        'responsable.qualite',
-        fiscal.legalRepresentativeTitle,
-      );
-      _putIfBlank(
-        flatValues,
-        'responsable.telephone',
-        fiscal.legalRepresentativePhone,
-      );
-      _putIfBlank(flatValues, 'accountant.name', fiscal.accountantName);
-      _putIfBlank(flatValues, 'accountant.title', fiscal.accountantTitle);
-      _putIfBlank(flatValues, 'accountant.phone', fiscal.accountantPhone);
-      _putIfBlank(flatValues, 'accountant.email', fiscal.accountantEmail);
-      _putIfBlank(flatValues, 'bank.name', fiscal.bankName);
-      _putIfBlank(flatValues, 'bank.account_label', fiscal.bankAccountLabel);
 
-      final orgName = organization.nom;
+      final units = await ref.read(churchUnitsProvider.future);
+      final export = await ref
+          .read(fiscalExcelExportServiceProvider)
+          .buildDossierExport(
+            dossier: dossier,
+            organization: organization,
+            values: flatValues,
+            churchUnit: _findChurchUnit(units, dossier.churchUnitId),
+          );
+      final pdfBytes = await ref
+          .read(fiscalPdfConversionServiceProvider)
+          .convertExcelToPdf(
+            excelBytes: export.bytes,
+            excelFilename: export.filename,
+          );
 
-      // Watermark si brouillon
-      final watermark = dossier.status == FiscalDossierStatus.draft
-          ? 'BROUILLON'
-          : null;
-
-      // Générer le PDF
-      final doc = await FiscalPdfService.buildDossierPdf(
-        orgName: orgName,
-        pages: pages,
-        values: flatValues,
-        watermark: watermark,
-      );
-
-      final pdfBytes = await doc.save();
       await downloadBytes(
         bytes: pdfBytes,
-        filename: _fiscalDownloadFilename(
-          organizationSigle: organization.sigle,
-          organizationName: organization.nom,
-          dateFin: flatValues['exercice.date_fin']?.toString(),
-          extension: 'pdf',
-        ),
+        filename: _replaceExtension(export.filename, 'pdf'),
         mimeType: 'application/pdf',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF fiscal généré.'),
+          SnackBar(
+            content: Text(
+              'PDF fiscal officiel genere depuis Excel : '
+              '${export.audit.balanceLineCount} lignes, '
+              'debit ${export.audit.totalDebit}, '
+              'credit ${export.audit.totalCredit}.',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -1092,52 +1041,8 @@ class _FiscalWizardScreenState extends ConsumerState<FiscalWizardScreen> {
   // Helpers
   // ═════════════════════════════════════════════════════════════════════════
 
-  void _putIfBlank(Map<String, dynamic> values, String key, String? value) {
-    final clean = value?.trim();
-    if (clean == null || clean.isEmpty) return;
-    final current = values[key]?.toString().trim();
-    if (current == null || current.isEmpty) values[key] = clean;
-  }
-
-  String _fiscalDownloadFilename({
-    required String? organizationSigle,
-    required String organizationName,
-    required String? dateFin,
-    required String extension,
-  }) {
-    final orgLabel = organizationSigle?.trim().isNotEmpty == true
-        ? organizationSigle!.trim()
-        : organizationName.trim();
-    final year = DateTime.tryParse(dateFin ?? '')?.year.toString();
-    final base = [
-      'dossier_fiscal_syscebnl',
-      orgLabel,
-      if (year != null) year,
-    ].join('_');
-    return '${_slugFilename(base)}.$extension';
-  }
-
-  String _slugFilename(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll('à', 'a')
-        .replaceAll('â', 'a')
-        .replaceAll('ä', 'a')
-        .replaceAll('ç', 'c')
-        .replaceAll('é', 'e')
-        .replaceAll('è', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('ë', 'e')
-        .replaceAll('î', 'i')
-        .replaceAll('ï', 'i')
-        .replaceAll('ô', 'o')
-        .replaceAll('ö', 'o')
-        .replaceAll('ù', 'u')
-        .replaceAll('û', 'u')
-        .replaceAll('ü', 'u')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
+  String _replaceExtension(String filename, String extension) {
+    return filename.replaceFirst(RegExp(r'\.[^.]+$'), '.$extension');
   }
 
   void _showActionError(Object error, {String prefix = 'Erreur'}) {

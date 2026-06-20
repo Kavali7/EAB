@@ -143,6 +143,40 @@ Dans **Authentication** > **Providers** :
    - Créer des credentials dans Google Cloud Console
    - Renseigner Client ID et Client Secret
 
+### 6. Configurer le convertisseur PDF fiscal officiel
+
+L'export PDF fiscal officiel ne doit pas etre un PDF reconstruit par l'application.
+Il doit etre genere depuis le fichier Excel SYSCEBNL final afin de conserver les
+feuilles, formules, zones d'impression et mises en page du dossier depose aux
+impots.
+
+Un service deployable est fourni ici :
+
+`server/fiscal-pdf-converter`
+
+Il utilise LibreOffice en mode headless. En production, deployez-le derriere HTTPS,
+avec verification du token Supabase activee :
+
+```bash
+docker build -t eab-fiscal-pdf-converter server/fiscal-pdf-converter
+docker run --rm -p 8088:8080 \
+  -e ALLOWED_ORIGINS=https://votre-domaine-app \
+  -e SUPABASE_URL=https://votre-projet.supabase.co \
+  -e SUPABASE_ANON_KEY=votre-anon-key \
+  eab-fiscal-pdf-converter
+```
+
+Puis compiler le frontend avec l'URL publique du service :
+
+```bash
+flutter build web --release \
+  --dart-define=FISCAL_PDF_CONVERTER_URL=https://votre-convertisseur-pdf
+```
+
+Si `FISCAL_PDF_CONVERTER_URL` est absent, le bouton PDF affiche une erreur claire
+et refuse l'export officiel. C'est voulu : cela evite de remettre en circulation
+un PDF approximatif qui ne correspondrait pas exactement au classeur fiscal Excel.
+
 ---
 
 ## 🔧 Configuration Flutter
