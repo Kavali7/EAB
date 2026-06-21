@@ -77,7 +77,8 @@ updated AS (
           'accountant_phone', '+229 01 00 00 00 01',
           'accountant_email', 'comptable.demo@example.com',
           'bank_name', 'Banque Demo Benin',
-          'bank_account_label', 'Compte principal de demonstration'
+          'bank_account_label', 'Compte principal de demonstration',
+          'bank_account_number', 'BJ66DEMO000000000001'
         ),
         'onboarding',
         s.onboarding || jsonb_build_object('completed_steps', cs.steps)

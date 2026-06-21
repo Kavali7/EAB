@@ -194,6 +194,7 @@ void main() {
               'accountant_email': 'comptable.demo@example.com',
               'bank_name': 'Banque Demo Benin',
               'bank_account_label': 'Compte principal de demonstration',
+              'bank_account_number': 'BJ66DEMO000000000001',
             },
           },
         ),
@@ -266,7 +267,8 @@ void main() {
         _entryText(archive, 'xl/worksheets/sheet2.xml'),
       );
       expect(_cellValue(ficheR1, 'G59'), isNull);
-      expect(_cellValue(ficheR1, 'AK57'), isNull);
+      expect(_cellValue(ficheR1, 'AK57'), 'BJ66DEMO000000000001');
+      expect(_cellType(ficheR1, 'AK57'), 'str');
 
       final ficheR2 = XmlDocument.parse(
         _entryText(archive, 'xl/worksheets/sheet3.xml'),

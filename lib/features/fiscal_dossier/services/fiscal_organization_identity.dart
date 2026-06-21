@@ -21,6 +21,7 @@ class FiscalOrganizationIdentity {
     required this.accountantEmail,
     required this.bankName,
     required this.bankAccountLabel,
+    required this.bankAccountNumber,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -47,6 +48,7 @@ class FiscalOrganizationIdentity {
   final String accountantEmail;
   final String bankName;
   final String bankAccountLabel;
+  final String bankAccountNumber;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -140,7 +142,11 @@ class FiscalOrganizationIdentity {
       bankName: _firstFilled([profile.bankName, 'Banque a renseigner']),
       bankAccountLabel: _firstFilled([
         profile.bankAccountLabel,
-        'Compte bancaire a renseigner',
+        'Compte principal a renseigner',
+      ]),
+      bankAccountNumber: _firstFilled([
+        profile.bankAccountNumber,
+        'Numero de compte a renseigner',
       ]),
       currency: _firstFilled([
         _stringValue(values['currency']),
@@ -184,7 +190,8 @@ class FiscalOrganizationIdentity {
       '_dFin': endDate,
       '_sTabExer': 'Tableaux financiers au $endDate',
       '_soAg1': bankName,
-      '_soAg2': bankAccountLabel,
+      '_soAg2': bankAccountNumber,
+      '_soCompteLibelle': bankAccountLabel,
     };
   }
 

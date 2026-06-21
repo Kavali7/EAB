@@ -391,7 +391,12 @@ class FiscalExcelTemplateWriter {
 
     if (normalizedSheetName == 'FICHE R1') {
       _clearCellValue(sheetDoc, 'G59');
-      _clearCellValue(sheetDoc, 'AK57');
+      final bankAccountNumber = definedNames['_soAg2'];
+      if (bankAccountNumber == null || bankAccountNumber.trim().isEmpty) {
+        _clearCellValue(sheetDoc, 'AK57');
+      } else {
+        _setTextCell(sheetDoc, 'AK57', bankAccountNumber);
+      }
       return;
     }
 

@@ -168,6 +168,7 @@ class OrganizationFiscalProfile {
     this.accountantEmail,
     this.bankName,
     this.bankAccountLabel,
+    this.bankAccountNumber,
   });
 
   static const paramKey = 'fiscal_identity';
@@ -188,6 +189,7 @@ class OrganizationFiscalProfile {
   final String? accountantEmail;
   final String? bankName;
   final String? bankAccountLabel;
+  final String? bankAccountNumber;
 
   factory OrganizationFiscalProfile.fromOrganization(Organization org) {
     final raw = org.parametres?[paramKey] ?? org.parametres?['fiscal'];
@@ -214,6 +216,7 @@ class OrganizationFiscalProfile {
       accountantEmail: _read(data, 'accountant_email'),
       bankName: _read(data, 'bank_name'),
       bankAccountLabel: _read(data, 'bank_account_label'),
+      bankAccountNumber: _read(data, 'bank_account_number'),
     );
   }
 
@@ -235,6 +238,7 @@ class OrganizationFiscalProfile {
       'accountant_email': accountantEmail,
       'bank_name': bankName,
       'bank_account_label': bankAccountLabel,
+      'bank_account_number': bankAccountNumber,
     }..removeWhere((_, value) => value == null || value.toString().isEmpty);
   }
 

@@ -224,6 +224,7 @@ final _eabIdentity = _FiscalDemoIdentity(
   accountantEmail: 'comptable.demo@example.com',
   bankName: 'Banque Demo Benin',
   bankAccountLabel: 'Compte principal de demonstration',
+  bankAccountNumber: 'BJ66DEMO000000000001',
   currency: 'FCFA',
   periodLabel: 'Exercice comptable 2025',
   periodStart: DateTime(2025),
@@ -252,6 +253,7 @@ class _FiscalDemoIdentity {
     required this.accountantEmail,
     required this.bankName,
     required this.bankAccountLabel,
+    required this.bankAccountNumber,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -278,6 +280,7 @@ class _FiscalDemoIdentity {
   final String accountantEmail;
   final String bankName;
   final String bankAccountLabel;
+  final String bankAccountNumber;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -313,7 +316,8 @@ class _FiscalDemoIdentity {
       '_dFin': endDate,
       '_sTabExer': 'Tableaux financiers au $endDate',
       '_soAg1': bankName,
-      '_soAg2': bankAccountLabel,
+      '_soAg2': bankAccountNumber,
+      '_soCompteLibelle': bankAccountLabel,
     };
   }
 

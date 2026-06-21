@@ -76,6 +76,7 @@ void main() {
                 'accountant_email': 'comptable@test.local',
                 'bank_name': 'Banque Test',
                 'bank_account_label': 'Compte principal',
+                'bank_account_number': 'BJ66TEST000000000001',
               },
             },
           ),

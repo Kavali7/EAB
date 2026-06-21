@@ -218,6 +218,7 @@ $parametres["fiscal_identity"] = [ordered]@{
   accountant_email           = "comptable.demo@example.com"
   bank_name                  = "Banque Demo Benin"
   bank_account_label         = "Compte principal de demonstration"
+  bank_account_number        = "BJ66DEMO000000000001"
 }
 
 $onboarding = @{}

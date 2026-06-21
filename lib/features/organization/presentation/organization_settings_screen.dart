@@ -59,6 +59,7 @@ class _OrganizationSettingsScreenState
   final _fiscalComptableEmailCtrl = TextEditingController();
   final _fiscalBanqueCtrl = TextEditingController();
   final _fiscalCompteBancaireCtrl = TextEditingController();
+  final _fiscalCompteLibelleCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
   String? _inviteChurchUnitId;
@@ -116,6 +117,7 @@ class _OrganizationSettingsScreenState
     _fiscalComptableEmailCtrl.dispose();
     _fiscalBanqueCtrl.dispose();
     _fiscalCompteBancaireCtrl.dispose();
+    _fiscalCompteLibelleCtrl.dispose();
     _inviteEmailCtrl.dispose();
     super.dispose();
   }
@@ -149,7 +151,8 @@ class _OrganizationSettingsScreenState
     _fiscalComptableTelCtrl.text = fiscal.accountantPhone ?? '';
     _fiscalComptableEmailCtrl.text = fiscal.accountantEmail ?? '';
     _fiscalBanqueCtrl.text = fiscal.bankName ?? '';
-    _fiscalCompteBancaireCtrl.text = fiscal.bankAccountLabel ?? '';
+    _fiscalCompteBancaireCtrl.text = fiscal.bankAccountNumber ?? '';
+    _fiscalCompteLibelleCtrl.text = fiscal.bankAccountLabel ?? '';
   }
 
   Future<void> _save(Organization org) async {
@@ -870,8 +873,12 @@ class _OrganizationSettingsScreenState
             children: [
               EabTextField(label: 'Banque', controller: _fiscalBanqueCtrl),
               EabTextField(
-                label: 'Compte ou intitule bancaire',
+                label: 'Numero de compte',
                 controller: _fiscalCompteBancaireCtrl,
+              ),
+              EabTextField(
+                label: 'Intitule du compte',
+                controller: _fiscalCompteLibelleCtrl,
               ),
             ],
           ),
@@ -1346,7 +1353,8 @@ class _OrganizationSettingsScreenState
       accountantPhone: _nullIfBlank(_fiscalComptableTelCtrl.text),
       accountantEmail: _nullIfBlank(_fiscalComptableEmailCtrl.text),
       bankName: _nullIfBlank(_fiscalBanqueCtrl.text),
-      bankAccountLabel: _nullIfBlank(_fiscalCompteBancaireCtrl.text),
+      bankAccountLabel: _nullIfBlank(_fiscalCompteLibelleCtrl.text),
+      bankAccountNumber: _nullIfBlank(_fiscalCompteBancaireCtrl.text),
     );
   }
 

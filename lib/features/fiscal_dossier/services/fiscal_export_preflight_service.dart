@@ -312,6 +312,8 @@ class FiscalExportPreflightEngine {
         'qualite du representant legal',
       if (_isBlank(fiscal.accountantName)) 'nom du comptable responsable',
       if (_isBlank(fiscal.accountantTitle)) 'qualite du comptable responsable',
+      if (_isBlank(fiscal.bankName)) 'banque de reference',
+      if (_isBlank(fiscal.bankAccountNumber)) 'numero de compte bancaire',
     ];
 
     final recommendedMissing = <String>[
@@ -322,8 +324,7 @@ class FiscalExportPreflightEngine {
         'telephone du representant legal',
       if (_isBlank(fiscal.accountantPhone) && _isBlank(fiscal.accountantEmail))
         'contact du comptable',
-      if (_isBlank(fiscal.bankName)) 'banque de reference',
-      if (_isBlank(fiscal.bankAccountLabel)) 'compte ou intitule bancaire',
+      if (_isBlank(fiscal.bankAccountLabel)) 'intitule du compte bancaire',
     ];
 
     return [

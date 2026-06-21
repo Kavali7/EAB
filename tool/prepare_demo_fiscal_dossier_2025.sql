@@ -157,6 +157,7 @@ dossier_values AS (
       ('accountant.email', COALESCE(r.fiscal_identity ->> 'accountant_email', ''), 'computed'),
       ('bank.name', COALESCE(r.fiscal_identity ->> 'bank_name', ''), 'computed'),
       ('bank.account_label', COALESCE(r.fiscal_identity ->> 'bank_account_label', ''), 'computed'),
+      ('bank.account_number', COALESCE(r.fiscal_identity ->> 'bank_account_number', ''), 'computed'),
       ('currency', COALESCE(r.devise, 'FCFA'), 'computed'),
       ('mode_production', 'Comptabilite interne SYSCEBNL', 'computed'),
       ('exercice.label', COALESCE(r.libelle, 'Exercice comptable 2025'), 'computed'),
