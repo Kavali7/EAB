@@ -270,6 +270,19 @@ final _eabIdentity = _FiscalDemoIdentity(
   bankName: 'Banque Demo Benin',
   bankAccountLabel: 'Compte principal de demonstration',
   bankAccountNumber: 'BJ66DEMO000000000001',
+  organizationPhone: '+229 01 00 00 00 00',
+  organizationEmail: 'contact.demo@example.com',
+  legalFormCode: '07',
+  taxRegimeCode: '01',
+  countryCode: '01',
+  establishmentsInCountry: '01',
+  establishmentsOutsideCountry: '00',
+  firstFiscalYear: '2025',
+  controlTypeCode: 'private_national',
+  mainActivityCode: '9491',
+  socialSecurityNumber: '',
+  importerCode: '',
+  legalRepresentativeFiscalId: '3202600000099',
   currency: 'FCFA',
   periodLabel: 'Exercice comptable 2025',
   periodStart: DateTime(2025),
@@ -299,6 +312,19 @@ class _FiscalDemoIdentity {
     required this.bankName,
     required this.bankAccountLabel,
     required this.bankAccountNumber,
+    required this.organizationPhone,
+    required this.organizationEmail,
+    required this.legalFormCode,
+    required this.taxRegimeCode,
+    required this.countryCode,
+    required this.establishmentsInCountry,
+    required this.establishmentsOutsideCountry,
+    required this.firstFiscalYear,
+    required this.controlTypeCode,
+    required this.mainActivityCode,
+    required this.socialSecurityNumber,
+    required this.importerCode,
+    required this.legalRepresentativeFiscalId,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -326,6 +352,19 @@ class _FiscalDemoIdentity {
   final String bankName;
   final String bankAccountLabel;
   final String bankAccountNumber;
+  final String organizationPhone;
+  final String organizationEmail;
+  final String legalFormCode;
+  final String taxRegimeCode;
+  final String countryCode;
+  final String establishmentsInCountry;
+  final String establishmentsOutsideCountry;
+  final String firstFiscalYear;
+  final String controlTypeCode;
+  final String mainActivityCode;
+  final String socialSecurityNumber;
+  final String importerCode;
+  final String legalRepresentativeFiscalId;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -363,6 +402,20 @@ class _FiscalDemoIdentity {
       '_soAg1': bankName,
       '_soAg2': bankAccountNumber,
       '_soCompteLibelle': bankAccountLabel,
+      '_soTelephone': organizationPhone,
+      '_soEmail': organizationEmail,
+      '_fiscalLegalFormCode': legalFormCode,
+      '_fiscalTaxRegimeCode': taxRegimeCode,
+      '_fiscalCountryCode': countryCode,
+      '_fiscalActivite': activityDescription,
+      '_fiscalEstablishmentsInCountry': establishmentsInCountry,
+      '_fiscalEstablishmentsOutsideCountry': establishmentsOutsideCountry,
+      '_fiscalFirstYear': firstFiscalYear,
+      '_fiscalControlTypeCode': controlTypeCode,
+      '_fiscalMainActivityCode': mainActivityCode,
+      '_fiscalSocialSecurityNumber': socialSecurityNumber,
+      '_fiscalImporterCode': importerCode,
+      '_fiscalLegalRepresentativeFiscalId': legalRepresentativeFiscalId,
     };
   }
 

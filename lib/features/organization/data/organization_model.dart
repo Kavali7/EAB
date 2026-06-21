@@ -169,6 +169,17 @@ class OrganizationFiscalProfile {
     this.bankName,
     this.bankAccountLabel,
     this.bankAccountNumber,
+    this.legalFormCode,
+    this.taxRegimeCode,
+    this.countryCode,
+    this.establishmentsInCountry,
+    this.establishmentsOutsideCountry,
+    this.firstFiscalYear,
+    this.controlTypeCode,
+    this.mainActivityCode,
+    this.socialSecurityNumber,
+    this.importerCode,
+    this.legalRepresentativeFiscalId,
   });
 
   static const paramKey = 'fiscal_identity';
@@ -190,6 +201,17 @@ class OrganizationFiscalProfile {
   final String? bankName;
   final String? bankAccountLabel;
   final String? bankAccountNumber;
+  final String? legalFormCode;
+  final String? taxRegimeCode;
+  final String? countryCode;
+  final String? establishmentsInCountry;
+  final String? establishmentsOutsideCountry;
+  final String? firstFiscalYear;
+  final String? controlTypeCode;
+  final String? mainActivityCode;
+  final String? socialSecurityNumber;
+  final String? importerCode;
+  final String? legalRepresentativeFiscalId;
 
   factory OrganizationFiscalProfile.fromOrganization(Organization org) {
     final raw = org.parametres?[paramKey] ?? org.parametres?['fiscal'];
@@ -217,6 +239,23 @@ class OrganizationFiscalProfile {
       bankName: _read(data, 'bank_name'),
       bankAccountLabel: _read(data, 'bank_account_label'),
       bankAccountNumber: _read(data, 'bank_account_number'),
+      legalFormCode: _read(data, 'legal_form_code'),
+      taxRegimeCode: _read(data, 'tax_regime_code'),
+      countryCode: _read(data, 'country_code'),
+      establishmentsInCountry: _read(data, 'establishments_in_country'),
+      establishmentsOutsideCountry: _read(
+        data,
+        'establishments_outside_country',
+      ),
+      firstFiscalYear: _read(data, 'first_fiscal_year'),
+      controlTypeCode: _read(data, 'control_type_code'),
+      mainActivityCode: _read(data, 'main_activity_code'),
+      socialSecurityNumber: _read(data, 'social_security_number'),
+      importerCode: _read(data, 'importer_code'),
+      legalRepresentativeFiscalId: _read(
+        data,
+        'legal_representative_fiscal_id',
+      ),
     );
   }
 
@@ -239,6 +278,17 @@ class OrganizationFiscalProfile {
       'bank_name': bankName,
       'bank_account_label': bankAccountLabel,
       'bank_account_number': bankAccountNumber,
+      'legal_form_code': legalFormCode,
+      'tax_regime_code': taxRegimeCode,
+      'country_code': countryCode,
+      'establishments_in_country': establishmentsInCountry,
+      'establishments_outside_country': establishmentsOutsideCountry,
+      'first_fiscal_year': firstFiscalYear,
+      'control_type_code': controlTypeCode,
+      'main_activity_code': mainActivityCode,
+      'social_security_number': socialSecurityNumber,
+      'importer_code': importerCode,
+      'legal_representative_fiscal_id': legalRepresentativeFiscalId,
     }..removeWhere((_, value) => value == null || value.toString().isEmpty);
   }
 

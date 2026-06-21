@@ -195,6 +195,15 @@ void main() {
               'bank_name': 'Banque Demo Benin',
               'bank_account_label': 'Compte principal de demonstration',
               'bank_account_number': 'BJ66DEMO000000000001',
+              'legal_form_code': '07',
+              'tax_regime_code': '01',
+              'country_code': '01',
+              'establishments_in_country': '01',
+              'establishments_outside_country': '00',
+              'first_fiscal_year': '2025',
+              'control_type_code': 'private_national',
+              'main_activity_code': '9491',
+              'legal_representative_fiscal_id': '3202600000099',
             },
           },
         ),
@@ -263,9 +272,24 @@ void main() {
       expect(allXml, contains('80000'));
       expect(allXml, contains('30000'));
 
+      final pageDeGarde = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet1.xml'),
+      );
+      expect(_cellValue(pageDeGarde, 'E30'), 'EAB');
+      expect(_cellValue(pageDeGarde, 'E33'), 'Cotonou, Littoral, Benin');
+
       final ficheR1 = XmlDocument.parse(
         _entryText(archive, 'xl/worksheets/sheet2.xml'),
       );
+      expect(
+        _cellValue(ficheR1, 'G22'),
+        '\u00c9glise Apostolique du B\u00e9nin',
+      );
+      expect(_cellValue(ficheR1, 'AL22'), 'EAB');
+      expect(_cellValue(ficheR1, 'AN22'), isNull);
+      expect(_cellValue(ficheR1, 'G25'), '+229 01 00 00 00 00');
+      expect(_cellValue(ficheR1, 'Q25'), 'contact.demo@example.com');
+      expect(_cellValue(ficheR1, 'AJ19'), '9491');
       expect(_cellValue(ficheR1, 'G59'), isNull);
       expect(_cellValue(ficheR1, 'AK57'), 'BJ66DEMO000000000001');
       expect(_cellType(ficheR1, 'AK57'), 'str');
@@ -276,6 +300,41 @@ void main() {
       expect(_cellValue(ficheR2, 'AH5'), '31/12/2025');
       expect(_cellType(ficheR2, 'AH5'), 'str');
       expect(_cellValue(ficheR2, 'AH6'), '12');
+      expect(_cellValue(ficheR2, 'R10'), '0');
+      expect(_cellValue(ficheR2, 'S10'), '7');
+      expect(_cellValue(ficheR2, 'R12'), '0');
+      expect(_cellValue(ficheR2, 'S12'), '1');
+      expect(_cellValue(ficheR2, 'R14'), '0');
+      expect(_cellValue(ficheR2, 'S14'), '1');
+      expect(_cellValue(ficheR2, 'R21'), '2');
+      expect(_cellValue(ficheR2, 'S21'), '0');
+      expect(_cellValue(ficheR2, 'T21'), '2');
+      expect(_cellValue(ficheR2, 'U21'), '5');
+      expect(_cellValue(ficheR2, 'AJ10'), isNull);
+      expect(_cellValue(ficheR2, 'AJ12'), 'X');
+      expect(_cellValue(ficheR2, 'AJ14'), isNull);
+      expect(
+        _cellValue(ficheR2, 'B30'),
+        'Organisation religieuse a but non lucratif',
+      );
+      expect(_cellValue(ficheR2, 'Q30'), '9491');
+
+      final ficheR3 = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet4.xml'),
+      );
+      expect(_cellValue(ficheR3, 'E12'), '3202600000099');
+
+      final ficheR4 = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet5.xml'),
+      );
+      expect(_cellValue(ficheR4, 'C14'), isNull);
+      expect(_cellValue(ficheR4, 'D14'), 'x');
+
+      final note36 = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet55.xml'),
+      );
+      expect(_cellValue(note36, 'C20'), '7');
+      expect(_cellValue(note36, 'C29'), '1');
 
       for (final file in archive.files.where(
         (file) =>

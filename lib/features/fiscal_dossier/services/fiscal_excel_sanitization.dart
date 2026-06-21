@@ -100,5 +100,5 @@ final List<RegExp> syscebnlFiscalExcelForbiddenPatterns = [
 final List<RegExp> syscebnlFiscalExcelNeutralizedSheetPatterns = [
   RegExp(r'^PAGE DE GARDE$', caseSensitive: false),
   RegExp(r'^FICHE R[1-4]$', caseSensitive: false),
-  RegExp(r'^NOTES? \d+[A-Z]?(?: bis)?$', caseSensitive: false),
+  RegExp(r'^NOTES? (?!36$)\d+[A-Z]?(?: bis)?$', caseSensitive: false),
 ];

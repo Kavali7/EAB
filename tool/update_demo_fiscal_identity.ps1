@@ -219,6 +219,17 @@ $parametres["fiscal_identity"] = [ordered]@{
   bank_name                  = "Banque Demo Benin"
   bank_account_label         = "Compte principal de demonstration"
   bank_account_number        = "BJ66DEMO000000000001"
+  legal_form_code            = "07"
+  tax_regime_code            = "01"
+  country_code               = "01"
+  establishments_in_country  = "01"
+  establishments_outside_country = "00"
+  first_fiscal_year          = "2025"
+  control_type_code          = "private_national"
+  main_activity_code         = "9491"
+  social_security_number     = ""
+  importer_code              = ""
+  legal_representative_fiscal_id = "3202600000099"
 }
 
 $onboarding = @{}

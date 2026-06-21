@@ -325,6 +325,13 @@ class FiscalExportPreflightEngine {
       if (_isBlank(fiscal.accountantPhone) && _isBlank(fiscal.accountantEmail))
         'contact du comptable',
       if (_isBlank(fiscal.bankAccountLabel)) 'intitule du compte bancaire',
+      if (_isBlank(fiscal.legalFormCode)) 'code forme juridique SYSCEBNL',
+      if (_isBlank(fiscal.taxRegimeCode)) 'code regime fiscal SYSCEBNL',
+      if (_isBlank(fiscal.countryCode)) 'code pays du siege',
+      if (_isBlank(fiscal.firstFiscalYear))
+        'premiere annee d exercice dans le pays',
+      if (_isBlank(fiscal.legalRepresentativeFiscalId))
+        'IFU du representant legal',
     ];
 
     return [

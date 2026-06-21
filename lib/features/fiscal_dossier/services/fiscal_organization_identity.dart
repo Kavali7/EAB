@@ -22,6 +22,19 @@ class FiscalOrganizationIdentity {
     required this.bankName,
     required this.bankAccountLabel,
     required this.bankAccountNumber,
+    required this.organizationPhone,
+    required this.organizationEmail,
+    required this.legalFormCode,
+    required this.taxRegimeCode,
+    required this.countryCode,
+    required this.establishmentsInCountry,
+    required this.establishmentsOutsideCountry,
+    required this.firstFiscalYear,
+    required this.controlTypeCode,
+    required this.mainActivityCode,
+    required this.socialSecurityNumber,
+    required this.importerCode,
+    required this.legalRepresentativeFiscalId,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -49,6 +62,19 @@ class FiscalOrganizationIdentity {
   final String bankName;
   final String bankAccountLabel;
   final String bankAccountNumber;
+  final String organizationPhone;
+  final String organizationEmail;
+  final String legalFormCode;
+  final String taxRegimeCode;
+  final String countryCode;
+  final String establishmentsInCountry;
+  final String establishmentsOutsideCountry;
+  final String firstFiscalYear;
+  final String controlTypeCode;
+  final String mainActivityCode;
+  final String socialSecurityNumber;
+  final String importerCode;
+  final String legalRepresentativeFiscalId;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -148,6 +174,71 @@ class FiscalOrganizationIdentity {
         profile.bankAccountNumber,
         'Numero de compte a renseigner',
       ]),
+      organizationPhone: _firstFilled([
+        _stringValue(values['org.phone']),
+        organization.telephone,
+        '',
+      ]),
+      organizationEmail: _firstFilled([
+        _stringValue(values['org.email']),
+        organization.email,
+        '',
+      ]),
+      legalFormCode: _firstFilled([
+        _stringValue(values['fiscal.legal_form_code']),
+        profile.legalFormCode,
+        '07',
+      ]),
+      taxRegimeCode: _firstFilled([
+        _stringValue(values['fiscal.tax_regime_code']),
+        profile.taxRegimeCode,
+        '01',
+      ]),
+      countryCode: _firstFilled([
+        _stringValue(values['fiscal.country_code']),
+        profile.countryCode,
+        '01',
+      ]),
+      establishmentsInCountry: _firstFilled([
+        _stringValue(values['fiscal.establishments_in_country']),
+        profile.establishmentsInCountry,
+        '01',
+      ]),
+      establishmentsOutsideCountry: _firstFilled([
+        _stringValue(values['fiscal.establishments_outside_country']),
+        profile.establishmentsOutsideCountry,
+        '00',
+      ]),
+      firstFiscalYear: _firstFilled([
+        _stringValue(values['fiscal.first_fiscal_year']),
+        profile.firstFiscalYear,
+        periodStart.year.toString(),
+      ]),
+      controlTypeCode: _firstFilled([
+        _stringValue(values['fiscal.control_type_code']),
+        profile.controlTypeCode,
+        'private_national',
+      ]),
+      mainActivityCode: _firstFilled([
+        _stringValue(values['fiscal.main_activity_code']),
+        profile.mainActivityCode,
+        '',
+      ]),
+      socialSecurityNumber: _firstFilled([
+        _stringValue(values['fiscal.social_security_number']),
+        profile.socialSecurityNumber,
+        '',
+      ]),
+      importerCode: _firstFilled([
+        _stringValue(values['fiscal.importer_code']),
+        profile.importerCode,
+        '',
+      ]),
+      legalRepresentativeFiscalId: _firstFilled([
+        _stringValue(values['responsable.fiscal_id']),
+        profile.legalRepresentativeFiscalId,
+        '',
+      ]),
       currency: _firstFilled([
         _stringValue(values['currency']),
         organization.devise,
@@ -192,6 +283,20 @@ class FiscalOrganizationIdentity {
       '_soAg1': bankName,
       '_soAg2': bankAccountNumber,
       '_soCompteLibelle': bankAccountLabel,
+      '_soTelephone': organizationPhone,
+      '_soEmail': organizationEmail,
+      '_fiscalLegalFormCode': legalFormCode,
+      '_fiscalTaxRegimeCode': taxRegimeCode,
+      '_fiscalCountryCode': countryCode,
+      '_fiscalActivite': activityDescription,
+      '_fiscalEstablishmentsInCountry': establishmentsInCountry,
+      '_fiscalEstablishmentsOutsideCountry': establishmentsOutsideCountry,
+      '_fiscalFirstYear': firstFiscalYear,
+      '_fiscalControlTypeCode': controlTypeCode,
+      '_fiscalMainActivityCode': mainActivityCode,
+      '_fiscalSocialSecurityNumber': socialSecurityNumber,
+      '_fiscalImporterCode': importerCode,
+      '_fiscalLegalRepresentativeFiscalId': legalRepresentativeFiscalId,
     };
   }
 

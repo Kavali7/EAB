@@ -60,8 +60,19 @@ class _OrganizationSettingsScreenState
   final _fiscalBanqueCtrl = TextEditingController();
   final _fiscalCompteBancaireCtrl = TextEditingController();
   final _fiscalCompteLibelleCtrl = TextEditingController();
+  final _fiscalFormeJuridiqueCodeCtrl = TextEditingController();
+  final _fiscalRegimeCodeCtrl = TextEditingController();
+  final _fiscalPaysCodeCtrl = TextEditingController();
+  final _fiscalEtablissementsPaysCtrl = TextEditingController();
+  final _fiscalEtablissementsHorsPaysCtrl = TextEditingController();
+  final _fiscalPremierExerciceCtrl = TextEditingController();
+  final _fiscalCodeActiviteCtrl = TextEditingController();
+  final _fiscalCaisseSocialeCtrl = TextEditingController();
+  final _fiscalCodeImportateurCtrl = TextEditingController();
+  final _fiscalRepresentantIfuCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
+  String _fiscalControleCode = 'private_national';
   String? _inviteChurchUnitId;
   bool _inviteCanManageChildren = false;
   String? _permissionAncestorUnitId;
@@ -118,6 +129,16 @@ class _OrganizationSettingsScreenState
     _fiscalBanqueCtrl.dispose();
     _fiscalCompteBancaireCtrl.dispose();
     _fiscalCompteLibelleCtrl.dispose();
+    _fiscalFormeJuridiqueCodeCtrl.dispose();
+    _fiscalRegimeCodeCtrl.dispose();
+    _fiscalPaysCodeCtrl.dispose();
+    _fiscalEtablissementsPaysCtrl.dispose();
+    _fiscalEtablissementsHorsPaysCtrl.dispose();
+    _fiscalPremierExerciceCtrl.dispose();
+    _fiscalCodeActiviteCtrl.dispose();
+    _fiscalCaisseSocialeCtrl.dispose();
+    _fiscalCodeImportateurCtrl.dispose();
+    _fiscalRepresentantIfuCtrl.dispose();
     _inviteEmailCtrl.dispose();
     super.dispose();
   }
@@ -153,6 +174,18 @@ class _OrganizationSettingsScreenState
     _fiscalBanqueCtrl.text = fiscal.bankName ?? '';
     _fiscalCompteBancaireCtrl.text = fiscal.bankAccountNumber ?? '';
     _fiscalCompteLibelleCtrl.text = fiscal.bankAccountLabel ?? '';
+    _fiscalFormeJuridiqueCodeCtrl.text = fiscal.legalFormCode ?? '07';
+    _fiscalRegimeCodeCtrl.text = fiscal.taxRegimeCode ?? '01';
+    _fiscalPaysCodeCtrl.text = fiscal.countryCode ?? '01';
+    _fiscalEtablissementsPaysCtrl.text = fiscal.establishmentsInCountry ?? '01';
+    _fiscalEtablissementsHorsPaysCtrl.text =
+        fiscal.establishmentsOutsideCountry ?? '00';
+    _fiscalPremierExerciceCtrl.text = fiscal.firstFiscalYear ?? '';
+    _fiscalControleCode = fiscal.controlTypeCode ?? 'private_national';
+    _fiscalCodeActiviteCtrl.text = fiscal.mainActivityCode ?? '';
+    _fiscalCaisseSocialeCtrl.text = fiscal.socialSecurityNumber ?? '';
+    _fiscalCodeImportateurCtrl.text = fiscal.importerCode ?? '';
+    _fiscalRepresentantIfuCtrl.text = fiscal.legalRepresentativeFiscalId ?? '';
   }
 
   Future<void> _save(Organization org) async {
@@ -817,6 +850,75 @@ class _OrganizationSettingsScreenState
             maxLines: compact ? 3 : 2,
           ),
           const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Parametres SYSCEBNL'),
+          const SizedBox(height: AppSpacing.sm),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Code forme juridique',
+                controller: _fiscalFormeJuridiqueCodeCtrl,
+                helper: '07 = Association dans NOTE 36.',
+                keyboardType: TextInputType.number,
+              ),
+              EabTextField(
+                label: 'Code regime fiscal',
+                controller: _fiscalRegimeCodeCtrl,
+                helper: '01 = Reel normal.',
+                keyboardType: TextInputType.number,
+              ),
+              EabTextField(
+                label: 'Code pays siege',
+                controller: _fiscalPaysCodeCtrl,
+                helper: '01 = Benin.',
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'Etablissements pays',
+                controller: _fiscalEtablissementsPaysCtrl,
+                keyboardType: TextInputType.number,
+              ),
+              EabTextField(
+                label: 'Etablissements hors pays',
+                controller: _fiscalEtablissementsHorsPaysCtrl,
+                keyboardType: TextInputType.number,
+              ),
+              EabTextField(
+                label: 'Premier exercice',
+                controller: _fiscalPremierExerciceCtrl,
+                helper: 'Laisse vide = annee du dossier.',
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              _fiscalControlDropdown(),
+              EabTextField(
+                label: 'Code activite',
+                controller: _fiscalCodeActiviteCtrl,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ResponsiveFormRow(
+            children: [
+              EabTextField(
+                label: 'N caisse sociale',
+                controller: _fiscalCaisseSocialeCtrl,
+              ),
+              EabTextField(
+                label: 'Code importateur',
+                controller: _fiscalCodeImportateurCtrl,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _subsectionTitle('Representant legal'),
           const SizedBox(height: AppSpacing.sm),
           ResponsiveFormRow(
@@ -833,6 +935,12 @@ class _OrganizationSettingsScreenState
                 label: 'Telephone',
                 controller: _fiscalRepresentantTelCtrl,
                 keyboardType: TextInputType.phone,
+              ),
+              EabTextField(
+                label: 'IFU representant',
+                controller: _fiscalRepresentantIfuCtrl,
+                helper: 'Facultatif, repris sur FICHE R3.',
+                keyboardType: TextInputType.number,
               ),
             ],
           ),
@@ -893,6 +1001,32 @@ class _OrganizationSettingsScreenState
       style: Theme.of(
         context,
       ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+    );
+  }
+
+  Widget _fiscalControlDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _fiscalControleCode,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Controle entite',
+        border: OutlineInputBorder(),
+      ),
+      items: const [
+        DropdownMenuItem(value: 'public', child: Text('Controle public')),
+        DropdownMenuItem(
+          value: 'private_national',
+          child: Text('Controle prive national'),
+        ),
+        DropdownMenuItem(
+          value: 'private_foreign',
+          child: Text('Controle prive etranger'),
+        ),
+      ],
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _fiscalControleCode = value);
+      },
     );
   }
 
@@ -1355,6 +1489,21 @@ class _OrganizationSettingsScreenState
       bankName: _nullIfBlank(_fiscalBanqueCtrl.text),
       bankAccountLabel: _nullIfBlank(_fiscalCompteLibelleCtrl.text),
       bankAccountNumber: _nullIfBlank(_fiscalCompteBancaireCtrl.text),
+      legalFormCode: _nullIfBlank(_fiscalFormeJuridiqueCodeCtrl.text),
+      taxRegimeCode: _nullIfBlank(_fiscalRegimeCodeCtrl.text),
+      countryCode: _nullIfBlank(_fiscalPaysCodeCtrl.text),
+      establishmentsInCountry: _nullIfBlank(_fiscalEtablissementsPaysCtrl.text),
+      establishmentsOutsideCountry: _nullIfBlank(
+        _fiscalEtablissementsHorsPaysCtrl.text,
+      ),
+      firstFiscalYear: _nullIfBlank(_fiscalPremierExerciceCtrl.text),
+      controlTypeCode: _fiscalControleCode,
+      mainActivityCode: _nullIfBlank(_fiscalCodeActiviteCtrl.text),
+      socialSecurityNumber: _nullIfBlank(_fiscalCaisseSocialeCtrl.text),
+      importerCode: _nullIfBlank(_fiscalCodeImportateurCtrl.text),
+      legalRepresentativeFiscalId: _nullIfBlank(
+        _fiscalRepresentantIfuCtrl.text,
+      ),
     );
   }
 

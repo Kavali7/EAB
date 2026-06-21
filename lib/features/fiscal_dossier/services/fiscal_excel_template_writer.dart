@@ -389,7 +389,30 @@ class FiscalExcelTemplateWriter {
   ) {
     final normalizedSheetName = sheetName.trim();
 
+    if (normalizedSheetName == 'PAGE DE GARDE') {
+      _setTextOrClear(sheetDoc, 'E30', definedNames['_soSigle']);
+      _setTextOrClear(sheetDoc, 'E33', definedNames['_soAdresse']);
+      return;
+    }
+
     if (normalizedSheetName == 'FICHE R1') {
+      _setTextOrClear(
+        sheetDoc,
+        'G19',
+        definedNames['_fiscalSocialSecurityNumber'],
+      );
+      _setTextOrClear(sheetDoc, 'P19', definedNames['_fiscalImporterCode']);
+      _setTextOrClear(
+        sheetDoc,
+        'AJ19',
+        definedNames['_fiscalMainActivityCode'],
+      );
+      _setTextOrClear(sheetDoc, 'G22', definedNames['_soNom']);
+      _setTextOrClear(sheetDoc, 'AL22', definedNames['_soSigle']);
+      _clearCellValue(sheetDoc, 'AN22');
+      _setTextOrClear(sheetDoc, 'G25', definedNames['_soTelephone']);
+      _setTextOrClear(sheetDoc, 'Q25', definedNames['_soEmail']);
+      _setTextOrClear(sheetDoc, 'AN25', definedNames['_soAdresse']);
       _clearCellValue(sheetDoc, 'G59');
       final bankAccountNumber = definedNames['_soAg2'];
       if (bankAccountNumber == null || bankAccountNumber.trim().isEmpty) {
@@ -397,6 +420,22 @@ class FiscalExcelTemplateWriter {
       } else {
         _setTextCell(sheetDoc, 'AK57', bankAccountNumber);
       }
+      return;
+    }
+
+    if (normalizedSheetName == 'FICHE R3') {
+      _setTextOrClear(
+        sheetDoc,
+        'E12',
+        definedNames['_fiscalLegalRepresentativeFiscalId'],
+      );
+      return;
+    }
+
+    if (normalizedSheetName == 'FICHE R4') {
+      // NOTE 3F is absent from the generated SYSCEBNL workbook.
+      _clearCellValue(sheetDoc, 'C14');
+      _setTextCell(sheetDoc, 'D14', 'x');
       return;
     }
 
@@ -412,6 +451,109 @@ class FiscalExcelTemplateWriter {
     if (duration != null) {
       _setNumericCell(sheetDoc, 'AH6', duration.toDouble());
     }
+
+    _setCodeCells(
+      sheetDoc,
+      const ['R10', 'S10'],
+      definedNames['_fiscalLegalFormCode'],
+      width: 2,
+      fallback: '07',
+    );
+    _setCodeCells(
+      sheetDoc,
+      const ['R12', 'S12'],
+      definedNames['_fiscalTaxRegimeCode'],
+      width: 2,
+      fallback: '01',
+    );
+    _setCodeCells(
+      sheetDoc,
+      const ['R14', 'S14'],
+      definedNames['_fiscalCountryCode'],
+      width: 2,
+      fallback: '01',
+    );
+    _setCodeCells(
+      sheetDoc,
+      const ['R16', 'S16'],
+      definedNames['_fiscalEstablishmentsInCountry'],
+      width: 2,
+      fallback: '01',
+    );
+    _setCodeCells(
+      sheetDoc,
+      const ['R18', 'S18'],
+      definedNames['_fiscalEstablishmentsOutsideCountry'],
+      width: 2,
+      fallback: '00',
+    );
+    _setCodeCells(
+      sheetDoc,
+      const ['R21', 'S21', 'T21', 'U21'],
+      definedNames['_fiscalFirstYear'],
+      width: 4,
+    );
+    _syncControlType(sheetDoc, definedNames['_fiscalControlTypeCode']);
+    _setTextOrClear(sheetDoc, 'B30', definedNames['_fiscalActivite']);
+    _setTextOrClear(sheetDoc, 'Q30', definedNames['_fiscalMainActivityCode']);
+  }
+
+  static void _setTextOrClear(
+    XmlDocument sheetDoc,
+    String cellRef,
+    String? value,
+  ) {
+    final clean = value?.trim();
+    if (clean == null || clean.isEmpty) {
+      _clearCellValue(sheetDoc, cellRef);
+      return;
+    }
+    _setTextCell(sheetDoc, cellRef, clean);
+  }
+
+  static void _setCodeCells(
+    XmlDocument sheetDoc,
+    List<String> cells,
+    String? value, {
+    required int width,
+    String? fallback,
+  }) {
+    final raw = value?.trim().isNotEmpty == true ? value!.trim() : fallback;
+    if (raw == null || raw.isEmpty) {
+      for (final cell in cells) {
+        _clearCellValue(sheetDoc, cell);
+      }
+      return;
+    }
+
+    final clean = raw.replaceAll(RegExp(r'[^0-9A-Za-z]'), '');
+    final padded = clean.padLeft(width, '0');
+    final chars = padded.length > width
+        ? padded.substring(padded.length - width).split('')
+        : padded.split('');
+    for (var index = 0; index < cells.length; index += 1) {
+      final text = index < chars.length ? chars[index] : '';
+      if (text.isEmpty) {
+        _clearCellValue(sheetDoc, cells[index]);
+      } else {
+        _setTextCell(sheetDoc, cells[index], text);
+      }
+    }
+  }
+
+  static void _syncControlType(XmlDocument sheetDoc, String? controlTypeCode) {
+    const cellsByControlType = {
+      'public': 'AJ10',
+      'private_national': 'AJ12',
+      'private_foreign': 'AJ14',
+    };
+    for (final cell in cellsByControlType.values) {
+      _clearCellValue(sheetDoc, cell);
+    }
+    final key = controlTypeCode?.trim().isNotEmpty == true
+        ? controlTypeCode!.trim()
+        : 'private_national';
+    _setTextCell(sheetDoc, cellsByControlType[key] ?? 'AJ12', 'X');
   }
 
   static int? _durationMonths(String? text) {
