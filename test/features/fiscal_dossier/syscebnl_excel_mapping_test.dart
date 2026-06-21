@@ -1234,5 +1234,30 @@ void main() {
         "='NOTE 27A'!B11+'NOTE 27A'!B12",
       );
     });
+
+    test('documente chaque feuille a revue manuelle', () {
+      final policyNames = SyscebnlFiscalExcelMapper.manualReviewSheets
+          .map((sheet) => sheet.sheet)
+          .toSet();
+
+      expect(
+        policyNames,
+        SyscebnlFiscalExcelMapper.manualReviewSheetNames.toSet(),
+      );
+      expect(
+        SyscebnlFiscalExcelMapper.manualReviewSheets,
+        everyElement(
+          isA<FiscalManualReviewSheet>()
+              .having((sheet) => sheet.category, 'category', isNotEmpty)
+              .having((sheet) => sheet.reason, 'reason', isNotEmpty)
+              .having(
+                (sheet) => sheet.requiredSource,
+                'requiredSource',
+                isNotEmpty,
+              ),
+        ),
+      );
+      expect(policyNames, contains('NOTE 27B'));
+    });
   });
 }

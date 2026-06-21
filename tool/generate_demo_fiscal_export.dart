@@ -118,6 +118,18 @@ _WorkbookAudit _auditWorkbook({
       'Feuilles a revue manuelle introuvables: ${missingManual.join(', ')}',
     );
   }
+  final manualPolicyNames = SyscebnlFiscalExcelMapper.manualReviewSheets
+      .map((sheet) => sheet.sheet)
+      .toSet();
+  final manualWithoutPolicy = SyscebnlFiscalExcelMapper.manualReviewSheetNames
+      .where((sheet) => !manualPolicyNames.contains(sheet))
+      .toList();
+  if (manualWithoutPolicy.isNotEmpty) {
+    throw StateError(
+      'Feuilles a revue manuelle sans justification: '
+      '${manualWithoutPolicy.join(', ')}',
+    );
+  }
   const informationalSheetNames = {'PAGE DE GARDE', 'CODES'};
   final classifiedSheets = {
     ...SyscebnlFiscalExcelMapper.automatedSheetNames,
@@ -219,6 +231,7 @@ _WorkbookAudit _auditWorkbook({
     automatedSheetNames: SyscebnlFiscalExcelMapper.automatedSheetNames,
     automatedSheetCount: SyscebnlFiscalExcelMapper.automatedSheetNames.length,
     manualReviewSheetNames: SyscebnlFiscalExcelMapper.manualReviewSheetNames,
+    manualReviewSheets: SyscebnlFiscalExcelMapper.manualReviewSheets,
     manualReviewSheetCount:
         SyscebnlFiscalExcelMapper.manualReviewSheetNames.length,
     unclassifiedSheetNames: unclassifiedSheetNames,
@@ -535,6 +548,7 @@ class _WorkbookAudit {
     required this.automatedSheetNames,
     required this.automatedSheetCount,
     required this.manualReviewSheetNames,
+    required this.manualReviewSheets,
     required this.manualReviewSheetCount,
     required this.unclassifiedSheetNames,
     required this.preservedArchiveEntries,
@@ -548,6 +562,7 @@ class _WorkbookAudit {
   final List<String> automatedSheetNames;
   final int automatedSheetCount;
   final List<String> manualReviewSheetNames;
+  final List<FiscalManualReviewSheet> manualReviewSheets;
   final int manualReviewSheetCount;
   final List<String> unclassifiedSheetNames;
   final bool preservedArchiveEntries;
@@ -564,6 +579,15 @@ class _WorkbookAudit {
       'automated_sheet_names': automatedSheetNames,
       'manual_review_sheet_count': manualReviewSheetCount,
       'manual_review_sheet_names': manualReviewSheetNames,
+      'manual_review_sheets': [
+        for (final sheet in manualReviewSheets)
+          {
+            'sheet': sheet.sheet,
+            'category': sheet.category,
+            'reason': sheet.reason,
+            'required_source': sheet.requiredSource,
+          },
+      ],
       'unclassified_sheet_count': unclassifiedSheetNames.length,
       'unclassified_sheet_names': unclassifiedSheetNames,
       'preserved_archive_entries': preservedArchiveEntries,

@@ -60,6 +60,20 @@ class FiscalExcelFormula {
   String get address => '$sheet!$cell';
 }
 
+class FiscalManualReviewSheet {
+  const FiscalManualReviewSheet({
+    required this.sheet,
+    required this.category,
+    required this.reason,
+    required this.requiredSource,
+  });
+
+  final String sheet;
+  final String category;
+  final String reason;
+  final String requiredSource;
+}
+
 class SyscebnlFiscalExcelMapping {
   const SyscebnlFiscalExcelMapping({
     required this.values,
@@ -155,6 +169,161 @@ class SyscebnlFiscalExcelMapper {
     'FICHE R2',
     'FICHE R3',
     'FICHE R4',
+  ];
+
+  static const manualReviewSheets = <FiscalManualReviewSheet>[
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 1',
+      category: 'engagements',
+      reason:
+          'Dettes garanties par suretes reelles sans source comptable '
+          'suffisante dans la balance.',
+      requiredSource: 'registre des garanties, nantissements et cautions',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 2',
+      category: 'methodes',
+      reason: 'Declarations de conformite et methodes comptables qualitatives.',
+      requiredSource: 'parametres des methodes comptables de l organisation',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 3B',
+      category: 'immobilisations',
+      reason:
+          'Biens pris en location-acquisition non deduisibles de la '
+          'balance seule.',
+      requiredSource: 'module contrats de location-acquisition',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 3D',
+      category: 'immobilisations',
+      reason:
+          'Plus-values et moins-values de cession necessitent le detail '
+          'des sorties d immobilisations.',
+      requiredSource: 'module immobilisations avec cessions',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 3E',
+      category: 'immobilisations',
+      reason:
+          'Reevaluations et traitements fiscaux associes non presents '
+          'dans les ecritures courantes.',
+      requiredSource: 'registre des reevaluations',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 5',
+      category: 'actif circulant',
+      reason:
+          'Actif circulant HAO et commentaires de variation a valider '
+          'hors balance generale.',
+      requiredSource: 'registre HAO et justification des variations',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 8A',
+      category: 'charges etalees',
+      reason:
+          'Tableau d etalement des charges immobilisees exige un '
+          'echeancier dedie.',
+      requiredSource: 'module charges a etaler',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 13',
+      category: 'fonds associatifs',
+      reason:
+          'Detail des apporteurs et mouvements de fonds associatifs '
+          'non fiable depuis la balance seule.',
+      requiredSource: 'registre des apporteurs et decisions statutaires',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 16B',
+      category: 'engagements sociaux',
+      reason: 'Hypotheses actuarielles et engagements de retraite.',
+      requiredSource: 'module RH ou evaluation actuarielle',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 16B bis',
+      category: 'engagements sociaux',
+      reason: 'Actifs affectes aux regimes finances et rendements attendus.',
+      requiredSource: 'module RH ou evaluation actuarielle',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 16C',
+      category: 'risques',
+      reason: 'Actifs et passifs eventuels exigent une revue juridique.',
+      requiredSource: 'registre des litiges et engagements eventuels',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 27B',
+      category: 'ressources humaines',
+      reason:
+          'Effectifs, masse salariale et personnel exterieur ne peuvent '
+          'pas etre controles depuis la seule comptabilite.',
+      requiredSource: 'module RH et paie',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 32',
+      category: 'production',
+      reason:
+          'Production de l exercice en quantites et valeurs, non '
+          'applicable ou non disponible sans module operationnel.',
+      requiredSource: 'module production ou parametrage non applicable',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 33',
+      category: 'production',
+      reason:
+          'Achats destines a la production et variations de stocks par '
+          'quantites.',
+      requiredSource: 'module achats/stocks ou parametrage non applicable',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 35',
+      category: 'informations sociales',
+      reason:
+          'Informations sociales, environnementales et communautaires '
+          'qualitatives.',
+      requiredSource: 'rapport social et communautaire',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'NOTE 36',
+      category: 'codes fiscaux',
+      reason:
+          'Codes de forme juridique, regime fiscal et pays a confirmer '
+          'avec les parametres officiels.',
+      requiredSource: 'parametres fiscaux avances',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'FICHE R1',
+      category: 'identite fiscale',
+      reason:
+          'Fiche administrative pre-remplie partiellement mais signature '
+          'et codes officiels a verifier.',
+      requiredSource: 'parametres fiscaux avances et signataire',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'FICHE R2',
+      category: 'activite',
+      reason:
+          'Activite, forme juridique, regime fiscal et controle a '
+          'confirmer.',
+      requiredSource: 'parametres fiscaux avances',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'FICHE R3',
+      category: 'gouvernance',
+      reason:
+          'Dirigeants pre-remplis partiellement, conseil d administration '
+          'a renseigner si applicable.',
+      requiredSource: 'module gouvernance et dirigeants',
+    ),
+    FiscalManualReviewSheet(
+      sheet: 'FICHE R4',
+      category: 'controle dossier',
+      reason:
+          'Tableau de presence des notes a verifier selon les feuilles '
+          'applicables.',
+      requiredSource: 'matrice d applicabilite des notes fiscales',
+    ),
   ];
 
   static SyscebnlFiscalExcelMapping fromBalance(
