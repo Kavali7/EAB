@@ -424,18 +424,12 @@ class FiscalExcelTemplateWriter {
     }
 
     if (normalizedSheetName == 'FICHE R3') {
-      _setTextOrClear(
-        sheetDoc,
-        'E12',
-        definedNames['_fiscalLegalRepresentativeFiscalId'],
-      );
+      _syncFicheR3(sheetDoc, definedNames);
       return;
     }
 
     if (normalizedSheetName == 'FICHE R4') {
-      // NOTE 3F is absent from the generated SYSCEBNL workbook.
-      _clearCellValue(sheetDoc, 'C14');
-      _setTextCell(sheetDoc, 'D14', 'x');
+      _syncFicheR4(sheetDoc, definedNames);
       return;
     }
 
@@ -496,6 +490,162 @@ class FiscalExcelTemplateWriter {
     _syncControlType(sheetDoc, definedNames['_fiscalControlTypeCode']);
     _setTextOrClear(sheetDoc, 'B30', definedNames['_fiscalActivite']);
     _setTextOrClear(sheetDoc, 'Q30', definedNames['_fiscalMainActivityCode']);
+  }
+
+  static void _syncFicheR3(
+    XmlDocument sheetDoc,
+    Map<String, String> definedNames,
+  ) {
+    final leaders = _parseGovernanceRows(
+      definedNames['_fiscalGovernanceLeaders'],
+    );
+    final fallbackLeader = _defaultLeader(definedNames);
+    _writeGovernanceRows(
+      sheetDoc,
+      leaders.isEmpty && fallbackLeader != null ? [fallbackLeader] : leaders,
+      startRow: 12,
+      endRow: 18,
+      includeFiscalId: true,
+    );
+    _writeGovernanceRows(
+      sheetDoc,
+      _parseGovernanceRows(definedNames['_fiscalBoardMembers']),
+      startRow: 25,
+      endRow: 31,
+      includeFiscalId: false,
+    );
+  }
+
+  static void _syncFicheR4(
+    XmlDocument sheetDoc,
+    Map<String, String> definedNames,
+  ) {
+    final rawApplicableNotes = definedNames['_fiscalApplicableNotes']?.trim();
+    final applicableNotes =
+        rawApplicableNotes == null || rawApplicableNotes.isEmpty
+        ? null
+        : _parseFiscalNoteCodes(rawApplicableNotes);
+
+    for (final entry in _fiscalR4NoteRows.entries) {
+      final noteCode = _normalizeFiscalNoteCode(entry.value);
+      final applicable = applicableNotes == null
+          ? noteCode != 'NOTE 3F'
+          : applicableNotes.contains(noteCode);
+      final applicableCell = 'C${entry.key}';
+      final notApplicableCell = 'D${entry.key}';
+      if (applicable) {
+        _setTextCell(sheetDoc, applicableCell, 'x');
+        _clearCellValue(sheetDoc, notApplicableCell);
+      } else {
+        _clearCellValue(sheetDoc, applicableCell);
+        _setTextCell(sheetDoc, notApplicableCell, 'x');
+      }
+    }
+  }
+
+  static _FiscalGovernanceRow? _defaultLeader(
+    Map<String, String> definedNames,
+  ) {
+    final name = definedNames['_fiscalLegalRepresentativeName']?.trim();
+    if (name == null || name.isEmpty) return null;
+    return _FiscalGovernanceRow(
+      fullName: name,
+      quality: definedNames['_fiscalLegalRepresentativeTitle'] ?? '',
+      fiscalId: definedNames['_fiscalLegalRepresentativeFiscalId'] ?? '',
+      address: definedNames['_soAdresse'] ?? '',
+    );
+  }
+
+  static List<_FiscalGovernanceRow> _parseGovernanceRows(String? raw) {
+    final text = raw?.trim();
+    if (text == null || text.isEmpty) return const [];
+
+    final rows = <_FiscalGovernanceRow>[];
+    for (final line in text.split(RegExp(r'[\r\n]+'))) {
+      final cleanLine = line.trim();
+      if (cleanLine.isEmpty) continue;
+      final parts = cleanLine
+          .split('|')
+          .map((part) => part.trim())
+          .toList(growable: false);
+      if (parts.every((part) => part.isEmpty)) continue;
+
+      final fullName = parts.isNotEmpty ? parts[0] : '';
+      final quality = parts.length > 1 ? parts[1] : '';
+      final fiscalId = parts.length > 3 ? parts[2] : '';
+      final address = switch (parts.length) {
+        >= 4 => parts.sublist(3).join(' | '),
+        3 => parts[2],
+        _ => '',
+      };
+      rows.add(
+        _FiscalGovernanceRow(
+          fullName: fullName,
+          quality: quality,
+          fiscalId: fiscalId,
+          address: address,
+        ),
+      );
+    }
+    return rows;
+  }
+
+  static void _writeGovernanceRows(
+    XmlDocument sheetDoc,
+    List<_FiscalGovernanceRow> rows, {
+    required int startRow,
+    required int endRow,
+    required bool includeFiscalId,
+  }) {
+    final maxRows = endRow - startRow + 1;
+    for (var index = 0; index < maxRows; index += 1) {
+      final rowNumber = startRow + index;
+      final row = index < rows.length ? rows[index] : null;
+      final nameParts = _splitFullName(row?.fullName ?? '');
+
+      _setTextOrClear(sheetDoc, 'B$rowNumber', nameParts.lastName);
+      _setTextOrClear(sheetDoc, 'C$rowNumber', nameParts.firstNames);
+      _setTextOrClear(sheetDoc, 'D$rowNumber', row?.quality);
+      if (includeFiscalId) {
+        _setTextOrClear(sheetDoc, 'E$rowNumber', row?.fiscalId);
+        _setTextOrClear(sheetDoc, 'F$rowNumber', row?.address);
+      } else {
+        _setTextOrClear(sheetDoc, 'E$rowNumber', row?.address);
+      }
+    }
+  }
+
+  static _NameParts _splitFullName(String fullName) {
+    final parts = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) return const _NameParts(lastName: '', firstNames: '');
+    if (parts.length == 1) {
+      return _NameParts(lastName: parts.first, firstNames: '');
+    }
+    return _NameParts(
+      lastName: parts.first,
+      firstNames: parts.skip(1).join(' '),
+    );
+  }
+
+  static Set<String> _parseFiscalNoteCodes(String raw) {
+    return raw
+        .split(RegExp(r'[,;\r\n]+'))
+        .map(_normalizeFiscalNoteCode)
+        .where((note) => note.isNotEmpty)
+        .toSet();
+  }
+
+  static String _normalizeFiscalNoteCode(String value) {
+    var text = value.trim().toUpperCase();
+    if (text.isEmpty) return '';
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
+    text = text.replaceFirst(RegExp(r'^NOTES\b'), 'NOTE');
+    if (!text.startsWith('NOTE ')) text = 'NOTE $text';
+    return text;
   }
 
   static void _setTextOrClear(
@@ -969,6 +1119,76 @@ class _CellRange {
   final _CellRef start;
   final _CellRef end;
 }
+
+class _FiscalGovernanceRow {
+  const _FiscalGovernanceRow({
+    required this.fullName,
+    required this.quality,
+    required this.fiscalId,
+    required this.address,
+  });
+
+  final String fullName;
+  final String quality;
+  final String fiscalId;
+  final String address;
+}
+
+class _NameParts {
+  const _NameParts({required this.lastName, required this.firstNames});
+
+  final String lastName;
+  final String firstNames;
+}
+
+const _fiscalR4NoteRows = <int, String>{
+  7: 'NOTE 1',
+  8: 'NOTE 2',
+  9: 'NOTE 3A',
+  10: 'NOTE 3B',
+  11: 'NOTE 3C',
+  12: 'NOTE 3D',
+  13: 'NOTE 3E',
+  14: 'NOTE 3F',
+  15: 'NOTE 4',
+  16: 'NOTE 5',
+  17: 'NOTE 6',
+  18: 'NOTE 7',
+  19: 'NOTE 8',
+  20: 'NOTE 9',
+  21: 'NOTE 10',
+  22: 'NOTE 11',
+  23: 'NOTE 12',
+  24: 'NOTE 13',
+  25: 'NOTE 14',
+  26: 'NOTE 15A',
+  27: 'NOTE 15B',
+  28: 'NOTE 16A',
+  29: 'NOTE 16B',
+  30: 'NOTE 16B bis',
+  31: 'NOTE 16C',
+  32: 'NOTE 17',
+  33: 'NOTE 18',
+  34: 'NOTE 19',
+  35: 'NOTE 20',
+  36: 'NOTE 21',
+  37: 'NOTE 22',
+  38: 'NOTE 23',
+  39: 'NOTE 24',
+  40: 'NOTE 25',
+  41: 'NOTE 26',
+  42: 'NOTE 27A',
+  43: 'NOTE 27B',
+  44: 'NOTE 28',
+  45: 'NOTE 29',
+  46: 'NOTE 30',
+  47: 'NOTE 31',
+  48: 'NOTE 32',
+  49: 'NOTE 33',
+  50: 'NOTE 34',
+  51: 'NOTE 35',
+  52: 'NOTE 36',
+};
 
 extension _FirstOrNullExtension<E> on Iterable<E> {
   E? get firstOrNull {

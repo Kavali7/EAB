@@ -70,6 +70,9 @@ class _OrganizationSettingsScreenState
   final _fiscalCaisseSocialeCtrl = TextEditingController();
   final _fiscalCodeImportateurCtrl = TextEditingController();
   final _fiscalRepresentantIfuCtrl = TextEditingController();
+  final _fiscalDirigeantsCtrl = TextEditingController();
+  final _fiscalConseilCtrl = TextEditingController();
+  final _fiscalNotesApplicablesCtrl = TextEditingController();
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
   String _fiscalControleCode = 'private_national';
@@ -139,6 +142,9 @@ class _OrganizationSettingsScreenState
     _fiscalCaisseSocialeCtrl.dispose();
     _fiscalCodeImportateurCtrl.dispose();
     _fiscalRepresentantIfuCtrl.dispose();
+    _fiscalDirigeantsCtrl.dispose();
+    _fiscalConseilCtrl.dispose();
+    _fiscalNotesApplicablesCtrl.dispose();
     _inviteEmailCtrl.dispose();
     super.dispose();
   }
@@ -186,6 +192,11 @@ class _OrganizationSettingsScreenState
     _fiscalCaisseSocialeCtrl.text = fiscal.socialSecurityNumber ?? '';
     _fiscalCodeImportateurCtrl.text = fiscal.importerCode ?? '';
     _fiscalRepresentantIfuCtrl.text = fiscal.legalRepresentativeFiscalId ?? '';
+    _fiscalDirigeantsCtrl.text = fiscal.governanceLeaders ?? '';
+    _fiscalConseilCtrl.text = fiscal.boardMembers ?? '';
+    _fiscalNotesApplicablesCtrl.text =
+        fiscal.applicableNotes ??
+        OrganizationFiscalProfile.defaultApplicableNotes;
   }
 
   Future<void> _save(Organization org) async {
@@ -945,6 +956,25 @@ class _OrganizationSettingsScreenState
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Gouvernance fiscale'),
+          const SizedBox(height: AppSpacing.sm),
+          EabTextField(
+            label: 'Dirigeants FICHE R3',
+            controller: _fiscalDirigeantsCtrl,
+            helper: 'Une ligne : Nom complet | Qualite courte | IFU | Adresse.',
+            hint:
+                'Georges GUIDAN | Representant legal | 3202600000099 | Cotonou',
+            maxLines: compact ? 5 : 4,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          EabTextField(
+            label: 'Conseil d administration FICHE R3',
+            controller: _fiscalConseilCtrl,
+            helper: 'Une ligne : Nom complet | Qualite courte | Adresse.',
+            hint: 'Marie HOUNTON | Presidente du conseil | Porto-Novo',
+            maxLines: compact ? 5 : 3,
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _subsectionTitle('Comptable responsable'),
           const SizedBox(height: AppSpacing.sm),
           ResponsiveFormRow(
@@ -989,6 +1019,17 @@ class _OrganizationSettingsScreenState
                 controller: _fiscalCompteLibelleCtrl,
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _subsectionTitle('Notes annexes applicables'),
+          const SizedBox(height: AppSpacing.sm),
+          EabTextField(
+            label: 'Notes applicables FICHE R4',
+            controller: _fiscalNotesApplicablesCtrl,
+            helper:
+                'Separez par virgule ou retour a la ligne. Les autres notes seront marquees N/A.',
+            hint: OrganizationFiscalProfile.defaultApplicableNotes,
+            maxLines: compact ? 6 : 4,
           ),
         ],
       ),
@@ -1464,6 +1505,8 @@ class _OrganizationSettingsScreenState
       _fiscalCentreImpotsCtrl.text,
       _fiscalRepresentantNomCtrl.text,
       _fiscalComptableNomCtrl.text,
+      _fiscalDirigeantsCtrl.text,
+      _fiscalNotesApplicablesCtrl.text,
     ].any((value) => value.trim().isNotEmpty)) {
       steps.add('fiscal_identity');
     }
@@ -1504,6 +1547,9 @@ class _OrganizationSettingsScreenState
       legalRepresentativeFiscalId: _nullIfBlank(
         _fiscalRepresentantIfuCtrl.text,
       ),
+      governanceLeaders: _nullIfBlank(_fiscalDirigeantsCtrl.text),
+      boardMembers: _nullIfBlank(_fiscalConseilCtrl.text),
+      applicableNotes: _nullIfBlank(_fiscalNotesApplicablesCtrl.text),
     );
   }
 

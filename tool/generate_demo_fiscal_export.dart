@@ -283,6 +283,15 @@ final _eabIdentity = _FiscalDemoIdentity(
   socialSecurityNumber: '',
   importerCode: '',
   legalRepresentativeFiscalId: '3202600000099',
+  governanceLeaders:
+      'Georges GUIDAN | Rep. legal | 3202600000099 | Cotonou, Littoral, Benin\n'
+      'Marie HOUNTON | Secretaire | 3202600000100 | Porto-Novo, Benin',
+  boardMembers:
+      'Paul KOSSOU | President | Cotonou, Benin\n'
+      'Jeanne ADANDE | Membre | Abomey-Calavi, Benin',
+  applicableNotes:
+      'NOTE 2, NOTE 3B, NOTE 3C, NOTE 11, NOTE 21, NOTE 22, '
+      'NOTE 24, NOTE 25, NOTE 30, NOTE 34, NOTE 35, NOTE 36',
   currency: 'FCFA',
   periodLabel: 'Exercice comptable 2025',
   periodStart: DateTime(2025),
@@ -325,6 +334,9 @@ class _FiscalDemoIdentity {
     required this.socialSecurityNumber,
     required this.importerCode,
     required this.legalRepresentativeFiscalId,
+    required this.governanceLeaders,
+    required this.boardMembers,
+    required this.applicableNotes,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -365,6 +377,9 @@ class _FiscalDemoIdentity {
   final String socialSecurityNumber;
   final String importerCode;
   final String legalRepresentativeFiscalId;
+  final String governanceLeaders;
+  final String boardMembers;
+  final String applicableNotes;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -416,6 +431,11 @@ class _FiscalDemoIdentity {
       '_fiscalSocialSecurityNumber': socialSecurityNumber,
       '_fiscalImporterCode': importerCode,
       '_fiscalLegalRepresentativeFiscalId': legalRepresentativeFiscalId,
+      '_fiscalLegalRepresentativeName': legalRepresentativeName,
+      '_fiscalLegalRepresentativeTitle': legalRepresentativeTitle,
+      '_fiscalGovernanceLeaders': governanceLeaders,
+      '_fiscalBoardMembers': boardMembers,
+      '_fiscalApplicableNotes': applicableNotes,
     };
   }
 

@@ -89,7 +89,15 @@ updated AS (
           'main_activity_code', '9491',
           'social_security_number', '',
           'importer_code', '',
-          'legal_representative_fiscal_id', '3202600000099'
+          'legal_representative_fiscal_id', '3202600000099',
+          'governance_leaders',
+            'Georges GUIDAN | Rep. legal | 3202600000099 | Cotonou, Littoral, Benin' || chr(10) ||
+            'Marie HOUNTON | Secretaire | 3202600000100 | Porto-Novo, Benin',
+          'board_members',
+            'Paul KOSSOU | President | Cotonou, Benin' || chr(10) ||
+            'Jeanne ADANDE | Membre | Abomey-Calavi, Benin',
+          'applicable_notes',
+            'NOTE 2, NOTE 3B, NOTE 3C, NOTE 11, NOTE 21, NOTE 22, NOTE 24, NOTE 25, NOTE 30, NOTE 34, NOTE 35, NOTE 36'
         ),
         'onboarding',
         s.onboarding || jsonb_build_object('completed_steps', cs.steps)

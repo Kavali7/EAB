@@ -35,6 +35,9 @@ class FiscalOrganizationIdentity {
     required this.socialSecurityNumber,
     required this.importerCode,
     required this.legalRepresentativeFiscalId,
+    required this.governanceLeaders,
+    required this.boardMembers,
+    required this.applicableNotes,
     required this.currency,
     required this.periodLabel,
     required this.periodStart,
@@ -75,6 +78,9 @@ class FiscalOrganizationIdentity {
   final String socialSecurityNumber;
   final String importerCode;
   final String legalRepresentativeFiscalId;
+  final String governanceLeaders;
+  final String boardMembers;
+  final String applicableNotes;
   final String currency;
   final String periodLabel;
   final DateTime periodStart;
@@ -110,6 +116,24 @@ class FiscalOrganizationIdentity {
       profile.ifu,
       'IFU a renseigner',
     ]);
+    final legalRepresentativeName = _firstFilled([
+      profile.legalRepresentativeName,
+      'Responsable legal a renseigner',
+    ]);
+    final legalRepresentativeTitle = _firstFilled([
+      profile.legalRepresentativeTitle,
+      'Representant legal',
+    ]);
+    final legalRepresentativePhone = _firstFilled([
+      profile.legalRepresentativePhone,
+      organization.telephone,
+      '',
+    ]);
+    final legalRepresentativeFiscalId = _firstFilled([
+      _stringValue(values['responsable.fiscal_id']),
+      profile.legalRepresentativeFiscalId,
+      '',
+    ]);
     final periodLabel = _firstFilled([
       _stringValue(values['exercice.label']),
       'Exercice ${periodEnd.year}',
@@ -138,19 +162,9 @@ class FiscalOrganizationIdentity {
         profile.activityDescription,
         'Activites cultuelles et communautaires',
       ]),
-      legalRepresentativeName: _firstFilled([
-        profile.legalRepresentativeName,
-        'Responsable legal a renseigner',
-      ]),
-      legalRepresentativeTitle: _firstFilled([
-        profile.legalRepresentativeTitle,
-        'Representant legal',
-      ]),
-      legalRepresentativePhone: _firstFilled([
-        profile.legalRepresentativePhone,
-        organization.telephone,
-        '',
-      ]),
+      legalRepresentativeName: legalRepresentativeName,
+      legalRepresentativeTitle: legalRepresentativeTitle,
+      legalRepresentativePhone: legalRepresentativePhone,
       accountantName: _firstFilled([
         profile.accountantName,
         'Comptable responsable a renseigner',
@@ -234,10 +248,26 @@ class FiscalOrganizationIdentity {
         profile.importerCode,
         '',
       ]),
-      legalRepresentativeFiscalId: _firstFilled([
-        _stringValue(values['responsable.fiscal_id']),
-        profile.legalRepresentativeFiscalId,
+      legalRepresentativeFiscalId: legalRepresentativeFiscalId,
+      governanceLeaders: _firstFilled([
+        _stringValue(values['fiscal.governance_leaders']),
+        profile.governanceLeaders,
+        _joinDelimitedRow([
+          legalRepresentativeName,
+          legalRepresentativeTitle,
+          legalRepresentativeFiscalId,
+          address,
+        ]),
+      ]),
+      boardMembers: _firstFilled([
+        _stringValue(values['fiscal.board_members']),
+        profile.boardMembers,
         '',
+      ]),
+      applicableNotes: _firstFilled([
+        _stringValue(values['fiscal.applicable_notes']),
+        profile.applicableNotes,
+        OrganizationFiscalProfile.defaultApplicableNotes,
       ]),
       currency: _firstFilled([
         _stringValue(values['currency']),
@@ -297,6 +327,11 @@ class FiscalOrganizationIdentity {
       '_fiscalSocialSecurityNumber': socialSecurityNumber,
       '_fiscalImporterCode': importerCode,
       '_fiscalLegalRepresentativeFiscalId': legalRepresentativeFiscalId,
+      '_fiscalLegalRepresentativeName': legalRepresentativeName,
+      '_fiscalLegalRepresentativeTitle': legalRepresentativeTitle,
+      '_fiscalGovernanceLeaders': governanceLeaders,
+      '_fiscalBoardMembers': boardMembers,
+      '_fiscalApplicableNotes': applicableNotes,
     };
   }
 
@@ -354,6 +389,10 @@ class FiscalOrganizationIdentity {
       if (clean != null && clean.isNotEmpty) return clean;
     }
     return '';
+  }
+
+  static String _joinDelimitedRow(List<String> values) {
+    return values.map((value) => value.trim()).join(' | ');
   }
 
   static String _formatDate(DateTime date) {

@@ -332,6 +332,10 @@ class FiscalExportPreflightEngine {
         'premiere annee d exercice dans le pays',
       if (_isBlank(fiscal.legalRepresentativeFiscalId))
         'IFU du representant legal',
+      if (_isBlank(fiscal.governanceLeaders)) 'dirigeants FICHE R3',
+      if (_isBlank(fiscal.boardMembers))
+        'membres du conseil d administration FICHE R3',
+      if (_isBlank(fiscal.applicableNotes)) 'notes applicables FICHE R4',
     ];
 
     return [

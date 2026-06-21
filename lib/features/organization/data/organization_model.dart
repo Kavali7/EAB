@@ -180,9 +180,17 @@ class OrganizationFiscalProfile {
     this.socialSecurityNumber,
     this.importerCode,
     this.legalRepresentativeFiscalId,
+    this.governanceLeaders,
+    this.boardMembers,
+    this.applicableNotes,
   });
 
   static const paramKey = 'fiscal_identity';
+  static const defaultApplicableNotes =
+      'NOTE 2, NOTE 3B, NOTE 3C, NOTE 6, NOTE 7, NOTE 13, NOTE 14, '
+      'NOTE 16C, NOTE 19, NOTE 20, NOTE 21, NOTE 22, NOTE 24, NOTE 25, '
+      'NOTE 27A, NOTE 27B, NOTE 28, NOTE 30, NOTE 31, NOTE 33, '
+      'NOTE 34, NOTE 35, NOTE 36';
 
   final String? ifu;
   final String? registrationNumber;
@@ -212,6 +220,9 @@ class OrganizationFiscalProfile {
   final String? socialSecurityNumber;
   final String? importerCode;
   final String? legalRepresentativeFiscalId;
+  final String? governanceLeaders;
+  final String? boardMembers;
+  final String? applicableNotes;
 
   factory OrganizationFiscalProfile.fromOrganization(Organization org) {
     final raw = org.parametres?[paramKey] ?? org.parametres?['fiscal'];
@@ -256,6 +267,9 @@ class OrganizationFiscalProfile {
         data,
         'legal_representative_fiscal_id',
       ),
+      governanceLeaders: _read(data, 'governance_leaders'),
+      boardMembers: _read(data, 'board_members'),
+      applicableNotes: _read(data, 'applicable_notes'),
     );
   }
 
@@ -289,6 +303,9 @@ class OrganizationFiscalProfile {
       'social_security_number': socialSecurityNumber,
       'importer_code': importerCode,
       'legal_representative_fiscal_id': legalRepresentativeFiscalId,
+      'governance_leaders': governanceLeaders,
+      'board_members': boardMembers,
+      'applicable_notes': applicableNotes,
     }..removeWhere((_, value) => value == null || value.toString().isEmpty);
   }
 

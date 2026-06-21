@@ -204,6 +204,13 @@ void main() {
               'control_type_code': 'private_national',
               'main_activity_code': '9491',
               'legal_representative_fiscal_id': '3202600000099',
+              'governance_leaders':
+                  'Georges GUIDAN | Representant legal de demonstration | 3202600000099 | Cotonou, Littoral, Benin\n'
+                  'Marie HOUNTON | Secretaire generale | 3202600000100 | Porto-Novo, Benin',
+              'board_members':
+                  'Paul KOSSOU | President du conseil | Cotonou, Benin\n'
+                  'Jeanne ADANDE | Membre du conseil | Abomey-Calavi, Benin',
+              'applicable_notes': 'NOTE 2, NOTE 3B, NOTE 36',
             },
           },
         ),
@@ -322,13 +329,31 @@ void main() {
       final ficheR3 = XmlDocument.parse(
         _entryText(archive, 'xl/worksheets/sheet4.xml'),
       );
+      expect(_cellValue(ficheR3, 'B12'), 'Georges');
+      expect(_cellValue(ficheR3, 'C12'), 'GUIDAN');
+      expect(_cellValue(ficheR3, 'D12'), 'Representant legal de demonstration');
       expect(_cellValue(ficheR3, 'E12'), '3202600000099');
+      expect(_cellValue(ficheR3, 'F12'), 'Cotonou, Littoral, Benin');
+      expect(_cellValue(ficheR3, 'B13'), 'Marie');
+      expect(_cellValue(ficheR3, 'C13'), 'HOUNTON');
+      expect(_cellValue(ficheR3, 'D13'), 'Secretaire generale');
+      expect(_cellValue(ficheR3, 'E13'), '3202600000100');
+      expect(_cellValue(ficheR3, 'B25'), 'Paul');
+      expect(_cellValue(ficheR3, 'C25'), 'KOSSOU');
+      expect(_cellValue(ficheR3, 'D25'), 'President du conseil');
+      expect(_cellValue(ficheR3, 'E25'), 'Cotonou, Benin');
 
       final ficheR4 = XmlDocument.parse(
         _entryText(archive, 'xl/worksheets/sheet5.xml'),
       );
+      expect(_cellValue(ficheR4, 'C8'), 'x');
+      expect(_cellValue(ficheR4, 'D8'), isNull);
       expect(_cellValue(ficheR4, 'C14'), isNull);
       expect(_cellValue(ficheR4, 'D14'), 'x');
+      expect(_cellValue(ficheR4, 'C16'), isNull);
+      expect(_cellValue(ficheR4, 'D16'), 'x');
+      expect(_cellValue(ficheR4, 'C52'), 'x');
+      expect(_cellValue(ficheR4, 'D52'), isNull);
 
       final note36 = XmlDocument.parse(
         _entryText(archive, 'xl/worksheets/sheet55.xml'),
