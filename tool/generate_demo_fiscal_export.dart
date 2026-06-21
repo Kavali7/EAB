@@ -57,6 +57,9 @@ void main() {
   stdout.writeln('Feuilles: ${audit.sheetCount}');
   stdout.writeln('Feuilles automatisees: ${audit.automatedSheetCount}');
   stdout.writeln('Feuilles a revue manuelle: ${audit.manualReviewSheetCount}');
+  stdout.writeln(
+    'Feuilles non classees: ${audit.unclassifiedSheetNames.length}',
+  );
   stdout.writeln('Entrees zip preservees: ${audit.preservedArchiveEntries}');
   stdout.writeln('Noms definis critiques:');
   for (final entry in audit.definedNames.entries) {
@@ -95,13 +98,39 @@ _WorkbookAudit _auditWorkbook({
     _entryText(outputArchive, 'xl/workbook.xml'),
   );
   final sheetPaths = _sheetPaths(outputArchive, workbook);
-  final normalizedSheets = sheetPaths.keys.map((sheet) => sheet.trim()).toSet();
+  final normalizedSheetNames = [
+    for (final sheet in sheetPaths.keys) sheet.trim(),
+  ];
+  final normalizedSheets = normalizedSheetNames.toSet();
   final missingAutomated = SyscebnlFiscalExcelMapper.automatedSheetNames
       .where((sheet) => !normalizedSheets.contains(sheet))
       .toList();
   if (missingAutomated.isNotEmpty) {
     throw StateError(
       'Feuilles automatisees introuvables: ${missingAutomated.join(', ')}',
+    );
+  }
+  final missingManual = SyscebnlFiscalExcelMapper.manualReviewSheetNames
+      .where((sheet) => !normalizedSheets.contains(sheet))
+      .toList();
+  if (missingManual.isNotEmpty) {
+    throw StateError(
+      'Feuilles a revue manuelle introuvables: ${missingManual.join(', ')}',
+    );
+  }
+  const informationalSheetNames = {'PAGE DE GARDE', 'CODES'};
+  final classifiedSheets = {
+    ...SyscebnlFiscalExcelMapper.automatedSheetNames,
+    ...SyscebnlFiscalExcelMapper.manualReviewSheetNames,
+    ...informationalSheetNames,
+  };
+  final unclassifiedSheetNames = normalizedSheetNames
+      .where((sheet) => !classifiedSheets.contains(sheet))
+      .toList();
+  if (unclassifiedSheetNames.isNotEmpty) {
+    throw StateError(
+      'Feuilles non classees dans l audit fiscal: '
+      '${unclassifiedSheetNames.join(', ')}',
     );
   }
 
@@ -187,9 +216,12 @@ _WorkbookAudit _auditWorkbook({
 
   return _WorkbookAudit(
     sheetCount: sheetPaths.length,
+    automatedSheetNames: SyscebnlFiscalExcelMapper.automatedSheetNames,
     automatedSheetCount: SyscebnlFiscalExcelMapper.automatedSheetNames.length,
+    manualReviewSheetNames: SyscebnlFiscalExcelMapper.manualReviewSheetNames,
     manualReviewSheetCount:
         SyscebnlFiscalExcelMapper.manualReviewSheetNames.length,
+    unclassifiedSheetNames: unclassifiedSheetNames,
     preservedArchiveEntries: inputNames.length == outputNames.length,
     definedNames: {
       '_nSo': _definedName(workbook, '_nSo') ?? '<absent>',
@@ -500,8 +532,11 @@ int _monthDuration(DateTime start, DateTime end) {
 class _WorkbookAudit {
   const _WorkbookAudit({
     required this.sheetCount,
+    required this.automatedSheetNames,
     required this.automatedSheetCount,
+    required this.manualReviewSheetNames,
     required this.manualReviewSheetCount,
+    required this.unclassifiedSheetNames,
     required this.preservedArchiveEntries,
     required this.definedNames,
     required this.nonZeroCells,
@@ -510,8 +545,11 @@ class _WorkbookAudit {
   });
 
   final int sheetCount;
+  final List<String> automatedSheetNames;
   final int automatedSheetCount;
+  final List<String> manualReviewSheetNames;
   final int manualReviewSheetCount;
+  final List<String> unclassifiedSheetNames;
   final bool preservedArchiveEntries;
   final Map<String, String> definedNames;
   final List<FiscalExcelCellValue> nonZeroCells;
@@ -523,7 +561,11 @@ class _WorkbookAudit {
       'file': output.absolute.path,
       'sheet_count': sheetCount,
       'automated_sheet_count': automatedSheetCount,
+      'automated_sheet_names': automatedSheetNames,
       'manual_review_sheet_count': manualReviewSheetCount,
+      'manual_review_sheet_names': manualReviewSheetNames,
+      'unclassified_sheet_count': unclassifiedSheetNames.length,
+      'unclassified_sheet_names': unclassifiedSheetNames,
       'preserved_archive_entries': preservedArchiveEntries,
       'defined_names': definedNames,
       'non_zero_cell_count': nonZeroCells.length,

@@ -146,6 +146,7 @@ class SyscebnlFiscalExcelMapper {
     'NOTE 16B',
     'NOTE 16B bis',
     'NOTE 16C',
+    'NOTE 27B',
     'NOTE 32',
     'NOTE 33',
     'NOTE 35',
