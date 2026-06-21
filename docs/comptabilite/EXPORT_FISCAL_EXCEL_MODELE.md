@@ -204,6 +204,22 @@ Le prototype controle que le classeur genere conserve le meme nombre d'entrees z
 
 Il controle aussi que les montants d'exemple des fiches et notes annexes sont neutralises ou remplaces par des donnees SYSCEBNL reelles, par exemple `FICHE R1!AQ14`, `NOTE 3A!H23`, `NOTE 3C!C22`, `NOTE 6!B12`, `NOTE 7!B12`, `NOTE 11!C12`, `NOTE 21!B37`, `NOTE 24!B11`, `NOTE 27A!B11` et `NOTE 31!B18`.
 
+Export distant d'un dossier fiscal reel Supabase :
+
+```bash
+SUPABASE_URL=https://<project-ref>.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+FISCAL_DOSSIER_ID=<fiscal-dossier-id> \
+dart run tool/export_remote_fiscal_dossier.dart
+```
+
+Cet outil lit le dossier, l'organisation, les valeurs fiscales et la balance du
+perimetre actif depuis Supabase. Il produit un classeur audite dans
+`build/exports/`, refuse les anciennes references du modele et calcule la
+balance comparative depuis les tables comptables afin de rester utilisable hors
+session utilisateur. La conversion PDF officielle reste faite ensuite par
+`server/fiscal-pdf-converter`.
+
 ## Ajustements avant generation
 
 Le niveau autorise, generalement le plus haut niveau comptable, doit pouvoir effectuer des ajustements temporaires avant generation :
