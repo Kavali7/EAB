@@ -86,16 +86,20 @@ class FiscalExcelTemplateWriter {
         _setFormulaCell(sheetDoc, formula.cell, formula.formula);
       }
       _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
+      _syncStaticFiscalHeaderCells(sheetName, sheetDoc, definedNames);
       _ensureHorizontalPrintCentering(sheetDoc);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
 
-    for (final sheetPath in sheetPaths.values) {
+    for (final entry in sheetPaths.entries) {
+      final sheetName = entry.key;
+      final sheetPath = entry.value;
       if (replacements.containsKey(sheetPath)) continue;
       final sheetFile = files[sheetPath];
       if (sheetFile == null) continue;
       final sheetDoc = XmlDocument.parse(_readText(sheetFile));
       _syncDefinedNameFormulaCaches(sheetDoc, definedNames);
+      _syncStaticFiscalHeaderCells(sheetName, sheetDoc, definedNames);
       _ensureHorizontalPrintCentering(sheetDoc);
       replacements[sheetPath] = _encodeXml(sheetDoc);
     }
@@ -357,6 +361,61 @@ class FiscalExcelTemplateWriter {
     );
   }
 
+  static void _setTextCell(XmlDocument sheetDoc, String cellRef, String value) {
+    final cell = _ensureCell(sheetDoc, cellRef);
+    _setAttribute(cell, 't', 'str');
+    cell.children.removeWhere(
+      (node) =>
+          node is XmlElement &&
+          (node.name.local == 'f' || node.name.local == 'v'),
+    );
+    cell.children.add(XmlElement(XmlName('v'), [], [XmlText(value)]));
+  }
+
+  static void _clearCellValue(XmlDocument sheetDoc, String cellRef) {
+    final cell = _ensureCell(sheetDoc, cellRef);
+    _removeAttribute(cell, 't');
+    cell.children.removeWhere(
+      (node) =>
+          node is XmlElement &&
+          (node.name.local == 'f' || node.name.local == 'v'),
+    );
+  }
+
+  static void _syncStaticFiscalHeaderCells(
+    String sheetName,
+    XmlDocument sheetDoc,
+    Map<String, String> definedNames,
+  ) {
+    final normalizedSheetName = sheetName.trim();
+
+    if (normalizedSheetName == 'FICHE R1') {
+      _clearCellValue(sheetDoc, 'G59');
+      _clearCellValue(sheetDoc, 'AK57');
+      return;
+    }
+
+    if (normalizedSheetName != 'FICHE R2') return;
+
+    final exerciseClosingDate =
+        definedNames['_ExerClos'] ?? definedNames['_ExerFin'];
+    if (exerciseClosingDate != null && exerciseClosingDate.isNotEmpty) {
+      _setTextCell(sheetDoc, 'AH5', exerciseClosingDate);
+    }
+
+    final duration = _durationMonths(definedNames['_Duree']);
+    if (duration != null) {
+      _setNumericCell(sheetDoc, 'AH6', duration.toDouble());
+    }
+  }
+
+  static int? _durationMonths(String? text) {
+    if (text == null) return null;
+    final matches = RegExp(r'\d+').allMatches(text).toList(growable: false);
+    if (matches.isEmpty) return null;
+    return int.tryParse(matches.last.group(0)!);
+  }
+
   static String? _worksheetUsedRange(
     XmlDocument sheetDoc,
     List<String> sharedStrings,
@@ -365,6 +424,18 @@ class FiscalExcelTemplateWriter {
     int? maxColumn;
     int? minRow;
     int? maxRow;
+    final printableCellRefs = <String>{};
+
+    void includeCell(_CellRef cell) {
+      minColumn = minColumn == null || cell.column < minColumn!
+          ? cell.column
+          : minColumn;
+      maxColumn = maxColumn == null || cell.column > maxColumn!
+          ? cell.column
+          : maxColumn;
+      minRow = minRow == null || cell.row < minRow! ? cell.row : minRow;
+      maxRow = maxRow == null || cell.row > maxRow! ? cell.row : maxRow;
+    }
 
     for (final cell in sheetDoc.findAllElements('c')) {
       final cellRef = cell.getAttribute('r');
@@ -373,14 +444,19 @@ class FiscalExcelTemplateWriter {
       if (!_cellHasPrintableContent(cell, sharedStrings)) continue;
 
       final parsed = _parseCellRef(cellRef);
-      minColumn = minColumn == null || parsed.column < minColumn
-          ? parsed.column
-          : minColumn;
-      maxColumn = maxColumn == null || parsed.column > maxColumn
-          ? parsed.column
-          : maxColumn;
-      minRow = minRow == null || parsed.row < minRow ? parsed.row : minRow;
-      maxRow = maxRow == null || parsed.row > maxRow ? parsed.row : maxRow;
+      printableCellRefs.add(_cellRefKey(parsed));
+      includeCell(parsed);
+    }
+
+    for (final mergeCell in sheetDoc.findAllElements('mergeCell')) {
+      final ref = mergeCell.getAttribute('ref');
+      if (ref == null || ref.isEmpty) continue;
+
+      final range = _parseRangeBounds(ref);
+      if (!printableCellRefs.contains(_cellRefKey(range.start))) continue;
+
+      includeCell(range.start);
+      includeCell(range.end);
     }
 
     if (minColumn == null ||
@@ -390,7 +466,7 @@ class FiscalExcelTemplateWriter {
       return null;
     }
 
-    return '${_columnName(minColumn)}$minRow:${_columnName(maxColumn)}$maxRow';
+    return '${_columnName(minColumn!)}$minRow:${_columnName(maxColumn!)}$maxRow';
   }
 
   static bool _cellHasPrintableContent(
@@ -440,18 +516,28 @@ class FiscalExcelTemplateWriter {
   }
 
   static bool _rangeContainsCell(String range, _CellRef cell) {
+    final bounds = _parseRangeBounds(range);
+    return cell.column >= bounds.start.column &&
+        cell.column <= bounds.end.column &&
+        cell.row >= bounds.start.row &&
+        cell.row <= bounds.end.row;
+  }
+
+  static _CellRange _parseRangeBounds(String range) {
     final parts = range.split(':');
-    if (parts.isEmpty || parts.length > 2) return false;
+    if (parts.isEmpty || parts.length > 2) {
+      throw FormatException('Plage Excel invalide: $range');
+    }
     final start = _parseCellRef(parts.first);
     final end = _parseCellRef(parts.length == 1 ? parts.first : parts.last);
     final minColumn = start.column < end.column ? start.column : end.column;
     final maxColumn = start.column > end.column ? start.column : end.column;
     final minRow = start.row < end.row ? start.row : end.row;
     final maxRow = start.row > end.row ? start.row : end.row;
-    return cell.column >= minColumn &&
-        cell.column <= maxColumn &&
-        cell.row >= minRow &&
-        cell.row <= maxRow;
+    return _CellRange(
+      start: _CellRef(column: minColumn, row: minRow),
+      end: _CellRef(column: maxColumn, row: maxRow),
+    );
   }
 
   static _CellRef _parseCellRef(String cellRef) {
@@ -618,18 +704,16 @@ class FiscalExcelTemplateWriter {
   }
 
   static String _absoluteRange(String range) {
-    final parts = range.split(':');
-    if (parts.isEmpty || parts.length > 2) {
-      throw FormatException('Plage Excel invalide: $range');
-    }
-    final start = _parseCellRef(parts.first);
-    final end = _parseCellRef(parts.length == 1 ? parts.first : parts.last);
-    return '${_absoluteCellRef(start)}:${_absoluteCellRef(end)}';
+    final bounds = _parseRangeBounds(range);
+    return '${_absoluteCellRef(bounds.start)}:${_absoluteCellRef(bounds.end)}';
   }
 
   static String _absoluteCellRef(_CellRef cell) {
     return r'$' + _columnName(cell.column) + r'$' + cell.row.toString();
   }
+
+  static String _cellRefKey(_CellRef cell) =>
+      '${_columnName(cell.column)}${cell.row}';
 
   static String _quoteSheetName(String sheetName) {
     return "'${sheetName.replaceAll("'", "''")}'";
@@ -730,6 +814,13 @@ class _CellRef {
 
   final int column;
   final int row;
+}
+
+class _CellRange {
+  const _CellRange({required this.start, required this.end});
+
+  final _CellRef start;
+  final _CellRef end;
 }
 
 extension _FirstOrNullExtension<E> on Iterable<E> {

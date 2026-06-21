@@ -175,7 +175,7 @@ class FiscalOrganizationIdentity {
       '_nCompletPays': country,
       '_Perimetre': perimeterLabel,
       '_Devise': currency,
-      '_ExerClos': '$periodLabel clos le $endDate',
+      '_ExerClos': endDate,
       '_ExerDeb': _formatDate(periodStart),
       '_ExerFin': endDate,
       '_ExerFin1': previousEndDate,

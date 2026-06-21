@@ -36,7 +36,7 @@ void main() {
       '_soNom': 'Eglise Prototype SYSCEBNL',
       '_soId': 'NIF-PROTOTYPE',
       '_soSigle': 'EPS',
-      '_ExerClos': 'Exercice clos le 31/12/2026',
+      '_ExerClos': '31/12/2026',
       '_ExerFin': '31/12/2026',
       '_ExerFin1': '31/12/2025',
       '_Duree': 'Duree (en mois) 12',

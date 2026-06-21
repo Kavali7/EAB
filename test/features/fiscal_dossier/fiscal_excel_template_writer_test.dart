@@ -86,6 +86,10 @@ void main() {
         final calcPr = workbook.rootElement.findElements('calcPr').first;
         expect(calcPr.getAttribute('fullCalcOnLoad'), '1');
         expect(calcPr.getAttribute('forceFullCalc'), '1');
+        expect(
+          _definedName(workbook, '_xlnm.Print_Area'),
+          "'ACTIF'!\$A\$1:\$G\$39",
+        );
 
         final actif = XmlDocument.parse(
           _entryText(archive, 'xl/worksheets/sheet1.xml'),
@@ -245,6 +249,7 @@ void main() {
         '"\u00c9glise Apostolique du B\u00e9nin"',
       );
       expect(_definedName(workbook, '_soNumFisc'), '"3202600000001"');
+      expect(_definedName(workbook, '_ExerClos'), '"31/12/2025"');
       expect(
         _definedName(workbook, '_Ville'),
         '"Centre des impots des organisations religieuses - Cotonou"',
@@ -256,6 +261,19 @@ void main() {
       expect(allXml, contains('150000'));
       expect(allXml, contains('80000'));
       expect(allXml, contains('30000'));
+
+      final ficheR1 = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet2.xml'),
+      );
+      expect(_cellValue(ficheR1, 'G59'), isNull);
+      expect(_cellValue(ficheR1, 'AK57'), isNull);
+
+      final ficheR2 = XmlDocument.parse(
+        _entryText(archive, 'xl/worksheets/sheet3.xml'),
+      );
+      expect(_cellValue(ficheR2, 'AH5'), '31/12/2025');
+      expect(_cellType(ficheR2, 'AH5'), 'str');
+      expect(_cellValue(ficheR2, 'AH6'), '12');
 
       for (final file in archive.files.where(
         (file) =>
@@ -467,6 +485,9 @@ String _worksheetXml() {
     <row r="20"><c r="E20"><v>0</v></c></row>
     <row r="27"><c r="E27"><v>0</v></c></row>
   </sheetData>
+  <mergeCells count="1">
+    <mergeCell ref="E20:G20"/>
+  </mergeCells>
 </worksheet>
 ''';
 }
