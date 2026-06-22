@@ -35,10 +35,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      if (!mounted) return;
+      if (response.session != null) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
     } on AuthException catch (e) {
       setState(() {
         _errorMessage = _translateAuthError(e.message);
