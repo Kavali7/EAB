@@ -215,7 +215,11 @@ Future<void> _seedFiscalDossier(
           'source': 'computed',
         },
   }.toList();
-  await client.insert('fiscal_dossier_values', values);
+  await client.upsert(
+    'fiscal_dossier_values',
+    values,
+    onConflict: 'dossier_id,field_key',
+  );
 }
 
 List<Map<String, dynamic>> _organizations() {
@@ -547,33 +551,35 @@ class _DemoDataBuilder {
       programs.addAll(_programsForUnit(i, unit['id'] as String));
       monthlyReports.add(_monthlyReport(i + 1, unit['id'] as String));
     }
+    final primaryLocalUnitId = localUnits.first['id'] as String;
+    final primaryFinancialAccountId =
+        financialAccounts.firstWhere(
+              (account) => account['church_unit_id'] == primaryLocalUnitId,
+            )['id']
+            as String;
     thirdParties.addAll(_thirdParties());
     campaigns.addAll(
-      _campaigns(
-        localUnits.first['id'] as String,
-        programs.first['id'] as String,
-      ),
+      _campaigns(primaryLocalUnitId, programs.first['id'] as String),
     );
     pledges.addAll(
       _pledges(
         campaigns.first['id'] as String,
-        localUnits.first['id'] as String,
+        primaryLocalUnitId,
         members.first['id'] as String,
       ),
     );
     movements.addAll(
       _movements(
         campaigns.first['id'] as String,
-        localUnits.first['id'] as String,
+        pledges.first['id'] as String,
+        primaryLocalUnitId,
         members.first['id'] as String,
-        financialAccounts.first['id'] as String,
+        primaryFinancialAccountId,
       ),
     );
-    entries.addAll(_entries(localUnits.first['id'] as String));
+    entries.addAll(_entries(primaryLocalUnitId));
     entryLines.addAll(_entryLines());
-    budgets.add(
-      _budget(localUnits.first['id'] as String, centers.first['id'] as String),
-    );
+    budgets.add(_budget(primaryLocalUnitId, centers.first['id'] as String));
     budgetLines.addAll(_budgetLines());
 
     return _DemoData(
@@ -760,6 +766,9 @@ class _DemoDataBuilder {
       'church_unit_id': unitId,
       'type': 'cash',
       'label': 'Caisse principale',
+      'provider': null,
+      'account_number': null,
+      'phone_number': null,
       'currency': 'FCFA',
       'opening_balance': 0,
       'journal_id': _id(single ? '2700' : '1700', 1),
@@ -773,6 +782,7 @@ class _DemoDataBuilder {
       'type': 'mobile_money',
       'label': 'Mobile Money MTN',
       'provider': 'MTN',
+      'account_number': null,
       'phone_number': '+229 61 00 00 ${index.toString().padLeft(2, '0')}',
       'currency': 'FCFA',
       'opening_balance': 0,
@@ -928,6 +938,7 @@ class _DemoDataBuilder {
 
   List<Map<String, dynamic>> _movements(
     String campaignId,
+    String pledgeId,
     String unitId,
     String memberId,
     String accountId,
@@ -938,6 +949,7 @@ class _DemoDataBuilder {
       'church_unit_id': unitId,
       'financial_account_id': accountId,
       'campagne_id': campaignId,
+      'promesse_id': pledgeId,
       'membre_id': memberId,
       'type': 'encaissement',
       'montant': 75000,
@@ -991,6 +1003,7 @@ class _DemoDataBuilder {
       'libelle': 'Offrandes',
       'debit': 0,
       'credit': 300000,
+      'mode_paiement': null,
     },
     {
       'id': _id(single ? '2f40' : '1f40', 3),
@@ -999,6 +1012,7 @@ class _DemoDataBuilder {
       'libelle': 'Aide sociale',
       'debit': 50000,
       'credit': 0,
+      'mode_paiement': null,
     },
     {
       'id': _id(single ? '2f40' : '1f40', 4),
@@ -1066,7 +1080,6 @@ class _DemoDataBuilder {
     'projets_realisations': 'Campagne de renovation et action sociale.',
     'projets_mois_suivant': 'Preparation du rapport trimestriel.',
     'observations': 'Donnees fictives pour demonstration publique.',
-    'statut': 'valide',
   };
 }
 
