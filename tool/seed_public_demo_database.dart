@@ -117,6 +117,7 @@ Future<void> main(List<String> args) async {
     await client.insert('lignes_ecritures', group.entryLines);
     await client.insert('budgets_comptables', group.budgets);
     await client.insert('lignes_budgets', group.budgetLines);
+    await client.insert('immobilisations_comptables', group.immobilisations);
     await client.insert('rapports_mensuels_eab', group.monthlyReports);
     await _seedFiscalDossier(client, group);
   }
@@ -409,6 +410,7 @@ class _DemoDataBuilder {
     final entryLines = <Map<String, dynamic>>[];
     final budgets = <Map<String, dynamic>>[];
     final budgetLines = <Map<String, dynamic>>[];
+    final immobilisations = <Map<String, dynamic>>[];
     final monthlyReports = <Map<String, dynamic>>[];
     final rootTypeId = _id(single ? '2100' : '1100', 1);
     final localTypeId = _id(single ? '2100' : '1100', single ? 1 : 4);
@@ -517,14 +519,15 @@ class _DemoDataBuilder {
         ? [units.first]
         : [
             units.first,
-            ...localUnits.take(8),
-            ...units.where((unit) => unit['type_id'] == sectionTypeId).take(8),
+            ...localUnits,
+            ...units.where((unit) => unit['type_id'] == sectionTypeId).take(16),
           ];
     for (var i = 0; i < financeUnits.length; i++) {
       final unit = financeUnits[i];
       financialAccounts.addAll(_financialAccounts(unit['id'] as String, i + 1));
     }
-    for (var i = 0; i < localUnits.length && i < (single ? 1 : 8); i++) {
+    final demoLocalUnitCount = single ? 1 : localUnits.length;
+    for (var i = 0; i < localUnits.length && i < demoLocalUnitCount; i++) {
       final unit = localUnits[i];
       centers.add(
         _center(
@@ -552,35 +555,31 @@ class _DemoDataBuilder {
       monthlyReports.add(_monthlyReport(i + 1, unit['id'] as String));
     }
     final primaryLocalUnitId = localUnits.first['id'] as String;
-    final primaryFinancialAccountId =
-        financialAccounts.firstWhere(
-              (account) => account['church_unit_id'] == primaryLocalUnitId,
-            )['id']
-            as String;
+    final primaryUnitFinancialAccounts = financialAccounts
+        .where((account) => account['church_unit_id'] == primaryLocalUnitId)
+        .toList();
     thirdParties.addAll(_thirdParties());
     campaigns.addAll(
       _campaigns(primaryLocalUnitId, programs.first['id'] as String),
     );
     pledges.addAll(
-      _pledges(
-        campaigns.first['id'] as String,
-        primaryLocalUnitId,
-        members.first['id'] as String,
-      ),
+      _pledges(primaryLocalUnitId, campaigns, members, thirdParties),
     );
     movements.addAll(
       _movements(
-        campaigns.first['id'] as String,
-        pledges.first['id'] as String,
         primaryLocalUnitId,
-        members.first['id'] as String,
-        primaryFinancialAccountId,
+        campaigns,
+        pledges,
+        members,
+        thirdParties,
+        primaryUnitFinancialAccounts,
       ),
     );
     entries.addAll(_entries(primaryLocalUnitId));
-    entryLines.addAll(_entryLines());
-    budgets.add(_budget(primaryLocalUnitId, centers.first['id'] as String));
-    budgetLines.addAll(_budgetLines());
+    entryLines.addAll(_entryLines(centers, thirdParties));
+    budgets.addAll(_budgets(primaryLocalUnitId, centers));
+    budgetLines.addAll(_budgetLines(budgets));
+    immobilisations.addAll(_immobilisations(primaryLocalUnitId, centers));
 
     return _DemoData(
       orgId: orgId,
@@ -622,6 +621,7 @@ class _DemoDataBuilder {
       entryLines: entryLines,
       budgets: budgets,
       budgetLines: budgetLines,
+      immobilisations: immobilisations,
       monthlyReports: monthlyReports,
     );
   }
@@ -779,6 +779,21 @@ class _DemoDataBuilder {
       'id': _id(single ? '2800' : '1800', index * 10 + 2),
       'organization_id': orgId,
       'church_unit_id': unitId,
+      'type': 'bank',
+      'label': 'Banque - compte principal',
+      'provider': null,
+      'account_number': 'BJ66DEMO${index.toString().padLeft(8, '0')}',
+      'phone_number': null,
+      'currency': 'FCFA',
+      'opening_balance': 0,
+      'journal_id': _id(single ? '2700' : '1700', 2),
+      'comptable_account_id': _id(single ? '2600' : '1600', 7),
+      'active': true,
+    },
+    {
+      'id': _id(single ? '2800' : '1800', index * 10 + 3),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
       'type': 'mobile_money',
       'label': 'Mobile Money MTN',
       'provider': 'MTN',
@@ -868,6 +883,10 @@ class _DemoDataBuilder {
       'nombre_filles': 15,
       'conversions_hommes': 1,
       'conversions_femmes': 2,
+      'nombre_classes_ecole_dimanche': 0,
+      'nombre_moniteurs_hommes': 0,
+      'nombre_monitrices_femmes': 0,
+      'derniere_lecon_ecole_dimanche': null,
     },
     {
       'id': _id(single ? '2d00' : '1d00', unitIndex * 10 + 2),
@@ -883,6 +902,48 @@ class _DemoDataBuilder {
       'nombre_filles': 5,
       'conversions_hommes': 0,
       'conversions_femmes': 0,
+      'nombre_classes_ecole_dimanche': 0,
+      'nombre_moniteurs_hommes': 0,
+      'nombre_monitrices_femmes': 0,
+      'derniere_lecon_ecole_dimanche': null,
+    },
+    {
+      'id': _id(single ? '2d00' : '1d00', unitIndex * 10 + 3),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
+      'type': 'sainte_cene',
+      'date': '2025-03-09',
+      'location': 'Temple principal',
+      'description': 'Sainte cene mensuelle avec suivi pastoral',
+      'nombre_hommes': 38 + unitIndex,
+      'nombre_femmes': 54 + unitIndex,
+      'nombre_garcons': 10,
+      'nombre_filles': 13,
+      'conversions_hommes': 0,
+      'conversions_femmes': 1,
+      'nombre_classes_ecole_dimanche': 0,
+      'nombre_moniteurs_hommes': 0,
+      'nombre_monitrices_femmes': 0,
+      'derniere_lecon_ecole_dimanche': null,
+    },
+    {
+      'id': _id(single ? '2d00' : '1d00', unitIndex * 10 + 4),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
+      'type': 'ecole_du_dimanche',
+      'date': '2025-03-16',
+      'location': 'Salle enfance',
+      'description': 'Ecole du dimanche et suivi des enfants',
+      'nombre_hommes': 4,
+      'nombre_femmes': 6,
+      'nombre_garcons': 28,
+      'nombre_filles': 31,
+      'conversions_hommes': 0,
+      'conversions_femmes': 0,
+      'nombre_classes_ecole_dimanche': 3,
+      'nombre_moniteurs_hommes': 2,
+      'nombre_monitrices_femmes': 3,
+      'derniere_lecon_ecole_dimanche': 'La generosite et le service',
     },
   ];
 
@@ -890,10 +951,31 @@ class _DemoDataBuilder {
     {
       'id': _id(single ? '2e00' : '1e00', 1),
       'organization_id': orgId,
+      'church_unit_id': null,
       'nom': 'Fournisseur Demo Services',
       'type': 'fournisseur',
       'telephone': '+229 97 00 00 00',
       'email': 'fournisseur.demo@example.com',
+      'adresse': address,
+    },
+    {
+      'id': _id(single ? '2e00' : '1e00', 2),
+      'organization_id': orgId,
+      'church_unit_id': null,
+      'nom': 'Partenaire Mission Solidarite',
+      'type': 'partenaire',
+      'telephone': '+229 95 00 00 02',
+      'email': 'solidarite.demo@example.com',
+      'adresse': address,
+    },
+    {
+      'id': _id(single ? '2e00' : '1e00', 3),
+      'organization_id': orgId,
+      'church_unit_id': null,
+      'nom': 'Bailleur Demo Diaspora',
+      'type': 'bailleur',
+      'telephone': '+229 96 00 00 03',
+      'email': 'diaspora.demo@example.com',
       'adresse': address,
     },
   ];
@@ -915,140 +997,647 @@ class _DemoDataBuilder {
       'statut': 'active',
       'allow_partial_payments': true,
     },
+    {
+      'id': _id(single ? '2f00' : '1f00', 2),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
+      'programme_id': null,
+      'titre': 'Soutien scolaire des orphelins',
+      'type': 'cotisation',
+      'description':
+          'Cotisation trimestrielle pour kits scolaires, suivi social et accompagnement.',
+      'objectif_montant': 850000,
+      'date_debut': '2025-02-01',
+      'date_fin': '2025-04-30',
+      'periodicite': 'trimestrielle',
+      'statut': 'active',
+      'allow_partial_payments': true,
+    },
+    {
+      'id': _id(single ? '2f00' : '1f00', 3),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
+      'programme_id': null,
+      'titre': 'Conference jeunesse regionale',
+      'type': 'activite',
+      'description':
+          'Activite ponctuelle avec inscriptions, promesses et depenses logistiques.',
+      'objectif_montant': 1200000,
+      'date_debut': '2025-05-01',
+      'date_fin': '2025-05-31',
+      'periodicite': 'ponctuelle',
+      'statut': 'brouillon',
+      'allow_partial_payments': true,
+    },
   ];
 
   List<Map<String, dynamic>> _pledges(
-    String campaignId,
     String unitId,
-    String memberId,
+    List<Map<String, dynamic>> campaigns,
+    List<Map<String, dynamic>> members,
+    List<Map<String, dynamic>> thirdParties,
   ) => [
     {
       'id': _id(single ? '2f10' : '1f10', 1),
       'organization_id': orgId,
-      'campagne_id': campaignId,
+      'campagne_id': campaigns[0]['id'],
       'church_unit_id': unitId,
-      'membre_id': memberId,
+      'membre_id': members[0]['id'],
+      'tiers_id': null,
+      'contributeur_nom': null,
       'montant_promis': 150000,
       'date_promesse': '2025-03-03',
       'date_echeance': '2025-05-30',
       'statut': 'partielle',
       'notes': 'Promesse demo avec versement partiel.',
     },
+    {
+      'id': _id(single ? '2f10' : '1f10', 2),
+      'organization_id': orgId,
+      'campagne_id': campaigns[0]['id'],
+      'church_unit_id': unitId,
+      'membre_id': members[1]['id'],
+      'tiers_id': null,
+      'contributeur_nom': null,
+      'montant_promis': 250000,
+      'date_promesse': '2025-03-04',
+      'date_echeance': '2025-06-15',
+      'statut': 'ouverte',
+      'notes': 'Promesse attendue pour la renovation.',
+    },
+    {
+      'id': _id(single ? '2f10' : '1f10', 3),
+      'organization_id': orgId,
+      'campagne_id': campaigns[1]['id'],
+      'church_unit_id': unitId,
+      'membre_id': members[2]['id'],
+      'tiers_id': null,
+      'contributeur_nom': null,
+      'montant_promis': 60000,
+      'date_promesse': '2025-02-05',
+      'date_echeance': '2025-03-31',
+      'statut': 'reglee',
+      'notes': 'Cotisation soldee pour les kits scolaires.',
+    },
+    {
+      'id': _id(single ? '2f10' : '1f10', 4),
+      'organization_id': orgId,
+      'campagne_id': campaigns[1]['id'],
+      'church_unit_id': unitId,
+      'membre_id': null,
+      'tiers_id': thirdParties[1]['id'],
+      'contributeur_nom': null,
+      'montant_promis': 300000,
+      'date_promesse': '2025-02-12',
+      'date_echeance': '2025-04-15',
+      'statut': 'partielle',
+      'notes': 'Appui partenaire pour le volet social.',
+    },
+    {
+      'id': _id(single ? '2f10' : '1f10', 5),
+      'organization_id': orgId,
+      'campagne_id': campaigns[2]['id'],
+      'church_unit_id': unitId,
+      'membre_id': null,
+      'tiers_id': thirdParties[2]['id'],
+      'contributeur_nom': 'Collectif diaspora demo',
+      'montant_promis': 500000,
+      'date_promesse': '2025-05-02',
+      'date_echeance': '2025-05-25',
+      'statut': 'ouverte',
+      'notes': 'Promesse de don pour la conference jeunesse.',
+    },
   ];
 
   List<Map<String, dynamic>> _movements(
-    String campaignId,
-    String pledgeId,
     String unitId,
-    String memberId,
-    String accountId,
-  ) => [
-    {
-      'id': _id(single ? '2f20' : '1f20', 1),
-      'organization_id': orgId,
-      'church_unit_id': unitId,
-      'financial_account_id': accountId,
-      'campagne_id': campaignId,
-      'promesse_id': pledgeId,
-      'membre_id': memberId,
-      'type': 'encaissement',
-      'montant': 75000,
-      'date_mouvement': '2025-03-10',
-      'libelle': 'Versement partiel cotisation renovation',
-      'mode_paiement': 'especes',
-      'statut': 'valide',
-      'validated_at': '2025-03-10T12:00:00Z',
-    },
-  ];
+    List<Map<String, dynamic>> campaigns,
+    List<Map<String, dynamic>> pledges,
+    List<Map<String, dynamic>> members,
+    List<Map<String, dynamic>> thirdParties,
+    List<Map<String, dynamic>> financialAccounts,
+  ) {
+    final cashAccountId = financialAccounts
+        .firstWhere((account) => account['type'] == 'cash')['id']
+        .toString();
+    final bankAccountId = financialAccounts
+        .firstWhere((account) => account['type'] == 'bank')['id']
+        .toString();
+    final momoAccountId = financialAccounts
+        .firstWhere((account) => account['type'] == 'mobile_money')['id']
+        .toString();
+    return [
+      {
+        'id': _id(single ? '2f20' : '1f20', 1),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': cashAccountId,
+        'campagne_id': campaigns[0]['id'],
+        'programme_id': null,
+        'promesse_id': pledges[0]['id'],
+        'membre_id': members[0]['id'],
+        'tiers_id': null,
+        'contributeur_nom': null,
+        'type': 'encaissement',
+        'montant': 75000,
+        'date_mouvement': '2025-03-10',
+        'libelle': 'Versement partiel cotisation renovation',
+        'mode_paiement': 'especes',
+        'reference_externe': 'REC-COT-001',
+        'piece_justificative_url': null,
+        'statut': 'valide',
+        'submitted_at': null,
+        'validated_at': '2025-03-10T12:00:00Z',
+        'rejet_motif': null,
+        'ecriture_id': null,
+      },
+      {
+        'id': _id(single ? '2f20' : '1f20', 2),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': bankAccountId,
+        'campagne_id': campaigns[1]['id'],
+        'programme_id': null,
+        'promesse_id': pledges[2]['id'],
+        'membre_id': members[2]['id'],
+        'tiers_id': null,
+        'contributeur_nom': null,
+        'type': 'encaissement',
+        'montant': 60000,
+        'date_mouvement': '2025-02-20',
+        'libelle': 'Cotisation soldee soutien scolaire',
+        'mode_paiement': 'virement_bancaire',
+        'reference_externe': 'VIR-SOC-001',
+        'piece_justificative_url': null,
+        'statut': 'valide',
+        'submitted_at': null,
+        'validated_at': '2025-02-20T12:00:00Z',
+        'rejet_motif': null,
+        'ecriture_id': null,
+      },
+      {
+        'id': _id(single ? '2f20' : '1f20', 3),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': momoAccountId,
+        'campagne_id': campaigns[1]['id'],
+        'programme_id': null,
+        'promesse_id': pledges[3]['id'],
+        'membre_id': null,
+        'tiers_id': thirdParties[1]['id'],
+        'contributeur_nom': null,
+        'type': 'encaissement',
+        'montant': 120000,
+        'date_mouvement': '2025-03-01',
+        'libelle': 'Appui partenaire via Mobile Money',
+        'mode_paiement': 'mobile_money',
+        'reference_externe': 'MTN-SOC-001',
+        'piece_justificative_url': null,
+        'statut': 'soumis',
+        'submitted_at': '2025-03-01T09:00:00Z',
+        'validated_at': null,
+        'rejet_motif': null,
+        'ecriture_id': null,
+      },
+      {
+        'id': _id(single ? '2f20' : '1f20', 4),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': cashAccountId,
+        'campagne_id': campaigns[1]['id'],
+        'programme_id': null,
+        'promesse_id': null,
+        'membre_id': null,
+        'tiers_id': thirdParties[0]['id'],
+        'contributeur_nom': null,
+        'type': 'decaissement',
+        'montant': 85000,
+        'date_mouvement': '2025-03-12',
+        'libelle': 'Achat kits scolaires orphelins',
+        'mode_paiement': 'especes',
+        'reference_externe': 'DEP-SOC-001',
+        'piece_justificative_url': null,
+        'statut': 'valide',
+        'submitted_at': null,
+        'validated_at': '2025-03-12T12:00:00Z',
+        'rejet_motif': null,
+        'ecriture_id': null,
+      },
+      {
+        'id': _id(single ? '2f20' : '1f20', 5),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': momoAccountId,
+        'campagne_id': campaigns[2]['id'],
+        'programme_id': null,
+        'promesse_id': pledges[4]['id'],
+        'membre_id': null,
+        'tiers_id': thirdParties[2]['id'],
+        'contributeur_nom': 'Collectif diaspora demo',
+        'type': 'encaissement',
+        'montant': 200000,
+        'date_mouvement': '2025-05-06',
+        'libelle': 'Avance diaspora conference jeunesse',
+        'mode_paiement': 'mobile_money',
+        'reference_externe': 'MOMO-JEUNES-001',
+        'piece_justificative_url': null,
+        'statut': 'brouillon',
+        'submitted_at': null,
+        'validated_at': null,
+        'rejet_motif': null,
+        'ecriture_id': null,
+      },
+      {
+        'id': _id(single ? '2f20' : '1f20', 6),
+        'organization_id': orgId,
+        'church_unit_id': unitId,
+        'financial_account_id': cashAccountId,
+        'campagne_id': campaigns[0]['id'],
+        'programme_id': null,
+        'promesse_id': pledges[1]['id'],
+        'membre_id': members[1]['id'],
+        'tiers_id': null,
+        'contributeur_nom': null,
+        'type': 'encaissement',
+        'montant': 25000,
+        'date_mouvement': '2025-03-18',
+        'libelle': 'Versement refuse pour reference incomplete',
+        'mode_paiement': 'especes',
+        'reference_externe': 'REC-COT-002',
+        'piece_justificative_url': null,
+        'statut': 'rejete',
+        'submitted_at': null,
+        'validated_at': null,
+        'rejet_motif': 'Reference de piece a completer avant validation.',
+        'ecriture_id': null,
+      },
+    ];
+  }
 
-  List<Map<String, dynamic>> _entries(String unitId) => [
-    {
-      'id': _id(single ? '2f30' : '1f30', 1),
-      'organization_id': orgId,
-      'church_unit_id': unitId,
-      'id_journal': _id(single ? '2700' : '1700', 1),
-      'date': '2025-03-02',
-      'reference_piece': 'REC-DEMO-001',
-      'libelle': 'Offrandes du culte dominical',
-      'statut': 'validee',
-      'validated_at': '2025-03-02T12:00:00Z',
-    },
-    {
-      'id': _id(single ? '2f30' : '1f30', 2),
-      'organization_id': orgId,
-      'church_unit_id': unitId,
-      'id_journal': _id(single ? '2700' : '1700', 1),
-      'date': '2025-03-06',
-      'reference_piece': 'DEP-DEMO-001',
-      'libelle': 'Aide sociale a une famille',
-      'statut': 'validee',
-      'validated_at': '2025-03-06T12:00:00Z',
-    },
-  ];
+  List<Map<String, dynamic>> _entries(String unitId) {
+    final cashJournalId = _id(single ? '2700' : '1700', 1);
+    final bankJournalId = _id(single ? '2700' : '1700', 2);
+    return [
+      _entry(
+        1,
+        unitId,
+        cashJournalId,
+        '2025-03-02',
+        'REC-DEMO-001',
+        'Offrandes du culte dominical',
+      ),
+      _entry(
+        2,
+        unitId,
+        bankJournalId,
+        '2025-03-04',
+        'REC-DEMO-002',
+        'Dimes recues par banque',
+      ),
+      _entry(
+        3,
+        unitId,
+        cashJournalId,
+        '2025-03-05',
+        'REC-DEMO-003',
+        'Don affecte action sociale',
+      ),
+      _entry(
+        4,
+        unitId,
+        cashJournalId,
+        '2025-03-08',
+        'DEP-DEMO-001',
+        'Travaux entretien du temple',
+      ),
+      _entry(
+        5,
+        unitId,
+        cashJournalId,
+        '2025-03-10',
+        'DEP-DEMO-002',
+        'Aide sociale a une famille',
+      ),
+      _entry(
+        6,
+        unitId,
+        bankJournalId,
+        '2025-03-12',
+        'DEP-DEMO-003',
+        'Location salle de formation',
+      ),
+      _entry(
+        7,
+        unitId,
+        bankJournalId,
+        '2025-03-15',
+        'IMMO-DEMO-001',
+        'Travaux batiment principal',
+      ),
+      _entry(
+        8,
+        unitId,
+        _id(single ? '2700' : '1700', 3),
+        '2025-03-18',
+        'IMMO-DEMO-002',
+        'Acquisition mobilier a credit',
+      ),
+    ];
+  }
 
-  List<Map<String, dynamic>> _entryLines() => [
-    {
-      'id': _id(single ? '2f40' : '1f40', 1),
-      'id_ecriture': _id(single ? '2f30' : '1f30', 1),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 8),
-      'libelle': 'Encaissement caisse',
-      'debit': 300000,
-      'credit': 0,
-      'mode_paiement': 'especes',
-    },
-    {
-      'id': _id(single ? '2f40' : '1f40', 2),
-      'id_ecriture': _id(single ? '2f30' : '1f30', 1),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 13),
-      'libelle': 'Offrandes',
-      'debit': 0,
-      'credit': 300000,
-      'mode_paiement': null,
-    },
-    {
-      'id': _id(single ? '2f40' : '1f40', 3),
-      'id_ecriture': _id(single ? '2f30' : '1f30', 2),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 11),
-      'libelle': 'Aide sociale',
-      'debit': 50000,
-      'credit': 0,
-      'mode_paiement': null,
-    },
-    {
-      'id': _id(single ? '2f40' : '1f40', 4),
-      'id_ecriture': _id(single ? '2f30' : '1f30', 2),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 8),
-      'libelle': 'Sortie caisse',
-      'debit': 0,
-      'credit': 50000,
-      'mode_paiement': 'especes',
-    },
-  ];
-
-  Map<String, dynamic> _budget(String unitId, String centerId) => {
-    'id': _id(single ? '2f50' : '1f50', 1),
+  Map<String, dynamic> _entry(
+    int index,
+    String unitId,
+    String journalId,
+    String date,
+    String reference,
+    String label,
+  ) => {
+    'id': _id(single ? '2f30' : '1f30', index),
     'organization_id': orgId,
     'church_unit_id': unitId,
-    'id_centre_analytique': centerId,
-    'exercice': 2025,
-    'libelle': 'Budget de fonctionnement 2025',
-    'est_verrouille': false,
+    'id_journal': journalId,
+    'date': date,
+    'reference_piece': reference,
+    'libelle': label,
+    'statut': 'validee',
+    'validated_at': '${date}T12:00:00Z',
   };
 
-  List<Map<String, dynamic>> _budgetLines() => [
-    {
-      'id': _id(single ? '2f60' : '1f60', 1),
-      'id_budget': _id(single ? '2f50' : '1f50', 1),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 9),
-      'montant_prevu': 800000,
-    },
-    {
-      'id': _id(single ? '2f60' : '1f60', 2),
-      'id_budget': _id(single ? '2f50' : '1f50', 1),
-      'id_compte_comptable': _id(single ? '2600' : '1600', 13),
-      'montant_prevu': 3000000,
-    },
-  ];
+  List<Map<String, dynamic>> _entryLines(
+    List<Map<String, dynamic>> centers,
+    List<Map<String, dynamic>> thirdParties,
+  ) {
+    final centerId = centers.first['id'] as String;
+    final projectCenterId = centers.length > 1
+        ? centers[1]['id'] as String
+        : centers.first['id'] as String;
+    final fournisseurId = thirdParties.first['id'] as String;
+    final partenaireId = thirdParties[1]['id'] as String;
+    final lineSpecs = [
+      [
+        1,
+        1,
+        8,
+        'Encaissement caisse offrandes',
+        450000,
+        0,
+        'especes',
+        centerId,
+        null,
+      ],
+      [2, 1, 13, 'Offrandes culte', 0, 450000, null, centerId, null],
+      [
+        3,
+        2,
+        7,
+        'Depot bancaire dimes',
+        820000,
+        0,
+        'virement_bancaire',
+        centerId,
+        null,
+      ],
+      [4, 2, 12, 'Dimes du mois', 0, 820000, null, centerId, null],
+      [
+        5,
+        3,
+        8,
+        'Don encaisse pour action sociale',
+        300000,
+        0,
+        'especes',
+        projectCenterId,
+        partenaireId,
+      ],
+      [
+        6,
+        3,
+        14,
+        'Dons et liberalites affectes',
+        0,
+        300000,
+        null,
+        projectCenterId,
+        partenaireId,
+      ],
+      [
+        7,
+        4,
+        10,
+        'Entretien et reparations temple',
+        180000,
+        0,
+        null,
+        centerId,
+        fournisseurId,
+      ],
+      [
+        8,
+        4,
+        8,
+        'Sortie caisse entretien',
+        0,
+        180000,
+        'especes',
+        centerId,
+        fournisseurId,
+      ],
+      [
+        9,
+        5,
+        11,
+        'Aide et action sociale',
+        125000,
+        0,
+        null,
+        projectCenterId,
+        null,
+      ],
+      [
+        10,
+        5,
+        8,
+        'Sortie caisse aide sociale',
+        0,
+        125000,
+        'especes',
+        projectCenterId,
+        null,
+      ],
+      [
+        11,
+        6,
+        9,
+        'Location salle de formation',
+        95000,
+        0,
+        null,
+        centerId,
+        fournisseurId,
+      ],
+      [
+        12,
+        6,
+        7,
+        'Reglement banque location',
+        0,
+        95000,
+        'virement_bancaire',
+        centerId,
+        fournisseurId,
+      ],
+      [
+        13,
+        7,
+        2,
+        'Immobilisation batiment',
+        1200000,
+        0,
+        null,
+        centerId,
+        fournisseurId,
+      ],
+      [
+        14,
+        7,
+        7,
+        'Reglement banque travaux batiment',
+        0,
+        1200000,
+        'virement_bancaire',
+        centerId,
+        fournisseurId,
+      ],
+      [15, 8, 3, 'Mobilier temple', 350000, 0, null, centerId, fournisseurId],
+      [
+        16,
+        8,
+        5,
+        'Dette fournisseur mobilier',
+        0,
+        350000,
+        null,
+        centerId,
+        fournisseurId,
+      ],
+    ];
+    return [
+      for (final spec in lineSpecs)
+        {
+          'id': _id(single ? '2f40' : '1f40', spec[0] as int),
+          'id_ecriture': _id(single ? '2f30' : '1f30', spec[1] as int),
+          'id_compte_comptable': _id(single ? '2600' : '1600', spec[2] as int),
+          'id_centre_analytique': spec[7],
+          'id_tiers': spec[8],
+          'libelle': spec[3],
+          'debit': spec[4],
+          'credit': spec[5],
+          'mode_paiement': spec[6],
+        },
+    ];
+  }
+
+  List<Map<String, dynamic>> _budgets(
+    String unitId,
+    List<Map<String, dynamic>> centers,
+  ) {
+    final selectedCenters = centers.take(3).toList();
+    return [
+      for (var i = 0; i < selectedCenters.length; i++)
+        {
+          'id': _id(single ? '2f50' : '1f50', i + 1),
+          'organization_id': orgId,
+          'church_unit_id': unitId,
+          'id_centre_analytique': selectedCenters[i]['id'],
+          'exercice': 2025,
+          'libelle': i == 0
+              ? 'Budget fonctionnement assemblee 2025'
+              : 'Budget ${selectedCenters[i]['nom']} 2025',
+          'est_verrouille': false,
+        },
+    ];
+  }
+
+  List<Map<String, dynamic>> _budgetLines(List<Map<String, dynamic>> budgets) {
+    final lines = <Map<String, dynamic>>[];
+    for (var i = 0; i < budgets.length; i++) {
+      final budgetId = budgets[i]['id'];
+      lines.addAll([
+        {
+          'id': _id(single ? '2f60' : '1f60', i * 3 + 1),
+          'id_budget': budgetId,
+          'id_compte_comptable': _id(single ? '2600' : '1600', 9),
+          'montant_prevu': i == 0 ? 600000 : 250000,
+          'montant_revu': i == 0 ? 650000 : null,
+        },
+        {
+          'id': _id(single ? '2f60' : '1f60', i * 3 + 2),
+          'id_budget': budgetId,
+          'id_compte_comptable': _id(single ? '2600' : '1600', 10),
+          'montant_prevu': i == 0 ? 900000 : 300000,
+          'montant_revu': null,
+        },
+        {
+          'id': _id(single ? '2f60' : '1f60', i * 3 + 3),
+          'id_budget': budgetId,
+          'id_compte_comptable': _id(
+            single ? '2600' : '1600',
+            i == 0 ? 13 : 14,
+          ),
+          'montant_prevu': i == 0 ? 4200000 : 1200000,
+          'montant_revu': i == 0 ? 4500000 : null,
+        },
+      ]);
+    }
+    return lines;
+  }
+
+  List<Map<String, dynamic>> _immobilisations(
+    String unitId,
+    List<Map<String, dynamic>> centers,
+  ) {
+    final centerId = centers.first['id'] as String;
+    final rows = [
+      ['Batiment principal demo', 'batiment', '2022-01-15', 4500000, 25, 2, 4],
+      ['Bancs et mobilier temple', 'mobilier', '2024-03-10', 650000, 8, 3, 4],
+      [
+        'Vehicule mission pastorale',
+        'vehicule',
+        '2023-07-20',
+        3200000,
+        5,
+        3,
+        4,
+      ],
+      ['Groupe electrogene demo', 'autre', '2025-02-01', 900000, 6, 3, 4],
+    ];
+    return [
+      for (var i = 0; i < rows.length; i++)
+        {
+          'id': _id(single ? '2f80' : '1f80', i + 1),
+          'organization_id': orgId,
+          'church_unit_id': unitId,
+          'id_centre_analytique': centerId,
+          'libelle': rows[i][0],
+          'type': rows[i][1],
+          'date_acquisition': rows[i][2],
+          'valeur_acquisition': rows[i][3],
+          'valeur_residuelle': 0,
+          'duree_utilite_en_annees': rows[i][4],
+          'id_compte_immobilisation': _id(
+            single ? '2600' : '1600',
+            rows[i][5] as int,
+          ),
+          'id_compte_amortissement': _id(
+            single ? '2600' : '1600',
+            rows[i][6] as int,
+          ),
+          'id_compte_dotation': null,
+          'est_sortie': false,
+        },
+    ];
+  }
 
   Map<String, dynamic> _monthlyReport(int index, String unitId) => {
     'id': _id(single ? '2f70' : '1f70', index),
@@ -1112,6 +1701,7 @@ class _DemoData {
     required this.entryLines,
     required this.budgets,
     required this.budgetLines,
+    required this.immobilisations,
     required this.monthlyReports,
   });
 
@@ -1142,6 +1732,7 @@ class _DemoData {
   final List<Map<String, dynamic>> entryLines;
   final List<Map<String, dynamic>> budgets;
   final List<Map<String, dynamic>> budgetLines;
+  final List<Map<String, dynamic>> immobilisations;
   final List<Map<String, dynamic>> monthlyReports;
 }
 

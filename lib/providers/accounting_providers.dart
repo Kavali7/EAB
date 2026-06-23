@@ -16,6 +16,7 @@ import '../models/profil_utilisateur.dart';
 import '../models/budget_comptable.dart';
 import '../models/immobilisation_comptable.dart';
 import '../models/releve_bancaire.dart';
+import '../features/church_units/data/church_unit_model.dart';
 import '../features/church_units/application/church_units_provider.dart';
 import 'data_service_provider.dart';
 import 'user_profile_providers.dart';
@@ -545,8 +546,6 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
     regionsParId: regionsParId,
   );
 
-  if (idsAssembleesAutorisees.isEmpty) return <EcritureComptable>[];
-
   final idsAssembleesCiblees = _calculerAssembleesCibleesParPortee(
     portee: portee,
     assembleeActiveId: assembleeActiveId,
@@ -556,7 +555,16 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
     idsAssembleesAutorisees: idsAssembleesAutorisees,
   );
 
-  if (idsAssembleesCiblees.isEmpty) return <EcritureComptable>[];
+  final idsChurchUnitsCiblees = _calculerChurchUnitsCibleesParPortee(
+    portee: portee,
+    assembleeActiveId: assembleeActiveId,
+    profil: profil,
+    churchUnits: churchUnits,
+  );
+
+  if (idsAssembleesCiblees.isEmpty && idsChurchUnitsCiblees.isEmpty) {
+    return <EcritureComptable>[];
+  }
 
   final legacyAssembleeByChurchUnitId = {
     for (final unit in churchUnits)
@@ -566,6 +574,7 @@ final ecrituresFiltreesProvider = Provider<List<EcritureComptable>>((ref) {
   return ecritures.where((e) {
     final churchUnitId = e.churchUnitId;
     if (churchUnitId != null) {
+      if (idsChurchUnitsCiblees.contains(churchUnitId)) return true;
       final legacyAssembleeId = legacyAssembleeByChurchUnitId[churchUnitId];
       if (legacyAssembleeId != null) {
         return idsAssembleesCiblees.contains(legacyAssembleeId);
@@ -668,4 +677,99 @@ Set<String> _calculerAssembleesCibleesParPortee({
   }
 
   return result;
+}
+
+Set<String> _calculerChurchUnitsCibleesParPortee({
+  required PorteeComptable portee,
+  required String? assembleeActiveId,
+  required ProfilUtilisateur? profil,
+  required List<ChurchUnit> churchUnits,
+}) {
+  if (churchUnits.isEmpty) return <String>{};
+
+  final unitsById = {for (final unit in churchUnits) unit.id: unit};
+  final childrenByParent = <String, List<ChurchUnit>>{};
+  for (final unit in churchUnits) {
+    final parentId = unit.parentId;
+    if (parentId == null) continue;
+    childrenByParent.putIfAbsent(parentId, () => <ChurchUnit>[]).add(unit);
+  }
+
+  Set<String> descendantsOf(String rootId) {
+    final result = <String>{};
+    final stack = <String>[rootId];
+    while (stack.isNotEmpty) {
+      final currentId = stack.removeLast();
+      if (!result.add(currentId)) continue;
+      for (final child in childrenByParent[currentId] ?? const <ChurchUnit>[]) {
+        stack.add(child.id);
+      }
+    }
+    return result;
+  }
+
+  final activeUnit = assembleeActiveId == null
+      ? null
+      : churchUnits.where((unit) {
+          return unit.id == assembleeActiveId ||
+              unit.legacyAssembleeId == assembleeActiveId;
+        }).firstOrNull;
+
+  final primaryUnit = profil?.primaryChurchUnitId == null
+      ? null
+      : unitsById[profil!.primaryChurchUnitId];
+
+  final allowedIds = <String>{};
+  if (profil == null) {
+    return allowedIds;
+  }
+  if (primaryUnit != null) {
+    allowedIds.addAll(descendantsOf(primaryUnit.id));
+  } else if (profil.role == RoleUtilisateur.adminNational) {
+    allowedIds.addAll(churchUnits.map((unit) => unit.id));
+  } else if (profil.idAssembleeLocale != null) {
+    final legacyUnit = churchUnits.where((unit) {
+      return unit.legacyAssembleeId == profil.idAssembleeLocale;
+    }).firstOrNull;
+    if (legacyUnit != null) allowedIds.addAll(descendantsOf(legacyUnit.id));
+  }
+
+  if (allowedIds.isEmpty) return allowedIds;
+
+  if (activeUnit == null || !allowedIds.contains(activeUnit.id)) {
+    return allowedIds;
+  }
+
+  ChurchUnit? ancestorMatching(bool Function(ChurchUnit unit) test) {
+    ChurchUnit? current = activeUnit;
+    while (current != null) {
+      if (test(current)) return current;
+      current = current.parentId == null ? null : unitsById[current.parentId];
+    }
+    return null;
+  }
+
+  ChurchUnit? scopeRoot;
+  switch (portee) {
+    case PorteeComptable.assemblee:
+      scopeRoot = activeUnit;
+      break;
+    case PorteeComptable.district:
+      scopeRoot =
+          ancestorMatching((unit) => unit.typeCode == 'district') ??
+          ancestorMatching(
+            (unit) => unit.levelOrder == activeUnit.levelOrder - 1,
+          );
+      break;
+    case PorteeComptable.region:
+      scopeRoot =
+          ancestorMatching((unit) => unit.typeCode == 'region') ??
+          ancestorMatching((unit) => unit.levelOrder <= 1);
+      break;
+    case PorteeComptable.national:
+      return allowedIds;
+  }
+
+  if (scopeRoot == null) return allowedIds;
+  return descendantsOf(scopeRoot.id).intersection(allowedIds);
 }

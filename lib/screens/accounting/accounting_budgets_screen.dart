@@ -32,6 +32,7 @@ class AccountingBudgetsScreen extends ConsumerStatefulWidget {
 class _AccountingBudgetsScreenState
     extends ConsumerState<AccountingBudgetsScreen> {
   int _exerciceSelectionne = DateTime.now().year;
+  bool _exerciceAutoSelectionne = false;
 
   @override
   Widget build(BuildContext context) {
@@ -136,9 +137,25 @@ class _AccountingBudgetsScreenState
     final centresParId = {for (final c in centres) c.id: c};
     final assembleesParId = {for (final a in assemblees) a.id: a};
     final idsAutorises = _assembleesAutorisees(profil, assemblees, districts);
+    final exercicesDisponibles = budgets.map((b) => b.exercice).toSet();
+    final exerciceSelectionneEffectif =
+        budgets.isNotEmpty &&
+            !exercicesDisponibles.contains(_exerciceSelectionne)
+        ? exercicesDisponibles.reduce((a, b) => a > b ? a : b)
+        : _exerciceSelectionne;
+    if (!_exerciceAutoSelectionne &&
+        budgets.isNotEmpty &&
+        !exercicesDisponibles.contains(_exerciceSelectionne)) {
+      _exerciceAutoSelectionne = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _exerciceSelectionne = exerciceSelectionneEffectif);
+        }
+      });
+    }
 
     final budgetsFiltres = budgets.where((b) {
-      if (b.exercice != _exerciceSelectionne) return false;
+      if (b.exercice != exerciceSelectionneEffectif) return false;
       if (profil?.role == RoleUtilisateur.adminNational) return true;
       if (b.idAssembleeLocale != null) {
         return idsAutorises.contains(b.idAssembleeLocale);
@@ -196,7 +213,11 @@ class _AccountingBudgetsScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildToolbar(compact: compact),
+                  _buildToolbar(
+                    compact: compact,
+                    exercicesDisponibles: exercicesDisponibles,
+                    exerciceSelectionneEffectif: exerciceSelectionneEffectif,
+                  ),
                   const SizedBox(height: AppSpacing.cardGap),
                   _buildSummaryGrid(
                     compact: compact,
@@ -225,29 +246,52 @@ class _AccountingBudgetsScreenState
     );
   }
 
-  Widget _buildToolbar({required bool compact}) {
+  Widget _buildToolbar({
+    required bool compact,
+    required Set<int> exercicesDisponibles,
+    required int exerciceSelectionneEffectif,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: compact
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [_yearSelector()],
+                children: [
+                  _yearSelector(
+                    exercicesDisponibles: exercicesDisponibles,
+                    exerciceSelectionneEffectif: exerciceSelectionneEffectif,
+                  ),
+                ],
               )
-            : Row(children: [SizedBox(width: 220, child: _yearSelector())]),
+            : Row(
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: _yearSelector(
+                      exercicesDisponibles: exercicesDisponibles,
+                      exerciceSelectionneEffectif: exerciceSelectionneEffectif,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
 
-  Widget _yearSelector() {
+  Widget _yearSelector({
+    required Set<int> exercicesDisponibles,
+    int? exerciceSelectionneEffectif,
+  }) {
     final years = <int>{
       DateTime.now().year - 1,
       DateTime.now().year,
       DateTime.now().year + 1,
       2025,
+      ...exercicesDisponibles,
     }.toList()..sort();
     return DropdownButtonFormField<int>(
-      initialValue: _exerciceSelectionne,
+      initialValue: exerciceSelectionneEffectif ?? _exerciceSelectionne,
       isExpanded: true,
       decoration: const InputDecoration(
         labelText: 'Exercice',
