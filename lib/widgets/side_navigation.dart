@@ -15,6 +15,12 @@ class SideNavigation extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orgAsync = ref.watch(currentOrganizationProvider);
     final branding = OrganisationBranding.fromOrganization(orgAsync.value);
+    final mobilePolicy = orgAsync.value?.mobileAccessPolicy;
+    final mobileAllowedRoutes =
+        MediaQuery.of(context).size.width < 700 &&
+            (mobilePolicy?.isRestricted ?? false)
+        ? mobilePolicy!.allowedRoutes
+        : null;
     final colors = Theme.of(context).colorScheme;
     final sidebarColor = Color.lerp(colors.primary, Colors.black, 0.42)!;
 
@@ -65,9 +71,10 @@ class SideNavigation extends ConsumerWidget {
                   horizontal: 10,
                   vertical: 12,
                 ),
-                children: const [
+                children: [
                   _NavSection(
                     label: 'Pilotage',
+                    allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
                         'Tableau de bord',
@@ -88,6 +95,7 @@ class SideNavigation extends ConsumerWidget {
                   ),
                   _NavSection(
                     label: 'Vie de l\'eglise',
+                    allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
                         'Fideles',
@@ -113,6 +121,7 @@ class SideNavigation extends ConsumerWidget {
                   ),
                   _NavSection(
                     label: 'Comptabilite',
+                    allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
                         'Ecritures',
@@ -163,6 +172,7 @@ class SideNavigation extends ConsumerWidget {
                   ),
                   _NavSection(
                     label: 'Conformite',
+                    allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
                         'Dossier fiscal',
@@ -178,6 +188,7 @@ class SideNavigation extends ConsumerWidget {
                   ),
                   _NavSection(
                     label: 'Administration',
+                    allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
                         'Organisation',
@@ -246,15 +257,27 @@ class _BrandMark extends StatelessWidget {
 }
 
 class _NavSection extends StatelessWidget {
-  const _NavSection({required this.label, required this.items});
+  const _NavSection({
+    required this.label,
+    required this.items,
+    this.allowedRoutes,
+  });
 
   final String label;
   final List<_NavItem> items;
+  final List<String>? allowedRoutes;
 
   @override
   Widget build(BuildContext context) {
     final navigation = context.findAncestorWidgetOfExactType<SideNavigation>();
     final currentRoute = navigation?.currentRoute;
+    final visibleItems = allowedRoutes == null
+        ? items
+        : items
+              .where((item) => _routeAllowed(item.route, allowedRoutes!))
+              .toList(growable: false);
+
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -273,11 +296,18 @@ class _NavSection extends StatelessWidget {
               ),
             ),
           ),
-          for (final item in items)
+          for (final item in visibleItems)
             _NavTile(item: item, selected: currentRoute == item.route),
         ],
       ),
     );
+  }
+
+  bool _routeAllowed(String route, List<String> routes) {
+    for (final allowed in routes) {
+      if (route == allowed) return true;
+    }
+    return false;
   }
 }
 

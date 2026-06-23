@@ -89,6 +89,48 @@
 
 ---
 
+#### Parametres JSON reconnus par le frontend
+
+`organizations.parametres` reste un JSONB libre, mais le frontend depend des cles suivantes :
+
+```json
+{
+  "onboarding": {
+    "skipped_steps": ["logo", "colors", "contact", "hierarchy_details"],
+    "completed_steps": ["logo", "colors", "contact", "fiscal_identity"],
+    "structure_model": "single | multi"
+  },
+  "fiscal_identity": {
+    "ifu": "320260000001",
+    "tax_center": "Direction generale des impots",
+    "deposit_center": "Direction generale des impots",
+    "legal_representative_name": "Nom du representant legal",
+    "accountant_name": "Nom du comptable"
+  },
+  "mobile_access": {
+    "mode": "full | restricted",
+    "allowed_routes": [
+      "/",
+      "/members",
+      "/programs",
+      "/calendar",
+      "/reports-rapport-mensuel",
+      "/financial-campaigns",
+      "/accounting",
+      "/accounting-treasury",
+      "/structure",
+      "/organization-settings"
+    ]
+  }
+}
+```
+
+- `mobile_access.mode = full` : aucun blocage mobile cote frontend.
+- `mobile_access.mode = restricted` : sur telephone, le menu masque les routes non listees dans `allowed_routes` et `AppShell` bloque les acces directs aux routes non autorisees.
+- Les restrictions mobile sont une simplification UX par organisation. Elles ne remplacent pas les politiques RLS ni les permissions hierarchiques PostgreSQL.
+
+---
+
 ### 2.2 `profiles`
 
 > Profil utilisateur avec rôle et périmètre d'accès. Lié à `auth.users`.
@@ -1954,6 +1996,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-23 | Agent IA | **UX mobile par organisation** : ajout de la convention `organizations.parametres.mobile_access` (`mode`, `allowed_routes`) pour permettre au frontend de simplifier ou bloquer certains modules sur telephone par organisation, sans remplacer les RLS ni les permissions hierarchiques. |
 | 2026-06-23 | Agent IA | **Preparation bases autonomes** : alignement de l'historique Supabase distant avec les migrations locales `00031` a `00038`, ajout du placeholder historique `202606160031_remote_hierarchy_matrix_history.sql` et renforcement de la procedure de reconstruction pour couvrir pre-requis, ordre SQL, branchement frontend, parametrages Supabase hors migrations et validations minimales avant livraison. |
 | 2026-06-23 | Agent IA | **Migration 00038** : Ajout de `lignes_releves_bancaires` pour stocker les operations de releves bancaires, avec rattachement organisation/unite/assemblee legacy, lien optionnel vers `church_unit_financial_accounts` et `ecritures_comptables`, indexes, triggers de synchronisation/`updated_at` et politiques RLS basees sur `user_can_access_bank_reconciliation_scope`. Le seed public de demonstration alimente des lignes pointees/non pointees pour rendre l'ecran Rapprochement testable. |
 | 2026-06-21 | Agent IA | **Export fiscal distant** : ajout de `tool/export_remote_fiscal_dossier.dart` pour regenerer un dossier fiscal reel depuis Supabase avec `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et `FISCAL_DOSSIER_ID`. L'outil audite le classeur, refuse les anciennes references du modele et calcule la balance comparative depuis les tables comptables pour fonctionner hors session utilisateur. |

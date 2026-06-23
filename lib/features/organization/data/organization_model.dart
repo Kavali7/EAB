@@ -42,6 +42,10 @@ class Organization {
     return OrganizationFiscalProfile.fromOrganization(this);
   }
 
+  OrganizationMobileAccessPolicy get mobileAccessPolicy {
+    return OrganizationMobileAccessPolicy.fromOrganization(this);
+  }
+
   factory Organization.fromJson(Map<String, dynamic> json) {
     return Organization(
       id: json['id'] as String,
@@ -148,6 +152,85 @@ class Organization {
   }
 
   bool get hasPendingOnboardingSteps => onboardingSkippedSteps.isNotEmpty;
+}
+
+class OrganizationMobileAccessPolicy {
+  const OrganizationMobileAccessPolicy({
+    this.mode = modeFull,
+    this.allowedRoutes = defaultAllowedRoutes,
+  });
+
+  static const paramKey = 'mobile_access';
+  static const modeFull = 'full';
+  static const modeRestricted = 'restricted';
+  static const defaultAllowedRoutes = [
+    '/',
+    '/members',
+    '/programs',
+    '/calendar',
+    '/reports-rapport-mensuel',
+    '/financial-campaigns',
+    '/accounting',
+    '/accounting-treasury',
+    '/structure',
+    '/organization-settings',
+  ];
+
+  final String mode;
+  final List<String> allowedRoutes;
+
+  bool get isRestricted => mode == modeRestricted;
+
+  bool allowsRoute(String route) {
+    if (!isRestricted) return true;
+    final cleanRoute = route.trim().isEmpty ? '/' : route.trim();
+    for (final allowed in allowedRoutes) {
+      if (allowed == '/') {
+        if (cleanRoute == '/') return true;
+        continue;
+      }
+      if (cleanRoute == allowed || cleanRoute.startsWith('$allowed/')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool blocksRoute(String route) => !allowsRoute(route);
+
+  factory OrganizationMobileAccessPolicy.fromOrganization(Organization org) {
+    final raw = org.parametres?[paramKey];
+    final data = raw is Map<String, dynamic>
+        ? raw
+        : raw is Map
+        ? Map<String, dynamic>.from(raw)
+        : const <String, dynamic>{};
+    final rawMode = data['mode']?.toString();
+    final mode = rawMode == modeRestricted ? modeRestricted : modeFull;
+    final rawRoutes = data['allowed_routes'];
+    final routes = rawRoutes is List
+        ? rawRoutes
+              .map((route) => route.toString().trim())
+              .where((route) => route.isNotEmpty)
+              .toList(growable: false)
+        : defaultAllowedRoutes;
+
+    return OrganizationMobileAccessPolicy(
+      mode: mode,
+      allowedRoutes: routes.isEmpty ? defaultAllowedRoutes : routes,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'mode': mode, 'allowed_routes': allowedRoutes};
+  }
+
+  static Map<String, dynamic> mergeIntoParametres(
+    Map<String, dynamic>? current,
+    OrganizationMobileAccessPolicy policy,
+  ) {
+    return {...?current, paramKey: policy.toJson()};
+  }
 }
 
 class OrganizationFiscalProfile {

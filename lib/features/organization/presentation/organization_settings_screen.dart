@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/core/errors/app_exceptions.dart';
+import 'package:eab/core/theme.dart';
 import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
@@ -76,6 +77,7 @@ class _OrganizationSettingsScreenState
   final _inviteEmailCtrl = TextEditingController();
   String _inviteRole = 'tresorierAssemblee';
   String _fiscalControleCode = 'private_national';
+  String _mobileAccessMode = OrganizationMobileAccessPolicy.modeFull;
   String? _inviteChurchUnitId;
   bool _inviteCanManageChildren = false;
   String? _permissionAncestorUnitId;
@@ -197,12 +199,21 @@ class _OrganizationSettingsScreenState
     _fiscalNotesApplicablesCtrl.text =
         fiscal.applicableNotes ??
         OrganizationFiscalProfile.defaultApplicableNotes;
+    _mobileAccessMode = org.mobileAccessPolicy.mode;
   }
 
   Future<void> _save(Organization org) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
+      final fiscalParams = OrganizationFiscalProfile.mergeIntoParametres(
+        org.parametres,
+        _fiscalProfileFromCurrentValues(),
+      );
+      final updatedParams = OrganizationMobileAccessPolicy.mergeIntoParametres(
+        fiscalParams,
+        OrganizationMobileAccessPolicy(mode: _mobileAccessMode),
+      );
       final updated = Organization(
         id: org.id,
         nom: _nomCtrl.text.trim(),
@@ -222,10 +233,7 @@ class _OrganizationSettingsScreenState
         email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
         siteWeb: _siteCtrl.text.trim().isEmpty ? null : _siteCtrl.text.trim(),
         devise: org.devise,
-        parametres: OrganizationFiscalProfile.mergeIntoParametres(
-          org.parametres,
-          _fiscalProfileFromCurrentValues(),
-        ),
+        parametres: updatedParams,
         createdAt: org.createdAt,
       );
       final repo = ref.read(organizationRepositoryProvider);
@@ -511,6 +519,8 @@ class _OrganizationSettingsScreenState
                           const SizedBox(height: AppSpacing.cardGap),
                           _themeSection(compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
+                          _mobileAccessSection(compact: compact),
+                          const SizedBox(height: AppSpacing.cardGap),
                           _contactSection(),
                           const SizedBox(height: AppSpacing.cardGap),
                           _fiscalIdentitySection(compact: compact),
@@ -780,6 +790,122 @@ class _OrganizationSettingsScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _mobileAccessSection({required bool compact}) {
+    return SectionCard(
+      title: 'Acces mobile',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Controlez ce que les utilisateurs voient sur telephone pour cette organisation.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: [
+              SizedBox(
+                width: compact ? double.infinity : 430,
+                child: _mobileAccessChoice(
+                  mode: OrganizationMobileAccessPolicy.modeFull,
+                  icon: Icons.devices_outlined,
+                  title: 'Acces mobile complet',
+                  description:
+                      'Tous les modules restent visibles sur telephone, comme sur ordinateur.',
+                ),
+              ),
+              SizedBox(
+                width: compact ? double.infinity : 430,
+                child: _mobileAccessChoice(
+                  mode: OrganizationMobileAccessPolicy.modeRestricted,
+                  icon: Icons.phone_android_outlined,
+                  title: 'Mobile simplifie',
+                  description:
+                      'Le telephone garde le tableau de bord, les saisies essentielles et les parametres. Les modules lourds restent reserves au PC.',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileAccessChoice({
+    required String mode,
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final selected = _mobileAccessMode == mode;
+    final colors = Theme.of(context).colorScheme;
+
+    return Material(
+      color: selected
+          ? colors.primary.withValues(alpha: 0.08)
+          : colors.surfaceContainerHighest.withValues(alpha: 0.26),
+      borderRadius: AppRadius.mdAll,
+      child: InkWell(
+        borderRadius: AppRadius.mdAll,
+        onTap: () => setState(() => _mobileAccessMode = mode),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 116),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.mdAll,
+            border: Border.all(
+              color: selected ? colors.primary : colors.outlineVariant,
+              width: selected ? 1.4 : 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? colors.primary.withValues(alpha: 0.12)
+                      : AppColors.surface,
+                  borderRadius: AppRadius.mdAll,
+                ),
+                child: Icon(icon, color: colors.primary, size: 21),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.subtitle.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      description,
+                      style: AppTextStyles.bodySmall.copyWith(height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Icon(
+                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: selected ? colors.primary : AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../features/church_units/application/church_units_provider.dart';
 import '../features/church_units/data/church_unit_model.dart';
 import '../features/notifications/presentation/notification_panel.dart';
+import '../features/organization/application/organization_providers.dart';
 import '../features/search/presentation/global_search_dialog.dart';
 import '../models/assemblee_locale.dart';
 import '../models/district_eglise.dart';
@@ -13,6 +14,7 @@ import '../models/profil_utilisateur.dart';
 import '../models/region_eglise.dart';
 import '../providers/church_structure_providers.dart';
 import '../providers/user_profile_providers.dart';
+import '../ui/ui.dart';
 import 'side_navigation.dart';
 
 class AppShell extends ConsumerWidget {
@@ -46,6 +48,7 @@ class AppShell extends ConsumerWidget {
     final assembleesAsync = ref.watch(assembleesLocalesProvider);
     final districtsAsync = ref.watch(districtsProvider);
     final regionsAsync = ref.watch(regionsProvider);
+    final orgAsync = ref.watch(currentOrganizationProvider);
     final assembleeActiveId = ref.watch(assembleeActiveIdProvider);
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
     final churchUnitActiveId = ref.watch(churchUnitActiveIdProvider);
@@ -113,7 +116,12 @@ class AppShell extends ConsumerWidget {
       assembleesAutorisees,
       assembleeActiveId,
     );
-    final isWide = MediaQuery.of(context).size.width >= 1100;
+    final viewportWidth = MediaQuery.of(context).size.width;
+    final isWide = viewportWidth >= 1100;
+    final isMobileViewport = viewportWidth < 700;
+    final mobilePolicy = orgAsync.value?.mobileAccessPolicy;
+    final mobileRouteRestricted =
+        isMobileViewport && (mobilePolicy?.blocksRoute(currentRoute) ?? false);
     final effectiveShowBackButton = showBackButton || currentRoute != '/';
     final effectiveBackRoute = backRoute ?? '/';
     final isContextResolving =
@@ -193,6 +201,8 @@ class AppShell extends ConsumerWidget {
                         color: AppColors.background,
                         child: isContextResolving
                             ? const _ContextResolvingView()
+                            : mobileRouteRestricted
+                            ? _MobileRestrictedRouteView(route: currentRoute)
                             : body,
                       ),
                     ),
@@ -201,7 +211,9 @@ class AppShell extends ConsumerWidget {
               ),
             ],
           ),
-          floatingActionButton: floatingActionButton,
+          floatingActionButton: mobileRouteRestricted
+              ? null
+              : floatingActionButton,
         ),
       ),
     );
@@ -345,6 +357,80 @@ class AppShell extends ConsumerWidget {
       case RoleUtilisateur.tresorierAssemblee:
         return false;
     }
+  }
+}
+
+class _MobileRestrictedRouteView extends StatelessWidget {
+  const _MobileRestrictedRouteView({required this.route});
+
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: AppRadius.lgAll,
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.10),
+                    borderRadius: AppRadius.mdAll,
+                  ),
+                  child: Icon(
+                    Icons.phone_android_outlined,
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('Fonction reservee au PC', style: AppTextStyles.heading3),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Cette organisation utilise un mobile simplifie. Sur telephone, seuls les modules essentiels restent visibles pour la saisie rapide et le suivi.',
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.dashboard_outlined),
+                    label: const Text('Aller au tableau de bord'),
+                    onPressed: () =>
+                        Navigator.of(context).pushReplacementNamed('/'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.settings_outlined),
+                    label: const Text('Ouvrir les parametres'),
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushReplacementNamed('/organization-settings'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

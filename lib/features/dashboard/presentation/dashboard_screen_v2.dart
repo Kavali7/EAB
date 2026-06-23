@@ -104,6 +104,40 @@ class DashboardScreenV2 extends ConsumerWidget {
     final monthly = _monthlyCashflow(filteredEcritures);
     final programStats = _programDistribution(filteredPrograms);
     final maritalStats = _maritalDistribution(filteredMembers);
+    final brouillonCount = filteredEcritures
+        .where((e) => e.statut.name == 'brouillon')
+        .length;
+    final isMobile = MediaQuery.of(context).size.width < 700;
+    final dashboardActions = [
+      _DashboardAction(
+        label: 'Nouveau fidele',
+        compactLabel: 'Fidele',
+        icon: Icons.person_add,
+        color: AppColors.primary,
+        onTap: () => Navigator.pushNamed(context, '/members'),
+      ),
+      _DashboardAction(
+        label: 'Nouveau programme',
+        compactLabel: 'Programme',
+        icon: Icons.event_note,
+        color: AppColors.indigo,
+        onTap: () => Navigator.pushNamed(context, '/programs'),
+      ),
+      _DashboardAction(
+        label: 'Nouvelle ecriture',
+        compactLabel: 'Ecriture',
+        icon: Icons.receipt_long,
+        color: AppColors.success,
+        onTap: () => Navigator.pushNamed(context, '/accounting'),
+      ),
+      _DashboardAction(
+        label: 'Rapport mensuel',
+        compactLabel: 'Rapport',
+        icon: Icons.description,
+        color: AppColors.secondary,
+        onTap: () => Navigator.pushNamed(context, '/reports-rapport-mensuel'),
+      ),
+    ];
 
     return AppShell(
       title: 'Tableau de bord',
@@ -113,6 +147,23 @@ class DashboardScreenV2 extends ConsumerWidget {
           ? const Padding(
               padding: EdgeInsets.all(AppSpacing.pagePadding),
               child: SkeletonLoader(lineCount: 8, lineHeight: 24),
+            )
+          : isMobile
+          ? _MobileDashboardView(
+              actions: dashboardActions,
+              filteredEcritures: filteredEcritures,
+              filteredMembers: filteredMembers,
+              totalIncome: totalIncome,
+              totalExpense: totalExpense,
+              maleCount: maleCount,
+              femaleCount: femaleCount,
+              baptized: baptized,
+              newConverts: newConverts,
+              programCount: filteredPrograms.length,
+              brouillonCount: brouillonCount,
+              programStats: programStats,
+              maritalStats: maritalStats,
+              exerciceAsync: ref.watch(exerciceOuvertProvider),
             )
           : SingleChildScrollView(
               child: Center(
@@ -125,40 +176,7 @@ class DashboardScreenV2 extends ConsumerWidget {
                       children: [
                         const ContextHeader(showPorteeComptable: false),
                         const SizedBox(height: AppSpacing.cardGap),
-                        _DashboardCommandBar(
-                          actions: [
-                            _DashboardAction(
-                              label: 'Nouveau fidele',
-                              icon: Icons.person_add,
-                              color: AppColors.primary,
-                              onTap: () =>
-                                  Navigator.pushNamed(context, '/members'),
-                            ),
-                            _DashboardAction(
-                              label: 'Nouveau programme',
-                              icon: Icons.event_note,
-                              color: AppColors.indigo,
-                              onTap: () =>
-                                  Navigator.pushNamed(context, '/programs'),
-                            ),
-                            _DashboardAction(
-                              label: 'Nouvelle ecriture',
-                              icon: Icons.receipt_long,
-                              color: AppColors.success,
-                              onTap: () =>
-                                  Navigator.pushNamed(context, '/accounting'),
-                            ),
-                            _DashboardAction(
-                              label: 'Rapport mensuel',
-                              icon: Icons.description,
-                              color: AppColors.secondary,
-                              onTap: () => Navigator.pushNamed(
-                                context,
-                                '/reports-rapport-mensuel',
-                              ),
-                            ),
-                          ],
-                        ),
+                        _DashboardCommandBar(actions: dashboardActions),
                         const SizedBox(height: AppSpacing.lg),
                         _ResponsiveKpiGrid(
                           children: [
@@ -423,10 +441,628 @@ class DashboardScreenV2 extends ConsumerWidget {
   }
 }
 
-class _DashboardCommandBar extends StatelessWidget {
-  const _DashboardCommandBar({required this.actions});
+class _MobileDashboardView extends StatelessWidget {
+  const _MobileDashboardView({
+    required this.actions,
+    required this.filteredEcritures,
+    required this.filteredMembers,
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.maleCount,
+    required this.femaleCount,
+    required this.baptized,
+    required this.newConverts,
+    required this.programCount,
+    required this.brouillonCount,
+    required this.programStats,
+    required this.maritalStats,
+    required this.exerciceAsync,
+  });
 
   final List<_DashboardAction> actions;
+  final List<EcritureComptable> filteredEcritures;
+  final List<dynamic> filteredMembers;
+  final double totalIncome;
+  final double totalExpense;
+  final int maleCount;
+  final int femaleCount;
+  final int baptized;
+  final int newConverts;
+  final int programCount;
+  final int brouillonCount;
+  final Map<String, int> programStats;
+  final Map<String, int> maritalStats;
+  final AsyncValue<Object?> exerciceAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = totalIncome - totalExpense;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MobileDashboardSummary(
+            totalMembers: filteredMembers.length,
+            maleCount: maleCount,
+            femaleCount: femaleCount,
+            baptized: baptized,
+            totalIncome: totalIncome,
+            totalExpense: totalExpense,
+            balance: balance,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _DashboardCommandBar(actions: actions, compact: true),
+          const SizedBox(height: AppSpacing.md),
+          _MobileMetricGrid(
+            items: [
+              _MobileMetric(
+                label: 'Programmes',
+                value: '$programCount',
+                detail: programStats.entries.isEmpty
+                    ? 'Aucun programme'
+                    : programStats.entries.first.key,
+                icon: Icons.event_note_outlined,
+                color: AppColors.indigo,
+              ),
+              _MobileMetric(
+                label: 'Brouillons',
+                value: '$brouillonCount',
+                detail: 'Ecritures a verifier',
+                icon: Icons.edit_note,
+                color: AppColors.warning,
+              ),
+              _MobileMetric(
+                label: 'Convertis',
+                value: '$newConverts',
+                detail: '90 derniers jours',
+                icon: Icons.star_rate_outlined,
+                color: AppColors.secondary,
+              ),
+              _MobileMetric(
+                label: 'Ecritures',
+                value: '${filteredEcritures.length}',
+                detail: 'Dans le perimetre',
+                icon: Icons.receipt_long,
+                color: AppColors.success,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _AlertsBlock(
+            filteredEcritures: filteredEcritures,
+            newConverts: newConverts,
+            exerciceAsync: exerciceAsync,
+          ),
+          _MobileDistributionBlock(
+            maleCount: maleCount,
+            femaleCount: femaleCount,
+            maritalStats: maritalStats,
+            programStats: programStats,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _MobileRecentBlock(
+            filteredEcritures: filteredEcritures,
+            filteredMembers: filteredMembers,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileDashboardSummary extends StatelessWidget {
+  const _MobileDashboardSummary({
+    required this.totalMembers,
+    required this.maleCount,
+    required this.femaleCount,
+    required this.baptized,
+    required this.totalIncome,
+    required this.totalExpense,
+    required this.balance,
+  });
+
+  final int totalMembers;
+  final int maleCount;
+  final int femaleCount;
+  final int baptized;
+  final double totalIncome;
+  final double totalExpense;
+  final double balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = balance >= 0;
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.10),
+                  borderRadius: AppRadius.mdAll,
+                ),
+                child: Icon(Icons.dashboard_outlined, color: colors.primary),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Vue mobile', style: AppTextStyles.caption),
+                    Text(
+                      'Synthese du perimetre',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.subtitle.copyWith(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            currencyFormatter.format(balance),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.heading1.copyWith(
+              fontSize: 28,
+              color: positive ? AppColors.success : AppColors.error,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text('Solde financier courant', style: AppTextStyles.bodySmall),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: _MobileSummaryLine(
+                  label: 'Recettes',
+                  value: currencyFormatter.format(totalIncome),
+                  color: AppColors.success,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _MobileSummaryLine(
+                  label: 'Depenses',
+                  value: currencyFormatter.format(totalExpense),
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: AppSpacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: _MobileSummaryLine(
+                  label: 'Fideles',
+                  value: '$totalMembers',
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _MobileSummaryLine(
+                  label: 'Hommes / Femmes',
+                  value: '$maleCount / $femaleCount',
+                  color: AppColors.secondary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _MobileSummaryLine(
+                  label: 'Baptises',
+                  value: '$baptized',
+                  color: AppColors.indigo,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileSummaryLine extends StatelessWidget {
+  const _MobileSummaryLine({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.caption,
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.subtitle.copyWith(color: color, fontSize: 15),
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileMetricGrid extends StatelessWidget {
+  const _MobileMetricGrid({required this.items});
+
+  final List<_MobileMetric> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: tileWidth,
+                child: _MobileMetricTile(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MobileMetricTile extends StatelessWidget {
+  const _MobileMetricTile({required this.item});
+
+  final _MobileMetric item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 102,
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(item.icon, color: item.color, size: 18),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            item.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.heading3.copyWith(
+              fontSize: 22,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.detail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileMetric {
+  const _MobileMetric({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String detail;
+  final IconData icon;
+  final Color color;
+}
+
+class _MobileDistributionBlock extends StatelessWidget {
+  const _MobileDistributionBlock({
+    required this.maleCount,
+    required this.femaleCount,
+    required this.maritalStats,
+    required this.programStats,
+  });
+
+  final int maleCount;
+  final int femaleCount;
+  final Map<String, int> maritalStats;
+  final Map<String, int> programStats;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'Repartition rapide',
+      child: Column(
+        children: [
+          _DistributionProgressLine(
+            label: 'Hommes',
+            value: maleCount,
+            total: maleCount + femaleCount,
+            color: AppColors.primary,
+          ),
+          _DistributionProgressLine(
+            label: 'Femmes',
+            value: femaleCount,
+            total: maleCount + femaleCount,
+            color: AppColors.secondary,
+          ),
+          const Divider(height: AppSpacing.lg),
+          if (maritalStats.isEmpty)
+            const _EmptyInlineState(label: 'Aucun statut marital')
+          else
+            for (final entry in maritalStats.entries.take(3))
+              _DistributionProgressLine(
+                label: entry.key,
+                value: entry.value,
+                total: maritalStats.values.fold(0, (a, b) => a + b),
+                color: AppColors.teal,
+              ),
+          const Divider(height: AppSpacing.lg),
+          if (programStats.isEmpty)
+            const _EmptyInlineState(label: 'Aucun programme')
+          else
+            for (final entry in programStats.entries.take(3))
+              _DistributionProgressLine(
+                label: entry.key,
+                value: entry.value,
+                total: programStats.values.fold(0, (a, b) => a + b),
+                color: AppColors.indigo,
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DistributionProgressLine extends StatelessWidget {
+  const _DistributionProgressLine({
+    required this.label,
+    required this.value,
+    required this.total,
+    required this.color,
+  });
+
+  final String label;
+  final int value;
+  final int total;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = total == 0 ? 0.0 : value / total;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                '$value',
+                style: AppTextStyles.subtitle.copyWith(fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 7,
+              value: ratio.clamp(0.0, 1.0),
+              color: color,
+              backgroundColor: color.withValues(alpha: 0.12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileRecentBlock extends StatelessWidget {
+  const _MobileRecentBlock({
+    required this.filteredEcritures,
+    required this.filteredMembers,
+  });
+
+  final List<EcritureComptable> filteredEcritures;
+  final List<dynamic> filteredMembers;
+
+  @override
+  Widget build(BuildContext context) {
+    final recentEcritures = [...filteredEcritures]
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final recentMembers = [...filteredMembers];
+
+    return SectionCard(
+      title: 'Activite recente',
+      child: Column(
+        children: [
+          _MobileRecentTitle(
+            icon: Icons.receipt_long,
+            label: 'Dernieres ecritures',
+            color: AppColors.success,
+          ),
+          if (recentEcritures.isEmpty)
+            const _EmptyInlineState(label: 'Aucune ecriture recente')
+          else
+            for (final ecriture in recentEcritures.take(3))
+              _MobileRecentRow(
+                title: ecriture.libelle,
+                subtitle: dateFormatter.format(ecriture.date),
+                trailing: ecriture.statut.name == 'brouillon'
+                    ? 'Brouillon'
+                    : null,
+              ),
+          const Divider(height: AppSpacing.lg),
+          _MobileRecentTitle(
+            icon: Icons.people_alt_outlined,
+            label: 'Derniers fideles',
+            color: AppColors.primary,
+          ),
+          if (recentMembers.isEmpty)
+            const _EmptyInlineState(label: 'Aucun fidele recent')
+          else
+            for (final member in recentMembers.take(3))
+              _MobileRecentRow(
+                title: member.fullName,
+                subtitle: member.phone ?? member.email ?? '',
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileRecentTitle extends StatelessWidget {
+  const _MobileRecentTitle({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.subtitle.copyWith(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MobileRecentRow extends StatelessWidget {
+  const _MobileRecentRow({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.subtitle.copyWith(fontSize: 13),
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption,
+                  ),
+              ],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            _StatusPill(label: trailing!),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardCommandBar extends StatelessWidget {
+  const _DashboardCommandBar({required this.actions, this.compact = false});
+
+  final List<_DashboardAction> actions;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -437,19 +1073,32 @@ class _DashboardCommandBar extends StatelessWidget {
         borderRadius: AppRadius.lgAll,
         border: Border.all(color: AppColors.divider),
       ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: actions
-            .map(
-              (action) => _CommandButton(
-                label: action.label,
-                icon: action.icon,
-                color: action.color,
-                onTap: action.onTap,
-              ),
-            )
-            .toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final buttonWidth = compact
+              ? (constraints.maxWidth - AppSpacing.sm) / 2
+              : null;
+          return Wrap(
+            spacing: compact ? AppSpacing.sm : 10,
+            runSpacing: compact ? AppSpacing.sm : 10,
+            children: actions
+                .map(
+                  (action) => SizedBox(
+                    width: buttonWidth,
+                    child: _CommandButton(
+                      label: compact
+                          ? action.compactLabel ?? action.label
+                          : action.label,
+                      icon: action.icon,
+                      color: action.color,
+                      compact: compact,
+                      onTap: action.onTap,
+                    ),
+                  ),
+                )
+                .toList(),
+          );
+        },
       ),
     );
   }
@@ -458,12 +1107,14 @@ class _DashboardCommandBar extends StatelessWidget {
 class _DashboardAction {
   const _DashboardAction({
     required this.label,
+    this.compactLabel,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
   final String label;
+  final String? compactLabel;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -474,12 +1125,14 @@ class _CommandButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.color,
+    required this.compact,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
   final Color color;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -491,16 +1144,23 @@ class _CommandButton extends StatelessWidget {
         borderRadius: AppRadius.mdAll,
         onTap: onTap,
         child: Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 13),
+          height: compact ? 48 : 42,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 13),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: compact
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Icon(icon, color: color, size: 19),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(color: color, fontWeight: FontWeight.w700),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: color, fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
