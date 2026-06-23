@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-23
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00038`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00038` + placeholder historique `202606160031`
 
 ---
 
@@ -1517,7 +1517,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 
 ## 10. Index
 
-> **Total : ~112 index**, dont les index metier existants, la recherche trigram, les index de hierarchie flexible `00019`, la matrice d'autorisations `00031` et les index fiscaux `church_unit_id` de `00035`.
+> **Total : ~119 index**, dont les index metier existants, la recherche trigram, les index de hierarchie flexible `00019`, la matrice d'autorisations `00031`, les index fiscaux `church_unit_id` de `00035` et les index de lignes de releves bancaires de `00038`.
 
 <details>
 <summary>Cliquer pour voir la liste complète des index</summary>
@@ -1728,8 +1728,15 @@ erDiagram
 
 ## 15. Procedure de reconstruction et de deploiement
 
-Cette section sert de procedure courte pour recreer le backend d'une eglise
-sur un nouveau projet Supabase, puis brancher le meme frontend dessus.
+Cette section sert de dossier d'execution pour recreer le backend d'une eglise
+sur un nouveau projet Supabase, puis brancher le meme frontend dessus. Elle doit
+permettre a un developpeur externe de reconstruire une base autonome sans
+chercher les regles dans le code applicatif.
+
+Les sections 1 a 14 de ce fichier constituent l'inventaire technique :
+tables, colonnes, relations, contraintes, RLS, fonctions, triggers, index,
+vues, Storage et dependances. La presente section decrit l'ordre d'execution
+et les points de configuration hors SQL.
 
 ### Modes supportes
 
@@ -1737,6 +1744,39 @@ sur un nouveau projet Supabase, puis brancher le meme frontend dessus.
 | ---- | ----- | ----------- |
 | Multi-tenant partage | Plusieurs eglises dans une meme base Supabase | Optionnelles comme compte demo |
 | Base dediee par eglise | Une base Supabase autonome par eglise cliente | Ne pas importer le seed demo |
+
+### Pre-requis d'une base autonome
+
+| Element | Exigence |
+| ------- | -------- |
+| Projet Supabase | Projet neuf ou projet cible sauvegarde avant intervention |
+| CLI Supabase | Authentifie avec le bon compte et lie au bon `project-ref` |
+| Acces SQL | Role proprietaire/postgres pour appliquer les migrations |
+| Auth | Email active, SMTP configure en production, redirect URLs du frontend renseignees |
+| Storage | Service Supabase Storage actif ; les buckets sont crees par migrations |
+| Frontend | `Project URL`, `anon public key` et eventuellement `FISCAL_PDF_CONVERTER_URL` disponibles |
+| Export PDF fiscal | Service `server/fiscal-pdf-converter` deploye si le PDF officiel est requis |
+
+Extensions creees ou requises par les migrations : `uuid-ossp`, `pgcrypto` et
+`pg_trgm`. Ne pas les supprimer sur une base deja installee.
+
+### Procedure CLI recommandee
+
+Depuis la racine du projet :
+
+```powershell
+supabase link --project-ref <project-ref-cible>
+supabase migration list --linked
+supabase db push --linked --dry-run
+supabase db push --linked
+```
+
+Apres application, `supabase migration list --linked` doit afficher toutes les
+migrations locales et distantes en face-a-face, sans ligne locale ou distante
+manquante. Le fichier `202606160031_remote_hierarchy_matrix_history.sql` est un
+placeholder historique : il correspond a une ancienne execution manuelle de la
+matrice hierarchique sur le projet EAB. La migration canonique pour une base
+neuve est `00031_hierarchical_permission_matrix.sql`.
 
 ### Ordre SQL obligatoire
 
@@ -1782,7 +1822,12 @@ supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql
 supabase/migrations/00036_active_unit_financial_reports.sql
 supabase/migrations/00037_fiscal_dossier_exercice_dates.sql
 supabase/migrations/00038_bank_statement_lines.sql
+supabase/migrations/202606160031_remote_hierarchy_matrix_history.sql
 ```
+
+Le dernier fichier est volontairement vide et ne doit contenir aucun DDL. Il
+sert uniquement a conserver l'historique distant du projet EAB sans dupliquer
+les objets de `00031`.
 
 ### Storage a creer dans Supabase
 
@@ -1804,6 +1849,16 @@ idempotente pour les nouvelles bases.
 | Demonstration EAB | Executer `supabase/seed.sql` apres les migrations |
 | Nouvelle eglise cliente | Ne pas executer `supabase/seed.sql`; creer le premier compte puis utiliser l'onboarding de l'app |
 | Base partagee avec EAB demo | Garder le seed EAB comme organisation demo; les nouvelles eglises sont creees via `create_organization_onboarding()` |
+
+Pour une base autonome livree a une eglise cliente, le seed public de demo ne
+doit pas etre applique. Le parcours normal est :
+
+1. creer le premier compte administrateur depuis l'app ;
+2. creer l'organisation avec l'onboarding ;
+3. renseigner l'identite, le logo, les couleurs, les contacts et les donnees fiscales dans les parametres ;
+4. configurer les niveaux de structure et les capacites de chaque niveau ;
+5. inviter les sous-comptes avec `organization_user_invitations`/`invite_user_to_org()` ;
+6. verifier les droits superieur -> inferieur depuis la matrice d'autorisations.
 
 ### Verification apres installation
 
@@ -1832,6 +1887,39 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
 6. Construire le frontend avec `flutter build web --no-wasm-dry-run --pwa-strategy=none -O1`.
 7. Creer le premier utilisateur depuis l'app, puis creer l'eglise via l'ecran d'onboarding.
+
+Pour un build deployable sans modifier le code source, passer les valeurs par
+`--dart-define` lorsque la configuration le permet :
+
+```powershell
+flutter build web --no-wasm-dry-run --pwa-strategy=none -O1 `
+  --dart-define=FISCAL_PDF_CONVERTER_URL=https://<service-pdf>
+```
+
+Le frontend ne doit jamais utiliser la cle `service_role`. Cette cle est
+reservee aux outils serveur, scripts d'administration et services backend.
+
+### Parametrages Supabase hors migrations
+
+| Zone Supabase | Configuration a verifier |
+| ------------- | ------------------------ |
+| Auth > Providers | Email active ; confirmation email selon le mode choisi |
+| Auth > URL Configuration | Site URL et Redirect URLs du domaine frontend |
+| Auth > SMTP | SMTP personnalise en production pour eviter `email rate limit exceeded` |
+| Auth > Rate Limits | Limites adaptees au volume d'inscriptions et confirmations |
+| Settings > API | Recuperer uniquement `Project URL` et `anon public key` pour le frontend |
+| Storage | Verifier les buckets `member-photos`, `documents`, `organization-assets` |
+| Edge/serveur externe | Deployer `server/fiscal-pdf-converter` si l'export PDF officiel est active |
+
+### Validation minimale avant livraison
+
+Avant de declarer une base autonome prete :
+
+1. `supabase migration list --linked` doit etre aligne.
+2. `supabase db push --linked --dry-run` doit indiquer que la base distante est a jour.
+3. Les scripts de verification listés plus haut doivent retourner `ok = true`.
+4. L'app doit permettre : inscription/connexion, creation organisation, import logo, creation structure, invitation sous-compte, creation membre, programme, campagne, mouvement financier, ecriture, releve bancaire, dossier fiscal.
+5. Les exports fiscaux Excel/PDF doivent reprendre l'identite de l'organisation connectee, sans reference residuelle au modele commercial externe.
 
 ### Auth et limite email
 
@@ -1866,6 +1954,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-23 | Agent IA | **Preparation bases autonomes** : alignement de l'historique Supabase distant avec les migrations locales `00031` a `00038`, ajout du placeholder historique `202606160031_remote_hierarchy_matrix_history.sql` et renforcement de la procedure de reconstruction pour couvrir pre-requis, ordre SQL, branchement frontend, parametrages Supabase hors migrations et validations minimales avant livraison. |
 | 2026-06-23 | Agent IA | **Migration 00038** : Ajout de `lignes_releves_bancaires` pour stocker les operations de releves bancaires, avec rattachement organisation/unite/assemblee legacy, lien optionnel vers `church_unit_financial_accounts` et `ecritures_comptables`, indexes, triggers de synchronisation/`updated_at` et politiques RLS basees sur `user_can_access_bank_reconciliation_scope`. Le seed public de demonstration alimente des lignes pointees/non pointees pour rendre l'ecran Rapprochement testable. |
 | 2026-06-21 | Agent IA | **Export fiscal distant** : ajout de `tool/export_remote_fiscal_dossier.dart` pour regenerer un dossier fiscal reel depuis Supabase avec `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et `FISCAL_DOSSIER_ID`. L'outil audite le classeur, refuse les anciennes references du modele et calcule la balance comparative depuis les tables comptables pour fonctionner hors session utilisateur. |
 | 2026-06-20 | Agent IA | **Export PDF fiscal officiel** : ajout du service deployable `server/fiscal-pdf-converter` pour convertir le classeur Excel SYSCEBNL final en PDF via LibreOffice headless, avec verification Supabase Auth optionnelle, et raccordement du bouton PDF a `FISCAL_PDF_CONVERTER_URL`. Sans URL configuree, l'application bloque l'export PDF officiel au lieu de generer un PDF approximatif. Pour les tests locaux Windows uniquement, le service peut basculer sur Excel COM si `soffice` est absent ; la production doit rester sur Docker/LibreOffice. |

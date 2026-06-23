@@ -96,8 +96,14 @@ flutter pub run build_runner build --delete-conflicting-outputs
    - `supabase/migrations/00033_apply_hierarchy_permissions_finance_reports.sql`
    - `supabase/migrations/00034_apply_hierarchy_permissions_accounting_scopes.sql`
    - `supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql`
+   - `supabase/migrations/00036_active_unit_financial_reports.sql`
+   - `supabase/migrations/00037_fiscal_dossier_exercice_dates.sql`
+   - `supabase/migrations/00038_bank_statement_lines.sql`
+   - `supabase/migrations/202606160031_remote_hierarchy_matrix_history.sql` *(placeholder historique vide)*
 
-   Les migrations `00018` a `00035` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle/dossiers fiscaux a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, ajoutent les capacites et moyens financiers configurables par unite, structurent les cotisations, promesses et mouvements financiers operationnels, ajoutent la matrice d'autorisations hierarchiques, puis l'appliquent aux membres/familles/programmes, finances operationnelles, rapports mensuels, perimetres comptables, dossiers fiscaux, imports de balance, rapports financiers et exports. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+   Les migrations `00018` a `00038` rendent l'application personnalisable par organisation, ajoutent la hierarchie flexible, rattachent progressivement les membres/familles/programmes/rapports mensuels/comptabilite operationnelle/dossiers fiscaux a `church_units`, activent les invitations de sous-comptes par organisation, ajoutent l'onboarding de creation d'une eglise autonome, permettent de finaliser les etapes ignorees depuis les parametres, creent les buckets Storage indispensables, ajoutent les capacites et moyens financiers configurables par unite, structurent les cotisations, promesses et mouvements financiers operationnels, ajoutent la matrice d'autorisations hierarchiques, puis l'appliquent aux membres/familles/programmes, finances operationnelles, rapports mensuels, perimetres comptables, dossiers fiscaux, imports de balance, rapports financiers, exports, rapports financiers filtres par unite active, dates d'exercice fiscal synchronisees et lignes de releves bancaires rapprocheables. Les donnees EAB existantes sont conservees comme compte de demonstration si `supabase/seed.sql` est execute.
+
+   Pour une reconstruction autonome complete, `docs/BACKEND_REFERENCE.md` reste la reference canonique : tables, relations, RLS, fonctions, triggers, index, Storage, ordre de migration et validations.
 
 3. Pour les données de démo :
    - `supabase/seed.sql`

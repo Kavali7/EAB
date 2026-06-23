@@ -1,0 +1,16 @@
+-- ============================================================================
+-- Remote migration history placeholder
+-- ============================================================================
+--
+-- The production Supabase project contains an applied migration version
+-- 202606160031 named "hierarchical_permission_matrix".
+--
+-- That migration was created from a manual SQL Editor execution while the
+-- hierarchy permission matrix was still being stabilized. The canonical,
+-- reproducible migration for a fresh autonomous database is now:
+--
+--   supabase/migrations/00031_hierarchical_permission_matrix.sql
+--
+-- Keep this file empty on purpose. It lets `supabase migration list` reconcile
+-- the historical remote version without replaying duplicate DDL on new
+-- databases. Do not add schema changes here.
