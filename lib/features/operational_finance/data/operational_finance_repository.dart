@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:eab/core/services/supabase_data_service.dart';
@@ -37,11 +39,14 @@ class OperationalFinanceRepository {
             )
             .toList(),
         pledges: (responses[1] as List)
-            .map((json) => FinancialPledge.fromJson(json as Map<String, dynamic>))
+            .map(
+              (json) => FinancialPledge.fromJson(json as Map<String, dynamic>),
+            )
             .toList(),
         movements: (responses[2] as List)
             .map(
-              (json) => FinancialMovement.fromJson(json as Map<String, dynamic>),
+              (json) =>
+                  FinancialMovement.fromJson(json as Map<String, dynamic>),
             )
             .toList(),
       );
@@ -128,6 +133,7 @@ class OperationalFinanceRepository {
     String? contributeurNom,
     String? modePaiement,
     String? referenceExterne,
+    String? pieceJustificativeUrl,
   }) async {
     final profile = await _profileContext();
     await _client.from('mouvements_financiers').insert({
@@ -146,6 +152,7 @@ class OperationalFinanceRepository {
       'libelle': libelle.trim(),
       'mode_paiement': _blankToNull(modePaiement),
       'reference_externe': _blankToNull(referenceExterne),
+      'piece_justificative_url': _blankToNull(pieceJustificativeUrl),
       'statut': 'soumis',
       'created_by': profile.profileId,
       'submitted_by': profile.profileId,
@@ -175,6 +182,7 @@ class OperationalFinanceRepository {
     required String libelle,
     required double montant,
     String? referencePiece,
+    String? pieceJustificativeUrl,
     String? modePaiement,
     String? centreAnalytiqueId,
     String? tiersId,
@@ -191,6 +199,7 @@ class OperationalFinanceRepository {
             'id_centre_analytique_principal': _blankToNull(centreAnalytiqueId),
             'date': _dateOnly(date),
             'reference_piece': _blankToNull(referencePiece),
+            'piece_justificative_url': _blankToNull(pieceJustificativeUrl),
             'libelle': libelle.trim(),
             'statut': 'validee',
             'created_by': profile.profileId,
@@ -245,13 +254,54 @@ class OperationalFinanceRepository {
           .eq('id', movementId);
     } catch (_) {
       if (entryId != null) {
-        await _client
-            .from('ecritures_comptables')
-            .delete()
-            .eq('id', entryId);
+        await _client.from('ecritures_comptables').delete().eq('id', entryId);
       }
       rethrow;
     }
+  }
+
+  Future<String> uploadSupportingDocument({
+    required Uint8List bytes,
+    required String originalFilename,
+    required String extension,
+    required String contentType,
+  }) async {
+    final profile = await _profileContext();
+    final safeExtension = _safeDocumentExtension(extension, contentType);
+    if (safeExtension == null) {
+      throw StateError('Format non supporte. Utilisez PDF, PNG, JPG ou WEBP.');
+    }
+    if (bytes.lengthInBytes > _maxSupportingDocumentBytes) {
+      throw StateError('Piece trop volumineuse. Taille maximale : 8 Mo.');
+    }
+
+    final suffix = DateTime.now().toUtc().microsecondsSinceEpoch;
+    final actor = profile.profileId.replaceAll('-', '').substring(0, 8);
+    final safeName = _safeFilenameStem(originalFilename);
+    final objectPath =
+        '${profile.organizationId}/financial-movements/$suffix-$actor-$safeName.$safeExtension';
+
+    await _client.storage
+        .from('documents')
+        .uploadBinary(
+          objectPath,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: _safeContentType(safeExtension, contentType),
+            cacheControl: '3600',
+            upsert: false,
+          ),
+        );
+
+    return objectPath;
+  }
+
+  Future<String> signedSupportingDocumentUrl(String storedValue) async {
+    final clean = storedValue.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      return clean;
+    }
+    return _client.storage.from('documents').createSignedUrl(clean, 3600);
   }
 
   Future<void> rejectMovement({
@@ -307,4 +357,56 @@ class OperationalFinanceRepository {
     if (clean == null || clean.isEmpty) return null;
     return clean;
   }
+
+  String? _safeDocumentExtension(String extension, String contentType) {
+    final cleanExtension = extension.toLowerCase().trim();
+    final normalizedExtension = cleanExtension == 'jpeg'
+        ? 'jpg'
+        : cleanExtension;
+    if (_supportingDocumentExtensions.contains(normalizedExtension)) {
+      return normalizedExtension;
+    }
+    final cleanType = contentType.toLowerCase().split(';').first.trim();
+    return switch (cleanType) {
+      'application/pdf' => 'pdf',
+      'image/png' => 'png',
+      'image/jpeg' => 'jpg',
+      'image/webp' => 'webp',
+      _ => null,
+    };
+  }
+
+  String _safeContentType(String extension, String contentType) {
+    final cleanType = contentType.toLowerCase().split(';').first.trim();
+    if (cleanType.isNotEmpty && cleanType != 'application/octet-stream') {
+      return cleanType;
+    }
+    return switch (extension) {
+      'pdf' => 'application/pdf',
+      'png' => 'image/png',
+      'jpg' => 'image/jpeg',
+      'webp' => 'image/webp',
+      _ => 'application/octet-stream',
+    };
+  }
+
+  String _safeFilenameStem(String filename) {
+    final stem = filename
+        .split(RegExp(r'[\\/]'))
+        .last
+        .split('?')
+        .first
+        .split('#')
+        .first
+        .replaceAll(RegExp(r'\.[^.]+$'), '')
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    if (stem.isEmpty) return 'piece';
+    return stem.length <= 48 ? stem : stem.substring(0, 48);
+  }
 }
+
+const _supportingDocumentExtensions = {'pdf', 'png', 'jpg', 'webp'};
+const _maxSupportingDocumentBytes = 8 * 1024 * 1024;

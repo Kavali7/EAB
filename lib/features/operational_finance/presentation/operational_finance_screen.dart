@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/constants.dart';
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/utils/external_url_opener.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/church_units/data/church_unit_model.dart';
 import 'package:eab/features/operational_finance/application/operational_finance_providers.dart';
 import 'package:eab/features/operational_finance/data/operational_finance_models.dart';
+import 'package:eab/features/operational_finance/data/picked_supporting_document.dart';
+import 'package:eab/features/operational_finance/data/supporting_document_picker.dart';
 import 'package:eab/models/centre_analytique.dart';
 import 'package:eab/models/compte_comptable.dart';
 import 'package:eab/models/compta_enums.dart';
@@ -73,7 +76,8 @@ class _OperationalFinanceScreenState
               },
             )
           : _buildContent(
-              operations: operationsAsync.value ??
+              operations:
+                  operationsAsync.value ??
                   const OperationalFinanceState(
                     campaigns: [],
                     pledges: [],
@@ -111,12 +115,16 @@ class _OperationalFinanceScreenState
       activeUnit,
       currentProfile,
     );
-    final launchUnits = units.where((unit) => unit.canLaunchContributions).toList();
+    final launchUnits = units
+        .where((unit) => unit.canLaunchContributions)
+        .toList();
     final scopedUnitIds = _unitScopeIds(units, activeUnit);
     final scopedCampaigns = activeUnit == null
         ? operations.campaigns
         : operations.campaigns
-              .where((campaign) => scopedUnitIds.contains(campaign.churchUnitId))
+              .where(
+                (campaign) => scopedUnitIds.contains(campaign.churchUnitId),
+              )
               .toList();
     final scopedAccounts = activeUnit == null
         ? accounts
@@ -158,19 +166,19 @@ class _OperationalFinanceScreenState
                   onCreatePledge: selectedCampaign == null
                       ? null
                       : () => _openPledgeForm(
-                            campaigns: scopedCampaigns,
-                            members: members,
-                            selectedCampaignId: selectedCampaign.id,
-                          ),
+                          campaigns: scopedCampaigns,
+                          members: members,
+                          selectedCampaignId: selectedCampaign.id,
+                        ),
                   onCreateMovement: scopedAccounts.isEmpty
                       ? null
                       : () => _openMovementForm(
-                            campaigns: scopedCampaigns,
-                            pledges: operations.pledges,
-                            accounts: scopedAccounts,
-                            members: members,
-                            selectedCampaignId: selectedCampaign?.id,
-                          ),
+                          campaigns: scopedCampaigns,
+                          pledges: operations.pledges,
+                          accounts: scopedAccounts,
+                          members: members,
+                          selectedCampaignId: selectedCampaign?.id,
+                        ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (activeUnit != null && scopedAccounts.isEmpty)
@@ -204,36 +212,38 @@ class _OperationalFinanceScreenState
                         onCreatePledge: selectedCampaign == null
                             ? null
                             : () => _openPledgeForm(
-                                  campaigns: scopedCampaigns,
-                                  members: members,
-                                  selectedCampaignId: selectedCampaign.id,
-                                ),
+                                campaigns: scopedCampaigns,
+                                members: members,
+                                selectedCampaignId: selectedCampaign.id,
+                              ),
                         onCreateMovement: scopedAccounts.isEmpty
                             ? null
                             : () => _openMovementForm(
-                                  campaigns: scopedCampaigns,
-                                  pledges: operations.pledges,
-                                  accounts: scopedAccounts,
-                                  members: members,
-                                  selectedCampaignId: selectedCampaign?.id,
-                                ),
-                        onCloseCampaign: selectedCampaign == null ||
+                                campaigns: scopedCampaigns,
+                                pledges: operations.pledges,
+                                accounts: scopedAccounts,
+                                members: members,
+                                selectedCampaignId: selectedCampaign?.id,
+                              ),
+                        onCloseCampaign:
+                            selectedCampaign == null ||
                                 selectedCampaign.statut == 'cloturee'
                             ? null
                             : () => _closeCampaign(selectedCampaign.id),
                         onValidateMovement: canValidateMovements
                             ? (movement) => _openValidationForm(
-                                  movement: movement,
-                                  accounts: accounts,
-                                  journals: journals,
-                                  comptes: comptes,
-                                  centres: centres,
-                                  tiers: tiers,
-                                )
+                                movement: movement,
+                                accounts: accounts,
+                                journals: journals,
+                                comptes: comptes,
+                                centres: centres,
+                                tiers: tiers,
+                              )
                             : null,
                         onRejectMovement: canValidateMovements
                             ? (movement) => _openRejectMovementDialog(movement)
                             : null,
+                        onOpenSupportingDocument: _openSupportingDocument,
                       ),
                     ],
                   )
@@ -268,37 +278,39 @@ class _OperationalFinanceScreenState
                           onCreatePledge: selectedCampaign == null
                               ? null
                               : () => _openPledgeForm(
-                                    campaigns: scopedCampaigns,
-                                    members: members,
-                                    selectedCampaignId: selectedCampaign.id,
-                                  ),
+                                  campaigns: scopedCampaigns,
+                                  members: members,
+                                  selectedCampaignId: selectedCampaign.id,
+                                ),
                           onCreateMovement: scopedAccounts.isEmpty
                               ? null
                               : () => _openMovementForm(
-                                    campaigns: scopedCampaigns,
-                                    pledges: operations.pledges,
-                                    accounts: scopedAccounts,
-                                    members: members,
-                                    selectedCampaignId: selectedCampaign?.id,
-                                  ),
-                          onCloseCampaign: selectedCampaign == null ||
+                                  campaigns: scopedCampaigns,
+                                  pledges: operations.pledges,
+                                  accounts: scopedAccounts,
+                                  members: members,
+                                  selectedCampaignId: selectedCampaign?.id,
+                                ),
+                          onCloseCampaign:
+                              selectedCampaign == null ||
                                   selectedCampaign.statut == 'cloturee'
                               ? null
                               : () => _closeCampaign(selectedCampaign.id),
                           onValidateMovement: canValidateMovements
                               ? (movement) => _openValidationForm(
-                                    movement: movement,
-                                    accounts: accounts,
-                                    journals: journals,
-                                    comptes: comptes,
-                                    centres: centres,
-                                    tiers: tiers,
-                                  )
+                                  movement: movement,
+                                  accounts: accounts,
+                                  journals: journals,
+                                  comptes: comptes,
+                                  centres: centres,
+                                  tiers: tiers,
+                                )
                               : null,
                           onRejectMovement: canValidateMovements
                               ? (movement) =>
                                     _openRejectMovementDialog(movement)
                               : null,
+                          onOpenSupportingDocument: _openSupportingDocument,
                         ),
                       ),
                     ],
@@ -453,6 +465,27 @@ class _OperationalFinanceScreenState
     );
   }
 
+  Future<void> _openSupportingDocument(FinancialMovement movement) async {
+    final storedValue = movement.pieceJustificativeUrl?.trim();
+    if (storedValue == null || storedValue.isEmpty) return;
+    try {
+      final repository = ref.read(operationalFinanceRepositoryProvider);
+      if (repository == null) {
+        throw StateError('Depot financier indisponible.');
+      }
+      final url = await repository.signedSupportingDocumentUrl(storedValue);
+      await openExternalUrl(url);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible d ouvrir la piece : $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   Future<void> _closeCampaign(String campaignId) async {
     final confirmed = await EabDialog.confirm(
       context,
@@ -467,13 +500,16 @@ class _OperationalFinanceScreenState
           .read(operationalFinanceProvider.notifier)
           .closeCampaign(campaignId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Campagne cloturee.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Campagne cloturee.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -566,7 +602,11 @@ class _HeaderActions extends StatelessWidget {
                 .toList(),
           )
         else
-          Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.sm, children: buttons),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: buttons,
+          ),
       ],
     );
   }
@@ -618,7 +658,10 @@ class _KpiStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = campaigns.where((c) => c.statut == 'active').length;
-    final promised = campaigns.fold<double>(0, (sum, c) => sum + c.montantPromis);
+    final promised = campaigns.fold<double>(
+      0,
+      (sum, c) => sum + c.montantPromis,
+    );
     final collected = campaigns.fold<double>(
       0,
       (sum, c) => sum + c.montantEncaisse,
@@ -629,7 +672,11 @@ class _KpiStrip extends StatelessWidget {
     );
     final items = [
       _KpiItem('Campagnes actives', active.toString(), Icons.flag_outlined),
-      _KpiItem('Promesses', currencyFormatter.format(promised), Icons.handshake),
+      _KpiItem(
+        'Promesses',
+        currencyFormatter.format(promised),
+        Icons.handshake,
+      ),
       _KpiItem('Encaisse', currencyFormatter.format(collected), Icons.payments),
       _KpiItem('Valide', currencyFormatter.format(validated), Icons.verified),
     ];
@@ -648,7 +695,10 @@ class _KpiStrip extends StatelessWidget {
           runSpacing: AppSpacing.sm,
           children: [
             for (final item in items)
-              SizedBox(width: width, child: _KpiTile(item: item)),
+              SizedBox(
+                width: width,
+                child: _KpiTile(item: item),
+              ),
           ],
         );
       },
@@ -861,6 +911,7 @@ class _CampaignDetailPanel extends StatelessWidget {
     required this.onCloseCampaign,
     required this.onValidateMovement,
     required this.onRejectMovement,
+    required this.onOpenSupportingDocument,
   });
 
   final FinancialCampaignSummary? campaign;
@@ -878,6 +929,7 @@ class _CampaignDetailPanel extends StatelessWidget {
   final VoidCallback? onCloseCampaign;
   final ValueChanged<FinancialMovement>? onValidateMovement;
   final ValueChanged<FinancialMovement>? onRejectMovement;
+  final ValueChanged<FinancialMovement>? onOpenSupportingDocument;
 
   @override
   Widget build(BuildContext context) {
@@ -902,7 +954,10 @@ class _CampaignDetailPanel extends StatelessWidget {
     final totalMovements = movements.fold<double>(
       0,
       (sum, movement) =>
-          sum + (movement.type == 'decaissement' ? -movement.montant : movement.montant),
+          sum +
+          (movement.type == 'decaissement'
+              ? -movement.montant
+              : movement.montant),
     );
 
     return Card(
@@ -933,8 +988,12 @@ class _CampaignDetailPanel extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                Expanded(child: _AmountMetric(label: 'Promis', value: totalPledges)),
-                Expanded(child: _AmountMetric(label: 'Net', value: totalMovements)),
+                Expanded(
+                  child: _AmountMetric(label: 'Promis', value: totalPledges),
+                ),
+                Expanded(
+                  child: _AmountMetric(label: 'Net', value: totalMovements),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -1007,6 +1066,10 @@ class _CampaignDetailPanel extends StatelessWidget {
                       onReject: onRejectMovement == null
                           ? null
                           : () => onRejectMovement!(movement),
+                      onOpenSupportingDocument:
+                          movement.pieceJustificativeUrl?.trim().isEmpty ?? true
+                          ? null
+                          : () => onOpenSupportingDocument?.call(movement),
                     ),
                 ],
               ),
@@ -1044,6 +1107,7 @@ class _MovementTile extends StatelessWidget {
     required this.canValidate,
     required this.onValidate,
     required this.onReject,
+    required this.onOpenSupportingDocument,
   });
 
   final FinancialMovement movement;
@@ -1052,11 +1116,35 @@ class _MovementTile extends StatelessWidget {
   final bool canValidate;
   final VoidCallback? onValidate;
   final VoidCallback? onReject;
+  final VoidCallback? onOpenSupportingDocument;
 
   @override
   Widget build(BuildContext context) {
     final isOut = movement.type == 'decaissement';
     final color = isOut ? AppColors.error : AppColors.success;
+    final hasSupportingDocument =
+        movement.pieceJustificativeUrl?.trim().isNotEmpty ?? false;
+    final actions = <Widget>[
+      if (hasSupportingDocument)
+        IconButton(
+          tooltip: 'Ouvrir la piece justificative',
+          onPressed: onOpenSupportingDocument,
+          icon: const Icon(Icons.attach_file_outlined),
+        ),
+      if (canValidate) ...[
+        IconButton(
+          tooltip: 'Valider en comptabilite',
+          onPressed: onValidate,
+          icon: const Icon(Icons.fact_check_outlined),
+        ),
+        IconButton(
+          tooltip: 'Rejeter',
+          onPressed: onReject,
+          color: AppColors.error,
+          icon: const Icon(Icons.block_outlined),
+        ),
+      ],
+    ];
     return _LineTile(
       icon: isOut ? Icons.north_east_outlined : Icons.south_west_outlined,
       title: movement.libelle,
@@ -1065,27 +1153,14 @@ class _MovementTile extends StatelessWidget {
         account?.label ?? 'Compte',
         contributor,
         _statusLabel(movement.statut),
+        if (hasSupportingDocument) 'Piece jointe',
         if (movement.rejetMotif?.trim().isNotEmpty ?? false)
           movement.rejetMotif!.trim(),
       ].join(' | '),
       trailing:
           '${isOut ? '-' : '+'}${currencyFormatter.format(movement.montant)}',
       color: color,
-      actions: canValidate
-          ? [
-              IconButton(
-                tooltip: 'Valider en comptabilite',
-                onPressed: onValidate,
-                icon: const Icon(Icons.fact_check_outlined),
-              ),
-              IconButton(
-                tooltip: 'Rejeter',
-                onPressed: onReject,
-                color: AppColors.error,
-                icon: const Icon(Icons.block_outlined),
-              ),
-            ]
-          : null,
+      actions: actions.isEmpty ? null : actions,
     );
   }
 }
@@ -1241,10 +1316,12 @@ class _CampaignFormState extends ConsumerState<_CampaignForm> {
             controller: _titreController,
             decoration: const InputDecoration(
               labelText: 'Titre',
-              hintText: 'Cotisation construction, soutien programme, offrande speciale...',
+              hintText:
+                  'Cotisation construction, soutien programme, offrande speciale...',
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Titre requis.' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Titre requis.'
+                : null,
           ),
           const SizedBox(height: AppSpacing.md),
           DropdownButtonFormField<String>(
@@ -1288,9 +1365,15 @@ class _CampaignFormState extends ConsumerState<_CampaignForm> {
             decoration: const InputDecoration(labelText: 'Periodicite'),
             items: const [
               DropdownMenuItem(value: 'ponctuelle', child: Text('Ponctuelle')),
-              DropdownMenuItem(value: 'hebdomadaire', child: Text('Hebdomadaire')),
+              DropdownMenuItem(
+                value: 'hebdomadaire',
+                child: Text('Hebdomadaire'),
+              ),
               DropdownMenuItem(value: 'mensuelle', child: Text('Mensuelle')),
-              DropdownMenuItem(value: 'trimestrielle', child: Text('Trimestrielle')),
+              DropdownMenuItem(
+                value: 'trimestrielle',
+                child: Text('Trimestrielle'),
+              ),
               DropdownMenuItem(value: 'annuelle', child: Text('Annuelle')),
             ],
             onChanged: (value) =>
@@ -1342,7 +1425,9 @@ class _CampaignFormState extends ConsumerState<_CampaignForm> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await ref.read(operationalFinanceProvider.notifier).createCampaign(
+      await ref
+          .read(operationalFinanceProvider.notifier)
+          .createCampaign(
             churchUnitId: _unitId!,
             titre: _titreController.text,
             type: _type,
@@ -1355,13 +1440,16 @@ class _CampaignFormState extends ConsumerState<_CampaignForm> {
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Campagne creee.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Campagne creee.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1399,7 +1487,9 @@ class _PledgeFormState extends ConsumerState<_PledgeForm> {
   void initState() {
     super.initState();
     _campaignId =
-        widget.campaigns.any((campaign) => campaign.id == widget.selectedCampaignId)
+        widget.campaigns.any(
+          (campaign) => campaign.id == widget.selectedCampaignId,
+        )
         ? widget.selectedCampaignId
         : (widget.campaigns.isEmpty ? null : widget.campaigns.first.id);
   }
@@ -1424,7 +1514,10 @@ class _PledgeFormState extends ConsumerState<_PledgeForm> {
             decoration: const InputDecoration(labelText: 'Campagne'),
             items: [
               for (final campaign in widget.campaigns)
-                DropdownMenuItem(value: campaign.id, child: Text(campaign.titre)),
+                DropdownMenuItem(
+                  value: campaign.id,
+                  child: Text(campaign.titre),
+                ),
             ],
             validator: (value) =>
                 value == null ? 'Selectionnez une campagne.' : null,
@@ -1521,7 +1614,9 @@ class _PledgeFormState extends ConsumerState<_PledgeForm> {
     final campaign = widget.campaigns.firstWhere((c) => c.id == _campaignId);
     setState(() => _saving = true);
     try {
-      await ref.read(operationalFinanceProvider.notifier).createPledge(
+      await ref
+          .read(operationalFinanceProvider.notifier)
+          .createPledge(
             campagneId: campaign.id,
             churchUnitId: campaign.churchUnitId,
             membreId: _memberId,
@@ -1533,13 +1628,16 @@ class _PledgeFormState extends ConsumerState<_PledgeForm> {
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Promesse enregistree.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Promesse enregistree.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1579,13 +1677,16 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
   String _movementType = 'encaissement';
   String _paymentMode = 'especes';
   DateTime _dateMouvement = DateTime.now();
+  PickedSupportingDocument? _supportingDocument;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _campaignId =
-        widget.campaigns.any((campaign) => campaign.id == widget.selectedCampaignId)
+        widget.campaigns.any(
+          (campaign) => campaign.id == widget.selectedCampaignId,
+        )
         ? widget.selectedCampaignId
         : (widget.campaigns.isEmpty ? null : widget.campaigns.first.id);
     _accountId = _accountsForCampaign().isEmpty
@@ -1608,7 +1709,8 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
         .where((pledge) => pledge.campagneId == _campaignId)
         .toList();
     final accounts = _accountsForCampaign();
-    if (_accountId != null && !accounts.any((account) => account.id == _accountId)) {
+    if (_accountId != null &&
+        !accounts.any((account) => account.id == _accountId)) {
       _accountId = accounts.isEmpty ? null : accounts.first.id;
     }
 
@@ -1685,8 +1787,14 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
             initialValue: _movementType,
             decoration: const InputDecoration(labelText: 'Type de mouvement'),
             items: const [
-              DropdownMenuItem(value: 'encaissement', child: Text('Encaissement')),
-              DropdownMenuItem(value: 'decaissement', child: Text('Decaissement')),
+              DropdownMenuItem(
+                value: 'encaissement',
+                child: Text('Encaissement'),
+              ),
+              DropdownMenuItem(
+                value: 'decaissement',
+                child: Text('Decaissement'),
+              ),
               DropdownMenuItem(value: 'ajustement', child: Text('Ajustement')),
             ],
             onChanged: (value) =>
@@ -1697,10 +1805,12 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
             controller: _labelController,
             decoration: const InputDecoration(
               labelText: 'Libelle',
-              hintText: 'Paiement cotisation, avance fournisseur, depot MoMo...',
+              hintText:
+                  'Paiement cotisation, avance fournisseur, depot MoMo...',
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Libelle requis.' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Libelle requis.'
+                : null,
           ),
           const SizedBox(height: AppSpacing.md),
           TextFormField(
@@ -1722,9 +1832,18 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
             items: const [
               DropdownMenuItem(value: 'especes', child: Text('Especes')),
               DropdownMenuItem(value: 'cheque', child: Text('Cheque')),
-              DropdownMenuItem(value: 'virement_bancaire', child: Text('Virement bancaire')),
-              DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
-              DropdownMenuItem(value: 'microfinance', child: Text('Microfinance')),
+              DropdownMenuItem(
+                value: 'virement_bancaire',
+                child: Text('Virement bancaire'),
+              ),
+              DropdownMenuItem(
+                value: 'mobile_money',
+                child: Text('Mobile Money'),
+              ),
+              DropdownMenuItem(
+                value: 'microfinance',
+                child: Text('Microfinance'),
+              ),
               DropdownMenuItem(value: 'autre', child: Text('Autre')),
             ],
             onChanged: (value) =>
@@ -1762,6 +1881,14 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
               labelText: 'Reference externe',
               hintText: 'Reference MoMo, numero cheque, recu...',
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _SupportingDocumentField(
+            document: _supportingDocument,
+            onPick: _saving ? null : _pickSupportingDocument,
+            onClear: _saving
+                ? null
+                : () => setState(() => _supportingDocument = null),
           ),
           const SizedBox(height: AppSpacing.md),
           _DatePickButton(
@@ -1813,9 +1940,23 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
     final account = widget.accounts.firstWhere((a) => a.id == _accountId);
     final campaign = _findCampaign(_campaignId);
     final pledge = _findPledge(_pledgeId);
+    final supportingDocument = _supportingDocument;
     setState(() => _saving = true);
     try {
-      await ref.read(operationalFinanceProvider.notifier).createMovement(
+      String? supportingDocumentPath;
+      if (supportingDocument != null) {
+        supportingDocumentPath = await ref
+            .read(operationalFinanceProvider.notifier)
+            .uploadSupportingDocument(
+              bytes: supportingDocument.bytes,
+              originalFilename: supportingDocument.name,
+              extension: supportingDocument.extension,
+              contentType: supportingDocument.contentType,
+            );
+      }
+      await ref
+          .read(operationalFinanceProvider.notifier)
+          .createMovement(
             churchUnitId: account.churchUnitId,
             financialAccountId: account.id,
             type: _movementType,
@@ -1829,20 +1970,129 @@ class _MovementFormState extends ConsumerState<_MovementForm> {
             contributeurNom: _contributorController.text,
             modePaiement: _paymentMode,
             referenceExterne: _referenceController.text,
+            pieceJustificativeUrl: supportingDocumentPath,
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mouvement enregistre.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Mouvement enregistre.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _pickSupportingDocument() async {
+    try {
+      final document = await pickSupportingDocument();
+      if (document == null) return;
+      if (!document.isSupported) {
+        throw StateError(
+          'Format non supporte. Utilisez PDF, PNG, JPG ou WEBP.',
+        );
+      }
+      if (document.bytes.lengthInBytes > _maxSupportingDocumentBytes) {
+        throw StateError('Piece trop volumineuse. Taille maximale : 8 Mo.');
+      }
+      setState(() => _supportingDocument = document);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de joindre la piece : $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+}
+
+class _SupportingDocumentField extends StatelessWidget {
+  const _SupportingDocumentField({
+    required this.document,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final PickedSupportingDocument? document;
+  final VoidCallback? onPick;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = document;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.infoLight.withValues(alpha: 0.55),
+              borderRadius: AppRadius.mdAll,
+            ),
+            child: Icon(
+              selected == null
+                  ? Icons.receipt_long_outlined
+                  : Icons.attach_file_outlined,
+              color: AppColors.info,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selected == null
+                      ? 'Piece justificative optionnelle'
+                      : selected.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.subtitle,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  selected == null
+                      ? 'Photo ou PDF, utile pour controler une depense.'
+                      : _formatFileSize(selected.bytes.lengthInBytes),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          if (selected == null)
+            OutlinedButton.icon(
+              onPressed: onPick,
+              icon: const Icon(Icons.upload_file_outlined, size: 18),
+              label: const Text('Joindre'),
+            )
+          else
+            IconButton(
+              tooltip: 'Retirer la piece',
+              onPressed: onClear,
+              icon: const Icon(Icons.close_outlined),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1982,7 +2232,9 @@ class _MovementValidationFormState
                 ),
             ],
             validator: (value) {
-              if (value == null) return 'Selectionnez le compte de contrepartie.';
+              if (value == null) {
+                return 'Selectionnez le compte de contrepartie.';
+              }
               if (value == _treasuryAccountId) {
                 return 'La contrepartie doit etre differente.';
               }
@@ -2039,8 +2291,9 @@ class _MovementValidationFormState
             controller: _libelleController,
             maxLines: 2,
             decoration: const InputDecoration(labelText: 'Libelle comptable'),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Libelle requis.' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Libelle requis.'
+                : null,
           ),
           const SizedBox(height: AppSpacing.lg),
           EabButton(
@@ -2127,6 +2380,7 @@ class _MovementValidationFormState
             libelle: _libelleController.text,
             montant: widget.movement.montant,
             referencePiece: _referenceController.text,
+            pieceJustificativeUrl: widget.movement.pieceJustificativeUrl,
             modePaiement: widget.movement.modePaiement,
             centreAnalytiqueId: _centreId,
             tiersId: _tiersId,
@@ -2140,7 +2394,10 @@ class _MovementValidationFormState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -2195,8 +2452,9 @@ class _RejectMovementFormState extends ConsumerState<_RejectMovementForm> {
               labelText: 'Motif du rejet',
               hintText: 'Piece manquante, montant incorrect, mauvais compte...',
             ),
-            validator: (value) =>
-                (value == null || value.trim().isEmpty) ? 'Motif requis.' : null,
+            validator: (value) => (value == null || value.trim().isEmpty)
+                ? 'Motif requis.'
+                : null,
           ),
           const SizedBox(height: AppSpacing.lg),
           EabButton(
@@ -2216,19 +2474,24 @@ class _RejectMovementFormState extends ConsumerState<_RejectMovementForm> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await ref.read(operationalFinanceProvider.notifier).rejectMovement(
+      await ref
+          .read(operationalFinanceProvider.notifier)
+          .rejectMovement(
             movementId: widget.movement.id,
             reason: _reasonController.text,
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mouvement rejete.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Mouvement rejete.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur : $e'), backgroundColor: AppColors.error),
+        SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -2275,6 +2538,9 @@ class _ValidationSummary extends StatelessWidget {
                     _statusLabel(movement.type),
                     dateFormatter.format(movement.dateMouvement),
                     account?.label ?? 'Compte financier',
+                    if (movement.pieceJustificativeUrl?.trim().isNotEmpty ??
+                        false)
+                      'Piece justificative jointe',
                   ].join(' | '),
                   style: AppTextStyles.caption,
                 ),
@@ -2319,7 +2585,9 @@ class _DatePickButton extends StatelessWidget {
       },
       icon: const Icon(Icons.event_outlined, size: 18),
       label: Text(
-        value == null ? '$label : aucune' : '$label : ${dateFormatter.format(value!)}',
+        value == null
+            ? '$label : aucune'
+            : '$label : ${dateFormatter.format(value!)}',
       ),
     );
   }
@@ -2444,7 +2712,9 @@ String _movementContributorLabel(
   FinancialMovement movement,
   Map<String, Member> memberById,
 ) {
-  final member = movement.membreId == null ? null : memberById[movement.membreId];
+  final member = movement.membreId == null
+      ? null
+      : memberById[movement.membreId];
   if (member != null) return member.fullName;
   if (movement.contributeurNom?.trim().isNotEmpty ?? false) {
     return movement.contributeurNom!.trim();
@@ -2459,8 +2729,18 @@ String _pledgeContributor(FinancialPledge pledge) {
   return pledge.membreId == null ? 'Contributeur' : 'Fidele rattache';
 }
 
+String _formatFileSize(int bytes) {
+  if (bytes < 1024) return '$bytes o';
+  final kiloBytes = bytes / 1024;
+  if (kiloBytes < 1024) return '${kiloBytes.toStringAsFixed(1)} Ko';
+  final megaBytes = kiloBytes / 1024;
+  return '${megaBytes.toStringAsFixed(1)} Mo';
+}
+
 double? _parseMoney(String? value) {
   final raw = value?.replaceAll(' ', '').replaceAll(',', '.').trim();
   if (raw == null || raw.isEmpty) return null;
   return double.tryParse(raw);
 }
+
+const _maxSupportingDocumentBytes = 8 * 1024 * 1024;

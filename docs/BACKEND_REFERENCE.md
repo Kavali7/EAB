@@ -633,7 +633,7 @@
 | `reference_piece` | TEXT | OUI | — | Réf. pièce justificative |
 | `libelle` | TEXT | NON | — | Libellé |
 | `statut` | `statut_ecriture` | NON | `'brouillon'` | Statut |
-| `piece_justificative_url` | TEXT | OUI | — | URL vers Storage |
+| `piece_justificative_url` | TEXT | OUI | — | Chemin prive Storage vers la piece justificative |
 | `created_by` | UUID | OUI | — | FK → `profiles(id)` SET NULL |
 | `validated_by` | UUID | OUI | — | FK → `profiles(id)` SET NULL |
 | `validated_at` | TIMESTAMPTZ | OUI | — | Date validation |
@@ -889,7 +889,7 @@
 | `libelle` | TEXT | NON | — | Libelle utilisateur |
 | `mode_paiement` | `mode_paiement` | OUI | — | Mode de paiement |
 | `reference_externe` | TEXT | OUI | — | Reference cheque, MoMo, banque, etc. |
-| `piece_justificative_url` | TEXT | OUI | — | Piece stockee dans Storage |
+| `piece_justificative_url` | TEXT | OUI | — | Chemin prive Storage dans le bucket `documents` |
 | `statut` | TEXT | NON | `'brouillon'` | `brouillon`, `soumis`, `valide`, `rejete`, `annule` |
 | `rejet_motif` | TEXT | OUI | — | Obligatoire si rejet |
 | `submitted_by` / `validated_by` | UUID | OUI | — | FK -> `profiles(id)` SET NULL |
@@ -899,6 +899,14 @@
 | `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | — |
 
 **RLS** : ✅ — **CHECK** : montant positif, type, statut, libelle, motif de rejet.
+
+**Pieces justificatives optionnelles** :
+- Les mouvements peuvent etre enregistres sans piece.
+- Quand une preuve est jointe, le fichier est stocke dans le bucket prive `documents`.
+- Convention de chemin : `{organization_id}/financial-movements/{timestamp}-{actor}-{nom-fichier}.{ext}`.
+- Formats prevus par l'interface : PDF, PNG, JPG/JPEG, WEBP, taille maximale 8 Mo.
+- Au moment de la validation comptable, le chemin est recopie dans `ecritures_comptables.piece_justificative_url` pour conserver le lien entre depense, controle et ecriture.
+- L'application ouvre ces fichiers via une URL signee temporaire, pas via une URL publique permanente.
 
 ---
 

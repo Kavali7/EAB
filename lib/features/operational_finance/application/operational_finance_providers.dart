@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/services/supabase_data_service.dart';
@@ -13,10 +15,10 @@ final operationalFinanceRepositoryProvider =
       return OperationalFinanceRepository(dataService);
     });
 
-final operationalFinanceProvider = AsyncNotifierProvider<
-  OperationalFinanceNotifier,
-  OperationalFinanceState
->(OperationalFinanceNotifier.new);
+final operationalFinanceProvider =
+    AsyncNotifierProvider<OperationalFinanceNotifier, OperationalFinanceState>(
+      OperationalFinanceNotifier.new,
+    );
 
 class OperationalFinanceNotifier
     extends AsyncNotifier<OperationalFinanceState> {
@@ -102,6 +104,7 @@ class OperationalFinanceNotifier
     String? contributeurNom,
     String? modePaiement,
     String? referenceExterne,
+    String? pieceJustificativeUrl,
   }) async {
     final repository = ref.read(operationalFinanceRepositoryProvider);
     if (repository == null) return;
@@ -120,8 +123,25 @@ class OperationalFinanceNotifier
       contributeurNom: contributeurNom,
       modePaiement: modePaiement,
       referenceExterne: referenceExterne,
+      pieceJustificativeUrl: pieceJustificativeUrl,
     );
     ref.invalidateSelf();
+  }
+
+  Future<String?> uploadSupportingDocument({
+    required Uint8List bytes,
+    required String originalFilename,
+    required String extension,
+    required String contentType,
+  }) async {
+    final repository = ref.read(operationalFinanceRepositoryProvider);
+    if (repository == null) return null;
+    return repository.uploadSupportingDocument(
+      bytes: bytes,
+      originalFilename: originalFilename,
+      extension: extension,
+      contentType: contentType,
+    );
   }
 
   Future<void> closeCampaign(String campaignId) async {
@@ -142,6 +162,7 @@ class OperationalFinanceNotifier
     required String libelle,
     required double montant,
     String? referencePiece,
+    String? pieceJustificativeUrl,
     String? modePaiement,
     String? centreAnalytiqueId,
     String? tiersId,
@@ -159,6 +180,7 @@ class OperationalFinanceNotifier
       libelle: libelle,
       montant: montant,
       referencePiece: referencePiece,
+      pieceJustificativeUrl: pieceJustificativeUrl,
       modePaiement: modePaiement,
       centreAnalytiqueId: centreAnalytiqueId,
       tiersId: tiersId,
