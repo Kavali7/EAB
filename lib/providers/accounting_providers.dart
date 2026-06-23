@@ -413,7 +413,7 @@ class LignesRelevesBancairesNotifier
 
   Future<void> mettreAJourLigneReleve(LigneReleveBancaire ligne) async {
     final json = camelToSnake(ligne.toJson());
-    await _db.from('releves_bancaires').update(json).eq('id', ligne.id);
+    await _db.from('lignes_releves_bancaires').update(json).eq('id', ligne.id);
     final actuelle = state.value ?? [];
     final index = actuelle.indexWhere((l) => l.id == ligne.id);
     if (index == -1) return;

@@ -298,8 +298,8 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<List<AccountingEntry>> getAccountingEntries() async {
-    // Note: Cette méthode est pour compatibilité avec l'ancien système simplifié
-    // La vraie comptabilité utilise getEcrituresComptables()
+    // Note: Cette methode est pour compatibilite avec l'ancien systeme simplifie.
+    // La vraie comptabilite utilise getEcrituresComptables().
     return [];
   }
 
@@ -443,8 +443,13 @@ class SupabaseDataService implements DataService {
 
   @override
   Future<List<LigneReleveBancaire>> getLignesRelevesBancaires() async {
-    // Note: Cette table n'existe pas directement, les relevés sont dans releves_bancaires
-    // On retourne une liste vide pour l'instant
-    return [];
+    final response = await _client
+        .from('lignes_releves_bancaires')
+        .select()
+        .order('date_operation', ascending: true);
+
+    return (response as List)
+        .map((json) => LigneReleveBancaire.fromJson(snakeToCamel(json)))
+        .toList();
   }
 }

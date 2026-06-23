@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-17
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00037`
+- **Derniere mise a jour** : 2026-06-23
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00038`
 
 ---
 
@@ -746,6 +746,33 @@
 
 ---
 
+### 3.11.1 `lignes_releves_bancaires`
+
+> Lignes operationnelles des releves bancaires pour le rapprochement. Chaque ligne represente une operation bancaire pointee ou non, avec lien optionnel vers une ecriture comptable.
+
+| Colonne | Type | Nullable | Defaut | Description |
+| --------- | ------ | ---------- | -------- | ------------- |
+| `id` | UUID | NON | `gen_random_uuid()` | PK |
+| `organization_id` | UUID | NON | - | FK -> `organizations(id)` CASCADE |
+| `releve_id` | UUID | OUI | - | FK -> `releves_bancaires(id)` CASCADE |
+| `church_unit_id` | UUID | OUI | - | FK -> `church_units(id)` SET NULL |
+| `id_assemblee_locale` | UUID | OUI | - | FK legacy -> `assemblees_locales(id)` SET NULL |
+| `id_compte_banque` | UUID | NON | - | FK -> `comptes_comptables(id)` RESTRICT |
+| `financial_account_id` | UUID | OUI | - | FK -> `church_unit_financial_accounts(id)` SET NULL |
+| `date_operation` | DATE | NON | - | Date de l'operation bancaire |
+| `libelle` | TEXT | NON | - | Libelle non vide |
+| `montant` | DECIMAL(15,2) | NON | - | Montant signe de l'operation |
+| `solde_apres_operation` | DECIMAL(15,2) | NON | `0` | Solde bancaire apres operation |
+| `reference_operation` | TEXT | OUI | - | Reference externe |
+| `est_pointe` | BOOLEAN | NON | `FALSE` | Operation pointee dans le rapprochement |
+| `id_ecriture_comptable_liee` | UUID | OUI | - | FK -> `ecritures_comptables(id)` SET NULL |
+| `metadata` | JSONB | NON | `'{}'::jsonb` | Donnees complementaires |
+| `created_at` / `updated_at` | TIMESTAMPTZ | NON | `NOW()` | - |
+
+**RLS** : oui, via `user_can_access_bank_reconciliation_scope(church_unit_id, id_assemblee_locale, action)`.
+
+---
+
 ### 3.12 `campagnes_financieres`
 
 > Couche operationnelle pour cotisations, promesses, offrandes speciales, projets ou activites financees. Ne genere pas automatiquement d'ecriture comptable SYSCEBNL.
@@ -1227,7 +1254,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_accounting_entries_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `ecritures_comptables` et `lignes_ecritures`, avec fallback legacy si `church_unit_id IS NULL` |
 | `user_can_access_accounting_budgets_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `budgets_comptables` et `lignes_budgets`, avec fallback legacy si `church_unit_id IS NULL` |
 | `user_can_access_accounting_assets_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `immobilisations_comptables`, avec fallback legacy si `church_unit_id IS NULL` |
-| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `releves_bancaires`, avec fallback legacy si `church_unit_id IS NULL` |
+| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | BOOLEAN | Helper RLS pour `releves_bancaires` et `lignes_releves_bancaires`, avec fallback legacy si `church_unit_id IS NULL` |
 
 ### Récapitulatif par table
 
@@ -1264,6 +1291,7 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `immobilisations_comptables` | Org + `user_can_access_accounting_assets_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `rapports_mensuels_eab` | Org + `user_can_access_monthly_reports_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
 | `releves_bancaires` | Org + `user_can_access_bank_reconciliation_scope(..., 'view_details')` | `create` / `update` via matrice | Acces direct conserve, descendants controles par matrice |
+| `lignes_releves_bancaires` | Org + `user_can_access_bank_reconciliation_scope(..., 'view_details')` | `create` / `update` via matrice | Lignes operationnelles pointees ou non, avec perimetre herite du releve ou du compte financier |
 | `exercices_comptables` | Même org | Admin seulement | Org simple |
 | `sequences_pieces` | Même org | Même org (système) | Org simple |
 | `audit_logs` | Admin national seulement | — | Lecture seule |
@@ -1327,9 +1355,10 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 | `user_can_access_accounting_entries_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `ecritures_comptables` et `lignes_ecritures` |
 | `user_can_access_accounting_budgets_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `budgets_comptables` et `lignes_budgets` |
 | `user_can_access_accounting_assets_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `immobilisations_comptables` |
-| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `releves_bancaires` |
+| `user_can_access_bank_reconciliation_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour `releves_bancaires` et `lignes_releves_bancaires` |
 | `enforce_accounting_entry_workflow_permission()` | plpgsql | — | Bloque validation/cloture d'ecriture si l'action matrice n'est pas autorisee et refuse la validation directe d'une ecriture desequilibree |
 | `sync_accounting_church_unit_scope()` | plpgsql | DEFINER | Synchronise `church_unit_id` et `id_assemblee_locale` sur les tables comptables pendant la transition |
+| `sync_ligne_releve_bancaire_scope()` | plpgsql | DEFINER | Synchronise organisation, unite, assemblee legacy, compte financier et ecriture liee des lignes de releve bancaire |
 | `fiscal_scope_contains_unit(UUID, UUID)` | SQL | STABLE | Verifie qu'un dossier fiscal couvre une unite cible ou un descendant |
 | `user_can_access_financial_statements_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour dossiers fiscaux, imports de balance et rapports financiers |
 | `user_can_access_exports_scope(UUID, UUID, TEXT)` | SQL | DEFINER STABLE | Helper RLS granulaire pour les exports financiers |
@@ -1446,9 +1475,16 @@ Ces triggers creent ou mettent a jour les valeurs `exercice.date_debut` et
 ecraser les valeurs manuelles valides. La migration backfille aussi les dossiers
 existants et corrige uniquement les inversions annuelles evidentes.
 
+Migration `00038` ajoute :
+
+- `sync_ligne_releve_bancaire_scope_trigger` sur `lignes_releves_bancaires`
+- `update_lignes_releves_bancaires_updated_at` sur `lignes_releves_bancaires`
+
+Ces triggers rattachent chaque ligne de releve a l'organisation, au releve, a l'unite flexible, au compte financier et a l'ecriture comptable liee, puis maintiennent `updated_at`.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
-Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (27 tables).
+Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `lignes_releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (28 tables).
 
 ### Triggers métier
 
@@ -1547,6 +1583,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | `idx_immobilisations_*` | `immobilisations_comptables` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `type`, `date_acquisition`, `est_sortie`, `deleted_at` |
 | `idx_rapports_*` | `rapports_mensuels_eab` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `(annee, mois)`, composite |
 | `idx_releves_*` | `releves_bancaires` | `organization_id`, `id_assemblee_locale`, `church_unit_id`, `date_releve`, `id_journal_banque` |
+| `idx_lignes_releves_*` | `lignes_releves_bancaires` | `organization_id`, `releve_id`, `church_unit_id`, `id_compte_banque`, `financial_account_id`, `date_operation`, `est_pointe` |
 | `idx_campagnes_financieres_*` | `campagnes_financieres` | `organization_id`, `church_unit_id`, `programme_id`, `statut`, dates |
 | `idx_promesses_financieres_*` | `promesses_financieres` | `organization_id`, `campagne_id`, `church_unit_id`, `membre_id`, `tiers_id`, `statut` |
 | `idx_mouvements_financiers_*` | `mouvements_financiers` | `organization_id`, `church_unit_id`, `financial_account_id`, `campagne_id`, `programme_id`, `promesse_id`, `statut`, `date_mouvement` |
@@ -1644,6 +1681,7 @@ erDiagram
     church_units ||--o{ budgets_comptables : "budgets"
     church_units ||--o{ immobilisations_comptables : "immobilisations"
     church_units ||--o{ releves_bancaires : "releves"
+    church_units ||--o{ lignes_releves_bancaires : "lignes releves"
     profiles ||--o{ church_unit_user_scopes : "roles"
     organizations ||--o{ regions_eglise : "régions"
     organizations ||--o{ comptes_comptables : "plan comptable"
@@ -1661,13 +1699,17 @@ erDiagram
     assemblees_locales ||--o{ immobilisations_comptables : "immobilisations"
     assemblees_locales ||--o{ rapports_mensuels_eab : "rapports"
     assemblees_locales ||--o{ releves_bancaires : "relevés"
+    assemblees_locales ||--o{ lignes_releves_bancaires : "lignes releves"
 
     programmes ||--o{ campagnes_financieres : "campagnes"
     campagnes_financieres ||--o{ promesses_financieres : "promesses"
     campagnes_financieres ||--o{ mouvements_financiers : "mouvements"
     promesses_financieres ||--o{ mouvements_financiers : "paiements"
     church_unit_financial_accounts ||--o{ mouvements_financiers : "operations"
+    church_unit_financial_accounts ||--o{ lignes_releves_bancaires : "operations bancaires"
     ecritures_comptables ||--o{ mouvements_financiers : "classement optionnel"
+    ecritures_comptables ||--o{ lignes_releves_bancaires : "rapprochement"
+    releves_bancaires ||--o{ lignes_releves_bancaires : "lignes"
     
     familles ||--o{ membres : "membres"
     membres ||--o| assemblees_locales : "pasteur"
@@ -1739,6 +1781,7 @@ supabase/migrations/00034_apply_hierarchy_permissions_accounting_scopes.sql
 supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql
 supabase/migrations/00036_active_unit_financial_reports.sql
 supabase/migrations/00037_fiscal_dossier_exercice_dates.sql
+supabase/migrations/00038_bank_statement_lines.sql
 ```
 
 ### Storage a creer dans Supabase
@@ -1778,11 +1821,12 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_accounting_scopes.sql` | 11 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 | `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
+| Verification rapprochement bancaire `00038` | `lignes_releves_bancaires` retourne les lignes pointees/non pointees dans le perimetre de l'utilisateur |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active et `00037` pour la synchronisation des dates d'exercice fiscal.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal et `00038` pour les lignes de releves bancaires rapprocheables.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1814,6 +1858,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les acces descendants aux dossiers fiscaux, balances importees, rapports financiers et exports doivent passer par les helpers RLS granulaires de `00035`; le workflow fiscal est aussi controle par trigger.
 - Les exports fiscaux Excel doivent utiliser des dates d'exercice valides issues de `exercices_comptables` ou des champs `fiscal_dossier_values` synchronises par `00037`; une periode inversee doit rester bloquee par le preflight applicatif.
 - Les exports PDF fiscaux officiels doivent etre produits depuis le classeur Excel final via `server/fiscal-pdf-converter` et `FISCAL_PDF_CONVERTER_URL`; le PDF applicatif historique ne doit pas etre utilise pour un depot fiscal.
+- Le rapprochement bancaire doit lire les operations depuis `lignes_releves_bancaires`; `releves_bancaires` reste l'entete et le solde du releve, pas le detail operationnel.
 
 ---
 
@@ -1821,6 +1866,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-23 | Agent IA | **Migration 00038** : Ajout de `lignes_releves_bancaires` pour stocker les operations de releves bancaires, avec rattachement organisation/unite/assemblee legacy, lien optionnel vers `church_unit_financial_accounts` et `ecritures_comptables`, indexes, triggers de synchronisation/`updated_at` et politiques RLS basees sur `user_can_access_bank_reconciliation_scope`. Le seed public de demonstration alimente des lignes pointees/non pointees pour rendre l'ecran Rapprochement testable. |
 | 2026-06-21 | Agent IA | **Export fiscal distant** : ajout de `tool/export_remote_fiscal_dossier.dart` pour regenerer un dossier fiscal reel depuis Supabase avec `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` et `FISCAL_DOSSIER_ID`. L'outil audite le classeur, refuse les anciennes references du modele et calcule la balance comparative depuis les tables comptables pour fonctionner hors session utilisateur. |
 | 2026-06-20 | Agent IA | **Export PDF fiscal officiel** : ajout du service deployable `server/fiscal-pdf-converter` pour convertir le classeur Excel SYSCEBNL final en PDF via LibreOffice headless, avec verification Supabase Auth optionnelle, et raccordement du bouton PDF a `FISCAL_PDF_CONVERTER_URL`. Sans URL configuree, l'application bloque l'export PDF officiel au lieu de generer un PDF approximatif. Pour les tests locaux Windows uniquement, le service peut basculer sur Excel COM si `soffice` est absent ; la production doit rester sur Docker/LibreOffice. |
 | 2026-06-17 | Agent IA | **Migration 00037** : Synchronisation automatique des champs `exercice.date_debut` et `exercice.date_fin` des dossiers fiscaux depuis l'exercice comptable, backfill des dossiers existants et correction limite des inversions annuelles evidentes pour proteger l'export Excel fiscal. |

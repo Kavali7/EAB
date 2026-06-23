@@ -144,7 +144,7 @@ class _AccountingReconciliationScreenState
                 children: [
                   Expanded(child: _bankSelector(comptesBanque, selectedId)),
                   const SizedBox(width: AppSpacing.cardGap),
-                  _hideMatchedSwitch(),
+                  SizedBox(width: 300, child: _hideMatchedSwitch()),
                 ],
               ),
       ),

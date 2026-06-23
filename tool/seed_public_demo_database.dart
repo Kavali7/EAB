@@ -115,6 +115,8 @@ Future<void> main(List<String> args) async {
     await client.insert('exercices_comptables', group.exercices);
     await client.insert('ecritures_comptables', group.entries);
     await client.insert('lignes_ecritures', group.entryLines);
+    await client.insert('releves_bancaires', group.bankStatements);
+    await client.insert('lignes_releves_bancaires', group.bankStatementLines);
     await client.insert('budgets_comptables', group.budgets);
     await client.insert('lignes_budgets', group.budgetLines);
     await client.insert('immobilisations_comptables', group.immobilisations);
@@ -408,6 +410,8 @@ class _DemoDataBuilder {
     final movements = <Map<String, dynamic>>[];
     final entries = <Map<String, dynamic>>[];
     final entryLines = <Map<String, dynamic>>[];
+    final bankStatements = <Map<String, dynamic>>[];
+    final bankStatementLines = <Map<String, dynamic>>[];
     final budgets = <Map<String, dynamic>>[];
     final budgetLines = <Map<String, dynamic>>[];
     final immobilisations = <Map<String, dynamic>>[];
@@ -577,6 +581,10 @@ class _DemoDataBuilder {
     );
     entries.addAll(_entries(primaryLocalUnitId));
     entryLines.addAll(_entryLines(centers, thirdParties));
+    bankStatements.addAll(_bankStatements(primaryLocalUnitId));
+    bankStatementLines.addAll(
+      _bankStatementLines(primaryLocalUnitId, primaryUnitFinancialAccounts),
+    );
     budgets.addAll(_budgets(primaryLocalUnitId, centers));
     budgetLines.addAll(_budgetLines(budgets));
     immobilisations.addAll(_immobilisations(primaryLocalUnitId, centers));
@@ -619,6 +627,8 @@ class _DemoDataBuilder {
       ],
       entries: entries,
       entryLines: entryLines,
+      bankStatements: bankStatements,
+      bankStatementLines: bankStatementLines,
       budgets: budgets,
       budgetLines: budgetLines,
       immobilisations: immobilisations,
@@ -1274,6 +1284,95 @@ class _DemoDataBuilder {
     ];
   }
 
+  List<Map<String, dynamic>> _bankStatements(String unitId) => [
+    {
+      'id': _id(single ? '2f25' : '1f25', 1),
+      'organization_id': orgId,
+      'church_unit_id': unitId,
+      'id_journal_banque': _id(single ? '2700' : '1700', 2),
+      'date_releve': '2025-03-31',
+      'solde_initial': 0,
+      'solde_final': -480000,
+      'fichier_url': null,
+    },
+  ];
+
+  List<Map<String, dynamic>> _bankStatementLines(
+    String unitId,
+    List<Map<String, dynamic>> financialAccounts,
+  ) {
+    final bankFinancialAccount = financialAccounts.firstWhere(
+      (account) => account['type'] == 'bank',
+    );
+    final bankFinancialAccountId = bankFinancialAccount['id'].toString();
+    final bankComptableAccountId = bankFinancialAccount['comptable_account_id']
+        .toString();
+    final statementId = _id(single ? '2f25' : '1f25', 1);
+    final specs = [
+      [
+        1,
+        '2025-03-04',
+        'Dimes recues par virement bancaire',
+        820000,
+        820000,
+        'VIR-DIM-001',
+        true,
+        2,
+      ],
+      [
+        2,
+        '2025-03-12',
+        'Reglement location salle de formation',
+        -95000,
+        725000,
+        'VIR-LOC-001',
+        true,
+        6,
+      ],
+      [
+        3,
+        '2025-03-15',
+        'Reglement travaux batiment principal',
+        -1200000,
+        -475000,
+        'VIR-BAT-001',
+        true,
+        7,
+      ],
+      [
+        4,
+        '2025-03-31',
+        'Frais bancaires non encore comptabilises',
+        -5000,
+        -480000,
+        'FRAIS-BQ-001',
+        false,
+        null,
+      ],
+    ];
+
+    return [
+      for (final spec in specs)
+        {
+          'id': _id(single ? '2f26' : '1f26', spec[0] as int),
+          'organization_id': orgId,
+          'releve_id': statementId,
+          'church_unit_id': unitId,
+          'id_compte_banque': bankComptableAccountId,
+          'financial_account_id': bankFinancialAccountId,
+          'date_operation': spec[1],
+          'libelle': spec[2],
+          'montant': spec[3],
+          'solde_apres_operation': spec[4],
+          'reference_operation': spec[5],
+          'est_pointe': spec[6],
+          'id_ecriture_comptable_liee': spec[7] == null
+              ? null
+              : _id(single ? '2f30' : '1f30', spec[7] as int),
+        },
+    ];
+  }
+
   List<Map<String, dynamic>> _entries(String unitId) {
     final cashJournalId = _id(single ? '2700' : '1700', 1);
     final bankJournalId = _id(single ? '2700' : '1700', 2);
@@ -1699,6 +1798,8 @@ class _DemoData {
     required this.exercices,
     required this.entries,
     required this.entryLines,
+    required this.bankStatements,
+    required this.bankStatementLines,
     required this.budgets,
     required this.budgetLines,
     required this.immobilisations,
@@ -1730,6 +1831,8 @@ class _DemoData {
   final List<Map<String, dynamic>> exercices;
   final List<Map<String, dynamic>> entries;
   final List<Map<String, dynamic>> entryLines;
+  final List<Map<String, dynamic>> bankStatements;
+  final List<Map<String, dynamic>> bankStatementLines;
   final List<Map<String, dynamic>> budgets;
   final List<Map<String, dynamic>> budgetLines;
   final List<Map<String, dynamic>> immobilisations;
