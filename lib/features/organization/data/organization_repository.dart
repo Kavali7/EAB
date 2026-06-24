@@ -26,6 +26,22 @@ class OrganizationRepository {
     return Organization.fromJson(data);
   }
 
+  /// Liste les organisations visibles par le proprietaire plateforme.
+  ///
+  /// Le client ne lit pas directement la table `organizations` pour cette
+  /// console : le backend expose uniquement le RPC dedie, protege par
+  /// `is_platform_owner()`.
+  Future<List<Organization>> fetchPlatformOrganizations() async {
+    final result = await _dataService.client.rpc('platform_list_organizations');
+    if (result is! List) return const [];
+    return result
+        .map(
+          (json) =>
+              Organization.fromJson(Map<String, dynamic>.from(json as Map)),
+        )
+        .toList(growable: false);
+  }
+
   /// Met à jour les informations de l'organisation.
   Future<void> updateOrganization(Organization org) async {
     await _dataService.client
@@ -43,6 +59,21 @@ class OrganizationRepository {
         .from('organizations')
         .update({'logo_url': logoUrl})
         .eq('id', orgId);
+  }
+
+  /// Met a jour uniquement la politique mobile d'une organisation.
+  Future<void> updateOrganizationMobileAccess({
+    required String orgId,
+    required OrganizationMobileAccessPolicy policy,
+  }) async {
+    await _dataService.client.rpc(
+      'platform_update_organization_mobile_access',
+      params: {
+        'p_org_id': orgId,
+        'p_mode': policy.mode,
+        'p_allowed_routes': policy.allowedRoutes,
+      },
+    );
   }
 
   /// Upload le logo dans le bucket public organization-assets.

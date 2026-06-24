@@ -34,6 +34,7 @@ import '../features/etats_financiers/presentation/etats_financiers_screen.dart';
 import '../features/organization/presentation/organization_gate.dart';
 import '../features/organization/presentation/organization_onboarding_screen.dart';
 import '../features/organization/presentation/organization_settings_screen.dart';
+import '../features/platform_admin/presentation/platform_admin_screen.dart';
 import '../features/dashboard_finance/dashboard_finance_screen.dart';
 import '../features/operational_finance/application/operational_finance_providers.dart';
 import '../features/operational_finance/presentation/operational_finance_screen.dart';
@@ -116,6 +117,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
     ref.invalidate(lignesBudgetsProvider);
     ref.invalidate(immobilisationsComptablesProvider);
     ref.invalidate(currentOrganizationProvider);
+    ref.invalidate(platformOrganizationsProvider);
     ref.invalidate(operationalFinanceProvider);
     // Réinitialiser le profil courant et l'assemblée active
     // (invalidate appelle build() qui retourne null)
@@ -174,6 +176,7 @@ class _ChurchAppState extends ConsumerState<ChurchApp> {
             const OrganizationGate(child: EtatsFinanciersScreen()),
         '/organization-settings': (_) =>
             const OrganizationGate(child: OrganizationSettingsScreen()),
+        '/platform-admin': (_) => const PlatformAdminScreen(),
         '/dashboard-finance': (_) =>
             const OrganizationGate(child: DashboardFinanceScreen()),
         '/financial-campaigns': (_) =>

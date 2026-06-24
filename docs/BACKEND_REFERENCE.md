@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-24
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00039` + placeholder historique `202606160031`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00040` + placeholder historique `202606160031`
 
 ---
 
@@ -129,6 +129,7 @@
 - `mobile_access.mode = restricted` : sur telephone, le menu masque les routes non listees dans `allowed_routes` et `AppShell` bloque les acces directs aux routes non autorisees.
 - Les restrictions mobile sont une simplification UX par organisation. Elles ne remplacent pas les politiques RLS ni les permissions hierarchiques PostgreSQL.
 - Depuis `00039`, la modification de `mobile_access` est reservee au proprietaire plateforme. Ce statut ne vient pas de `profiles.role` : il doit etre porte par `auth.users.raw_app_meta_data`, par exemple `{"platform_owner": true}` ou `{"role": "platform_owner"}`. Un `admin_national` d'eglise peut modifier les autres parametres de son organisation, mais pas cette politique mobile.
+- Depuis `00040`, la console proprietaire plateforme utilise les RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])`. Le frontend ne recoit pas de droit table large pour administrer cette fonctionnalite.
 
 ---
 
@@ -1281,6 +1282,12 @@ le statut proprietaire plateforme depuis `auth.jwt().app_metadata` ou depuis
 un role SQL technique (`postgres`, `service_role`, `supabase_admin`). Ce statut
 est distinct de `role_utilisateur` et ne doit pas etre attribue via `profiles`.
 
+`platform_owner_jwt_claim_grants_access()` est ajoute en `00040` pour les RPC
+`SECURITY DEFINER` de la console proprietaire. Il lit uniquement les claims JWT
+`app_metadata` et ignore volontairement les roles SQL techniques, afin qu'une
+fonction definie par `postgres` ne donne pas acces a tout utilisateur
+authentifie.
+
 > Migration `00020` ajoute `user_has_church_unit_access(UUID)` pour verifier les perimetres `church_units`,
 > en tenant compte de `profiles.primary_church_unit_id`, de `church_unit_user_scopes`
 > et des descendants via `get_church_unit_descendants(UUID)`.
@@ -1363,12 +1370,24 @@ connecte ; la seconde est appelee par trigger et bloque uniquement les
 modifications de `organizations.parametres.mobile_access` lorsque le compte
 n'est pas proprietaire plateforme.
 
+Depuis `00040`, la console proprietaire plateforme utilise :
+
+- `platform_owner_jwt_claim_grants_access()` : verification stricte des claims
+  `app_metadata` pour les RPC `SECURITY DEFINER`;
+- `platform_list_organizations()` : liste restreinte des organisations et de
+  leurs parametres mobiles;
+- `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` :
+  modification unique de `organizations.parametres.mobile_access`.
+
 | Fonction | Langage | Sécurité | Description |
 | ---------- | --------- | ---------- | ------------- |
 | `update_updated_at_column()` | plpgsql | — | Met `updated_at = NOW()` avant UPDATE |
 | `handle_new_user()` | plpgsql | DEFINER | Crée le profil a l'inscription ; applique une invitation active si l'email correspond |
 | `normalize_user_role(TEXT)` | plpgsql | — | Normalise les roles camelCase/snake_case en `role_utilisateur` |
 | `invite_user_to_org(UUID, TEXT, TEXT, UUID, BOOLEAN)` | plpgsql | DEFINER | Cree ou met a jour une invitation de sous-compte et rattache l'utilisateur si le compte existe deja |
+| `platform_owner_jwt_claim_grants_access()` | SQL | INVOKER | Verifie uniquement les claims JWT proprietaire plateforme pour les RPC `SECURITY DEFINER` |
+| `platform_list_organizations()` | plpgsql | DEFINER | Liste les organisations pour la console proprietaire plateforme |
+| `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` | plpgsql | DEFINER | Met a jour uniquement `organizations.parametres.mobile_access` pour une organisation cible |
 | `create_organization_onboarding(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB)` | plpgsql | DEFINER | Cree une organisation autonome, sa structure minimale et rattache l'utilisateur connecte comme admin national |
 | `verify_ecriture_equilibree()` | plpgsql | — | Vérifie débit = crédit (écritures validées) |
 | `prevent_modification_validated_ecriture()` | plpgsql | — | Bloque modification écritures validées/clôturées |
@@ -1895,6 +1914,7 @@ supabase/migrations/00036_active_unit_financial_reports.sql
 supabase/migrations/00037_fiscal_dossier_exercice_dates.sql
 supabase/migrations/00038_bank_statement_lines.sql
 supabase/migrations/00039_platform_owner_mobile_access.sql
+supabase/migrations/00040_platform_owner_console.sql
 supabase/migrations/202606160031_remote_hierarchy_matrix_history.sql
 ```
 
@@ -1950,12 +1970,13 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 | `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
 | `supabase/tests/test_platform_owner_mobile_access.sql` | 2 lignes avec `ok = true` |
+| `supabase/tests/test_platform_owner_console.sql` | 3 lignes avec `ok = true` |
 | Verification rapprochement bancaire `00038` | `lignes_releves_bancaires` retourne les lignes pointees/non pointees dans le perimetre de l'utilisateur |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables et `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables, `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme et `00040` pour la console proprietaire plateforme.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -2029,6 +2050,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-24 | Agent IA | **Migration 00040** : ajout des RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` pour la console proprietaire plateforme, avec verification JWT stricte `platform_owner_jwt_claim_grants_access()` afin de gerer les restrictions mobiles sans accorder de droits table larges au frontend. |
 | 2026-06-24 | Agent IA | **Migration 00039** : verrouillage de `organizations.parametres.mobile_access` au statut proprietaire plateforme via `is_platform_owner()` et le trigger `protect_organization_mobile_access`, avec clarification que ce pouvoir ne vient pas du role d'eglise `admin_national`. |
 | 2026-06-23 | Agent IA | **UX mobile par organisation** : ajout de la convention `organizations.parametres.mobile_access` (`mode`, `allowed_routes`) pour permettre au frontend de simplifier ou bloquer certains modules sur telephone par organisation, sans remplacer les RLS ni les permissions hierarchiques. |
 | 2026-06-23 | Agent IA | **Preparation bases autonomes** : alignement de l'historique Supabase distant avec les migrations locales `00031` a `00038`, ajout du placeholder historique `202606160031_remote_hierarchy_matrix_history.sql` et renforcement de la procedure de reconstruction pour couvrir pre-requis, ordre SQL, branchement frontend, parametrages Supabase hors migrations et validations minimales avant livraison. |

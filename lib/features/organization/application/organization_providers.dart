@@ -18,8 +18,15 @@ final organizationRepositoryProvider = Provider<OrganizationRepository>((ref) {
 /// Organisation courante (chargée une fois au login).
 final currentOrganizationProvider =
     AsyncNotifierProvider<CurrentOrganizationNotifier, Organization?>(
-  CurrentOrganizationNotifier.new,
-);
+      CurrentOrganizationNotifier.new,
+    );
+
+/// Organisations administrees par le proprietaire plateforme.
+final platformOrganizationsProvider =
+    FutureProvider.autoDispose<List<Organization>>((ref) async {
+      final repo = ref.read(organizationRepositoryProvider);
+      return repo.fetchPlatformOrganizations();
+    });
 
 class CurrentOrganizationNotifier extends AsyncNotifier<Organization?> {
   @override
@@ -28,7 +35,11 @@ class CurrentOrganizationNotifier extends AsyncNotifier<Organization?> {
       final repo = ref.read(organizationRepositoryProvider);
       return repo.fetchCurrentOrganization();
     } catch (e, st) {
-      ErrorReporting.captureException(e, stackTrace: st, context: {'provider': 'currentOrganizationProvider'});
+      ErrorReporting.captureException(
+        e,
+        stackTrace: st,
+        context: {'provider': 'currentOrganizationProvider'},
+      );
       rethrow;
     }
   }

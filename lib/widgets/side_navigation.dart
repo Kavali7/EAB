@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/security/platform_owner_access.dart';
 import '../core/theme.dart';
 import '../features/organization/application/organization_providers.dart';
 import '../ui/theme/organisation_branding.dart';
@@ -15,6 +16,9 @@ class SideNavigation extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orgAsync = ref.watch(currentOrganizationProvider);
     final branding = OrganisationBranding.fromOrganization(orgAsync.value);
+    final isPlatformOwner = PlatformOwnerAccess.isCurrentUserOwner(
+      Supabase.instance.client,
+    );
     final mobilePolicy = orgAsync.value?.mobileAccessPolicy;
     final mobileAllowedRoutes =
         MediaQuery.of(context).size.width < 700 &&
@@ -225,6 +229,20 @@ class SideNavigation extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (isPlatformOwner)
+                    _NavMenuGroup(
+                      label: 'Proprietaire',
+                      caption: 'Pilotage plateforme',
+                      icon: Icons.verified_user_outlined,
+                      allowedRoutes: mobileAllowedRoutes,
+                      items: [
+                        _NavItem(
+                          'Console plateforme',
+                          '/platform-admin',
+                          Icons.admin_panel_settings_outlined,
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
