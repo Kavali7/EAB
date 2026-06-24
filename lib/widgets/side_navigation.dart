@@ -72,8 +72,10 @@ class SideNavigation extends ConsumerWidget {
                   vertical: 12,
                 ),
                 children: [
-                  _NavSection(
+                  _NavMenuGroup(
                     label: 'Pilotage',
+                    caption: 'Vue globale',
+                    icon: Icons.space_dashboard_outlined,
                     allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
@@ -82,7 +84,7 @@ class SideNavigation extends ConsumerWidget {
                         Icons.dashboard_outlined,
                       ),
                       _NavItem(
-                        'Finance',
+                        'Synthese finance',
                         '/dashboard-finance',
                         Icons.insights_outlined,
                       ),
@@ -93,8 +95,10 @@ class SideNavigation extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  _NavSection(
+                  _NavMenuGroup(
                     label: 'Vie de l\'eglise',
+                    caption: 'Fideles et activites',
+                    icon: Icons.church_outlined,
                     allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
@@ -119,8 +123,33 @@ class SideNavigation extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  _NavSection(
+                  _NavMenuGroup(
+                    label: 'Finance & collectes',
+                    caption: 'Encaissements et suivi',
+                    icon: Icons.savings_outlined,
+                    allowedRoutes: mobileAllowedRoutes,
+                    items: [
+                      _NavItem(
+                        'Collectes & promesses',
+                        '/financial-campaigns',
+                        Icons.savings_outlined,
+                      ),
+                      _NavItem(
+                        'Tresorerie',
+                        '/accounting-treasury',
+                        Icons.payments_outlined,
+                      ),
+                      _NavItem(
+                        'Budgets',
+                        '/accounting-budgets',
+                        Icons.insert_chart_outlined,
+                      ),
+                    ],
+                  ),
+                  _NavMenuGroup(
                     label: 'Comptabilite',
+                    caption: 'SYSCEBNL et controles',
+                    icon: Icons.account_balance_outlined,
                     allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
@@ -129,24 +158,9 @@ class SideNavigation extends ConsumerWidget {
                         Icons.account_balance_wallet_outlined,
                       ),
                       _NavItem(
-                        'Tresorerie',
-                        '/accounting-treasury',
-                        Icons.payments_outlined,
-                      ),
-                      _NavItem(
-                        'Collectes',
-                        '/financial-campaigns',
-                        Icons.savings_outlined,
-                      ),
-                      _NavItem(
                         'Rapprochement',
                         '/accounting-reconciliation',
                         Icons.compare_arrows,
-                      ),
-                      _NavItem(
-                        'Budgets',
-                        '/accounting-budgets',
-                        Icons.insert_chart_outlined,
                       ),
                       _NavItem(
                         'Immobilisations',
@@ -159,35 +173,39 @@ class SideNavigation extends ConsumerWidget {
                         Icons.assessment_outlined,
                       ),
                       _NavItem(
-                        'Etats financiers',
-                        '/etats-financiers',
-                        Icons.bar_chart_outlined,
-                      ),
-                      _NavItem(
                         'Exercices',
                         '/accounting-exercices',
                         Icons.event_available_outlined,
                       ),
                     ],
                   ),
-                  _NavSection(
-                    label: 'Conformite',
+                  _NavMenuGroup(
+                    label: 'Fiscalite & rapports',
+                    caption: 'Documents officiels',
+                    icon: Icons.fact_check_outlined,
                     allowedRoutes: mobileAllowedRoutes,
                     items: [
+                      _NavItem(
+                        'Etats financiers',
+                        '/etats-financiers',
+                        Icons.bar_chart_outlined,
+                      ),
                       _NavItem(
                         'Dossier fiscal',
                         '/fiscal-dossiers',
                         Icons.request_page_outlined,
                       ),
                       _NavItem(
-                        'Journal d\'audit',
-                        '/audit-log',
-                        Icons.history_outlined,
+                        'Import balance',
+                        '/fiscal-import-balance',
+                        Icons.upload_file_outlined,
                       ),
                     ],
                   ),
-                  _NavSection(
+                  _NavMenuGroup(
                     label: 'Administration',
+                    caption: 'Reglages et securite',
+                    icon: Icons.admin_panel_settings_outlined,
                     allowedRoutes: mobileAllowedRoutes,
                     items: [
                       _NavItem(
@@ -199,6 +217,11 @@ class SideNavigation extends ConsumerWidget {
                         'Parametrage comptable',
                         '/accounting-settings',
                         Icons.tune,
+                      ),
+                      _NavItem(
+                        'Journal d\'audit',
+                        '/audit-log',
+                        Icons.history_outlined,
                       ),
                     ],
                   ),
@@ -256,14 +279,18 @@ class _BrandMark extends StatelessWidget {
   }
 }
 
-class _NavSection extends StatelessWidget {
-  const _NavSection({
+class _NavMenuGroup extends StatelessWidget {
+  const _NavMenuGroup({
     required this.label,
+    required this.caption,
+    required this.icon,
     required this.items,
     this.allowedRoutes,
   });
 
   final String label;
+  final String caption;
+  final IconData icon;
   final List<_NavItem> items;
   final List<String>? allowedRoutes;
 
@@ -278,27 +305,114 @@ class _NavSection extends StatelessWidget {
               .toList(growable: false);
 
     if (visibleItems.isEmpty) return const SizedBox.shrink();
+    final selected = visibleItems.any((item) {
+      return _routeSelected(currentRoute, item.route);
+    });
+    final colors = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
-            child: Text(
-              label.toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.sidebarMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
-            ),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.035),
+          borderRadius: AppRadius.lgAll,
+          border: Border.all(
+            color: selected
+                ? colors.secondary.withValues(alpha: 0.32)
+                : Colors.white.withValues(alpha: 0.06),
           ),
-          for (final item in visibleItems)
-            _NavTile(item: item, selected: currentRoute == item.route),
-        ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? colors.secondary.withValues(alpha: 0.22)
+                          : Colors.white.withValues(alpha: 0.08),
+                      borderRadius: AppRadius.mdAll,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 19,
+                      color: selected
+                          ? colors.secondary
+                          : AppColors.sidebarMuted,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        Text(
+                          caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.sidebarMuted,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (selected)
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: colors.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Column(
+                    children: [
+                      for (final item in visibleItems)
+                        _NavTile(
+                          item: item,
+                          selected: _routeSelected(currentRoute, item.route),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -308,6 +422,14 @@ class _NavSection extends StatelessWidget {
       if (route == allowed) return true;
     }
     return false;
+  }
+
+  bool _routeSelected(String? currentRoute, String route) {
+    final current = currentRoute == null || currentRoute.isEmpty
+        ? '/'
+        : currentRoute;
+    if (route == '/') return current == '/';
+    return current == route || current.startsWith('$route/');
   }
 }
 
