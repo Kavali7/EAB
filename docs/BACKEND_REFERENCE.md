@@ -10,7 +10,7 @@
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
 - **Derniere mise a jour** : 2026-06-24
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00040` + placeholder historique `202606160031`
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00041` + placeholder historique `202606160031`
 
 ---
 
@@ -1944,6 +1944,20 @@ idempotente pour les nouvelles bases.
 | Nouvelle eglise cliente | Ne pas executer `supabase/seed.sql`; creer le premier compte puis utiliser l'onboarding de l'app |
 | Base partagee avec EAB demo | Garder le seed EAB comme organisation demo; les nouvelles eglises sont creees via `create_organization_onboarding()` |
 
+Le seed public complet est gere par `tool/seed_public_demo_database.dart`.
+Il reconstruit deux organisations publiques de demonstration :
+
+- `test1@gmail.com` / `test123456789` : EAB multi-niveau.
+- `test2@gmail.com` / `test123456789` : eglise locale unique ALPN.
+
+`tool/enrich_public_demo_business_data.sql` est un complement idempotent
+destine a enrichir une base demo deja creee sans purger les comptes ni toucher
+aux comptes proprietaires plateforme. Il ajoute des donnees metier visibles
+dans les ecrans membres, programmes, rapports mensuels, finances
+operationnelles, comptabilite et rapprochement bancaire. Ce script ne doit pas
+etre applique dans une base client autonome, sauf si le client veut une base de
+demonstration publique.
+
 Pour une base autonome livree a une eglise cliente, le seed public de demo ne
 doit pas etre applique. Le parcours normal est :
 
@@ -2052,6 +2066,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-24 | Agent IA | **Donnees demo publiques** : enrichissement des deux comptes publics `test1@gmail.com` (EAB multi-niveau) et `test2@gmail.com` (eglise locale unique ALPN) avec membres, programmes, rapports mensuels, campagnes, promesses, mouvements, ecritures et lignes de rapprochement. Ajout du script idempotent `tool/enrich_public_demo_business_data.sql` pour completer une base demo sans toucher aux comptes proprietaires plateforme. |
 | 2026-06-24 | Agent IA | **Migration 00040** : ajout des RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` pour la console proprietaire plateforme, avec verification JWT stricte `platform_owner_jwt_claim_grants_access()` afin de gerer les restrictions mobiles sans accorder de droits table larges au frontend. |
 | 2026-06-24 | Agent IA | **Migration 00041** : isolation stricte des proprietaires plateforme : interdiction de leur attribuer un profil d'eglise ou un perimetre `church_unit_user_scopes`, afin qu'ils administrent la plateforme via RPC sans voir les donnees metier d'une organisation cliente. |
 | 2026-06-24 | Agent IA | **Migration 00039** : verrouillage de `organizations.parametres.mobile_access` au statut proprietaire plateforme via `is_platform_owner()` et le trigger `protect_organization_mobile_access`, avec clarification que ce pouvoir ne vient pas du role d'eglise `admin_national`. |
