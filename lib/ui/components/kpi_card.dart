@@ -8,6 +8,9 @@
 library;
 
 import 'package:flutter/material.dart';
+
+import 'package:eab/core/theme.dart';
+
 import '../theme/app_spacing.dart';
 
 /// Sens de la tendance.
@@ -41,9 +44,9 @@ class KpiCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cardColor = color ?? theme.colorScheme.primary;
     final trendColor = switch (trend) {
-      KpiTrend.up => Colors.green[700],
-      KpiTrend.down => Colors.red[600],
-      KpiTrend.neutral => Colors.grey[500],
+      KpiTrend.up => AppColors.success,
+      KpiTrend.down => AppColors.error,
+      KpiTrend.neutral => AppColors.textTertiary,
     };
     final trendIcon = switch (trend) {
       KpiTrend.up => Icons.trending_up,
@@ -55,7 +58,7 @@ class KpiCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: const BorderSide(color: AppColors.divider),
       ),
       child: InkWell(
         onTap: onTap,
@@ -73,7 +76,7 @@ class KpiCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: cardColor.withAlpha(25),
+                      color: cardColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(icon, color: cardColor, size: 22),
@@ -82,8 +85,8 @@ class KpiCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -93,11 +96,15 @@ class KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               // Valeur principale
-              Text(
-                value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: AppTextStyles.heading2.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -108,8 +115,8 @@ class KpiCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -120,9 +127,9 @@ class KpiCard extends StatelessWidget {
                     const SizedBox(width: 2),
                     Text(
                       trendLabel!,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: AppTextStyles.bodySmall.copyWith(
                         color: trendColor,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -159,7 +166,7 @@ class QuickActionCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: const BorderSide(color: AppColors.divider),
       ),
       child: InkWell(
         onTap: onTap,
@@ -174,11 +181,16 @@ class QuickActionCard extends StatelessWidget {
             children: [
               Icon(icon, color: c, size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: c,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 220),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: c,
+                  ),
                 ),
               ),
             ],

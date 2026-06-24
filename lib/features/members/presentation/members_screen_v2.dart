@@ -245,44 +245,65 @@ class _MembersCommandBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.lgAll,
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: AppRadius.mdAll,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        final summary = Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: AppRadius.mdAll,
+              ),
+              child: const Icon(
+                Icons.groups_outlined,
+                color: AppColors.primary,
+              ),
             ),
-            child: const Icon(Icons.groups_outlined, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Registre des fideles', style: AppTextStyles.subtitle),
+                  Text(
+                    '$total resultat${total > 1 ? "s" : ""} dans la vue active',
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+        final action = ElevatedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.person_add_alt_1_outlined),
+          label: const Text('Ajouter un fidele'),
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.lgAll,
+            border: Border.all(color: AppColors.divider),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Registre des fideles', style: AppTextStyles.subtitle),
-                Text(
-                  '$total resultat${total > 1 ? "s" : ""} dans la vue active',
-                  style: AppTextStyles.bodySmall,
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [summary, const SizedBox(height: 12), action],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: summary),
+                    const SizedBox(width: 12),
+                    action,
+                  ],
                 ),
-              ],
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.person_add_alt_1_outlined),
-            label: const Text('Ajouter un fidele'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

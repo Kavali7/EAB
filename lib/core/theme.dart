@@ -1,6 +1,6 @@
 /// Design System — Thème principal EAB.
 ///
-/// Version C1 : Google Fonts (Inter), tokens finalisés,
+/// Version C1 : Google Fonts (Noto Sans), tokens finalisés,
 /// micro-animations, accessibilité (focus visible, contrastes).
 library;
 
@@ -27,10 +27,10 @@ class AppColors {
   static const Color surface = Colors.white;
   static const Color surfaceElevated = Color(0xFFFAFBFC);
   static const Color sidebar = Color(0xFF0B2633);
-  static const Color sidebarMuted = Color(0xFF9FB5C0);
+  static const Color sidebarMuted = Color(0xFFB5C7D0);
   static const Color textPrimary = Color(0xFF14212A);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color textTertiary = Color(0xFF98A2B3);
+  static const Color textSecondary = Color(0xFF4F5F6F);
+  static const Color textTertiary = Color(0xFF64748B);
 
   // États
   static const Color success = Color(0xFF16A34A);
@@ -43,8 +43,8 @@ class AppColors {
   static const Color infoLight = Color(0xFFDBEAFE);
 
   // Séparateurs & bordures
-  static const Color divider = Color(0xFFE6EAF0);
-  static const Color border = Color(0xFFD7DEE8);
+  static const Color divider = Color(0xFFDDE4EC);
+  static const Color border = Color(0xFFC8D2DF);
   static const Color borderFocus = Color(0xFF3B82F6);
 
   // Overlay
@@ -135,55 +135,62 @@ class AppAccessibility {
 }
 
 // ══════════════════════════════════════════════════════════════
-// TEXT STYLES (avec Google Fonts Inter)
+// TEXT STYLES (avec Google Fonts Noto Sans)
 // ══════════════════════════════════════════════════════════════
 
 class AppTextStyles {
-  static TextStyle get _base => GoogleFonts.inter();
+  static TextStyle get _base =>
+      GoogleFonts.notoSans(textStyle: const TextStyle(letterSpacing: 0));
 
   static TextStyle get heading1 => _base.copyWith(
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: FontWeight.w700,
-    height: 1.2,
+    height: 1.18,
     letterSpacing: 0,
     color: AppColors.textPrimary,
   );
 
   static TextStyle get heading2 => _base.copyWith(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    height: 1.22,
     letterSpacing: 0,
     color: AppColors.textPrimary,
   );
 
   static TextStyle get heading3 => _base.copyWith(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
+    fontSize: 19,
+    fontWeight: FontWeight.w700,
+    height: 1.28,
+    letterSpacing: 0,
     color: AppColors.textPrimary,
   );
 
   // Legacy compat
   static TextStyle get title => heading3;
-  static TextStyle get sectionTitle => heading3.copyWith(fontSize: 16);
+  static TextStyle get sectionTitle => heading3.copyWith(fontSize: 17);
 
   static TextStyle get subtitle => _base.copyWith(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    height: 1.35,
+    letterSpacing: 0,
     color: AppColors.textPrimary,
   );
 
   static TextStyle get body => _base.copyWith(
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: FontWeight.w400,
-    height: 1.5,
+    height: 1.52,
+    letterSpacing: 0,
     color: AppColors.textPrimary,
   );
 
   static TextStyle get bodySmall => _base.copyWith(
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: FontWeight.w400,
+    height: 1.45,
+    letterSpacing: 0,
     color: AppColors.textSecondary,
   );
 
@@ -191,28 +198,32 @@ class AppTextStyles {
   static TextStyle get secondary => bodySmall;
 
   static TextStyle get caption => _base.copyWith(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
+    fontSize: 12.5,
+    fontWeight: FontWeight.w600,
+    height: 1.35,
     letterSpacing: 0,
     color: AppColors.textTertiary,
   );
 
   static TextStyle get label => _base.copyWith(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
+    fontSize: 12.5,
+    fontWeight: FontWeight.w700,
+    height: 1.3,
     letterSpacing: 0,
     color: AppColors.textSecondary,
   );
 
   static TextStyle get buttonText => _base.copyWith(
     fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
+    height: 1.25,
     letterSpacing: 0,
   );
 
   static TextStyle get mono => GoogleFonts.jetBrainsMono(
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: FontWeight.w400,
+    height: 1.45,
     color: AppColors.textPrimary,
   );
 }
@@ -242,10 +253,28 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
             error: AppColors.error,
             onError: Colors.white,
           );
-  final textTheme = GoogleFonts.interTextTheme().apply(
-    bodyColor: AppColors.textPrimary,
-    displayColor: AppColors.textPrimary,
-  );
+  final textTheme = GoogleFonts.notoSansTextTheme()
+      .copyWith(
+        displayLarge: AppTextStyles.heading1.copyWith(fontSize: 36),
+        displayMedium: AppTextStyles.heading1.copyWith(fontSize: 34),
+        displaySmall: AppTextStyles.heading1,
+        headlineLarge: AppTextStyles.heading1,
+        headlineMedium: AppTextStyles.heading2,
+        headlineSmall: AppTextStyles.heading3,
+        titleLarge: AppTextStyles.heading2,
+        titleMedium: AppTextStyles.heading3,
+        titleSmall: AppTextStyles.subtitle,
+        bodyLarge: AppTextStyles.body.copyWith(fontSize: 16),
+        bodyMedium: AppTextStyles.body,
+        bodySmall: AppTextStyles.bodySmall,
+        labelLarge: AppTextStyles.buttonText,
+        labelMedium: AppTextStyles.label,
+        labelSmall: AppTextStyles.caption,
+      )
+      .apply(
+        bodyColor: AppColors.textPrimary,
+        displayColor: AppColors.textPrimary,
+      );
 
   return ThemeData(
     useMaterial3: true,
@@ -263,9 +292,11 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
       shadowColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
-      titleTextStyle: GoogleFonts.inter(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
+      titleTextStyle: GoogleFonts.notoSans(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: 0,
         color: AppColors.textPrimary,
       ),
     ),
@@ -329,8 +360,9 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
       ),
       labelStyle: AppTextStyles.label,
       hintStyle: AppTextStyles.bodySmall,
-      errorStyle: TextStyle(color: AppColors.error, fontSize: 12),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      helperStyle: AppTextStyles.caption,
+      errorStyle: AppTextStyles.caption.copyWith(color: AppColors.error),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       filled: true,
       fillColor: AppColors.surfaceElevated,
     ),
@@ -370,11 +402,11 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
     // ── DataTable ──
     dataTableTheme: DataTableThemeData(
       headingTextStyle: AppTextStyles.label.copyWith(
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
       ),
-      dataTextStyle: AppTextStyles.body.copyWith(fontSize: 13),
-      headingRowHeight: 44,
-      dataRowMinHeight: 40,
+      dataTextStyle: AppTextStyles.body.copyWith(fontSize: 14),
+      headingRowHeight: 48,
+      dataRowMinHeight: 44,
       headingRowColor: WidgetStateProperty.all(AppColors.surfaceElevated),
     ),
 
@@ -383,6 +415,7 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
       elevation: AppElevation.medium,
+      contentTextStyle: AppTextStyles.body.copyWith(color: Colors.white),
     ),
 
     // ── Dialog ──
@@ -396,7 +429,7 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
     chipTheme: ChipThemeData(
       shape: RoundedRectangleBorder(borderRadius: AppRadius.smAll),
       labelStyle: AppTextStyles.caption,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
 
     // ── Scrollbar ──
@@ -430,10 +463,13 @@ ThemeData buildAppTheme({ColorScheme? colorScheme}) {
     ),
 
     // ── ListTile ──
-    listTileTheme: const ListTileThemeData(
+    listTileTheme: ListTileThemeData(
+      titleTextStyle: AppTextStyles.subtitle,
+      subtitleTextStyle: AppTextStyles.bodySmall,
+      textColor: AppColors.textPrimary,
       minVerticalPadding: 8,
-      contentPadding: EdgeInsets.symmetric(horizontal: 16),
-      shape: RoundedRectangleBorder(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(AppRadius.md)),
       ),
     ),

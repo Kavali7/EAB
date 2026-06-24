@@ -12,6 +12,9 @@
 library;
 
 import 'package:flutter/material.dart';
+
+import 'package:eab/core/theme.dart';
+
 import '../theme/app_spacing.dart';
 
 /// Définition d'une colonne pour [EabTable].
@@ -191,12 +194,12 @@ class _EabTableState<T> extends State<EabTable<T>> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.emptyIcon, size: 48, color: Colors.grey[400]),
+              Icon(widget.emptyIcon, size: 48, color: AppColors.textTertiary),
               const SizedBox(height: AppSpacing.md),
               Text(
                 widget.emptyMessage,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -212,8 +215,8 @@ class _EabTableState<T> extends State<EabTable<T>> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        borderRadius: AppRadius.lgAll,
+        side: const BorderSide(color: AppColors.divider),
       ),
       child: Column(
         children: [
@@ -260,10 +263,10 @@ class _EabTableState<T> extends State<EabTable<T>> {
                       // ── En-tête colonnes ──
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
+                          color: AppColors.surfaceElevated,
                           border: Border(
                             bottom: BorderSide(
-                              color: Colors.grey.shade300,
+                              color: AppColors.border,
                               width: 2,
                             ),
                           ),
@@ -282,7 +285,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
                                   '#',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.grey[600],
+                                    color: AppColors.textSecondary,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -313,7 +316,12 @@ class _EabTableState<T> extends State<EabTable<T>> {
                           onTap: widget.onRowTap != null
                               ? () => widget.onRowTap!(item)
                               : null,
-                          hoverColor: Colors.blue.shade50,
+                          hoverColor: theme.colorScheme.primary.withValues(
+                            alpha: 0.06,
+                          ),
+                          focusColor: theme.colorScheme.primary.withValues(
+                            alpha: 0.08,
+                          ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -321,11 +329,11 @@ class _EabTableState<T> extends State<EabTable<T>> {
                             ),
                             decoration: BoxDecoration(
                               color: isEven
-                                  ? Colors.white
-                                  : Colors.grey.shade50,
+                                  ? AppColors.surface
+                                  : AppColors.surfaceElevated,
                               border: Border(
                                 bottom: BorderSide(
-                                  color: Colors.grey.shade200,
+                                  color: AppColors.divider,
                                   width: 0.5,
                                 ),
                               ),
@@ -341,8 +349,8 @@ class _EabTableState<T> extends State<EabTable<T>> {
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        color: Colors.grey[500],
-                                        fontSize: 13,
+                                        color: AppColors.textTertiary,
+                                        fontSize: 13.5,
                                       ),
                                     ),
                                   ),
@@ -368,6 +376,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
+                border: const Border(top: BorderSide(color: AppColors.divider)),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(12),
                 ),
@@ -380,7 +389,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
                       '${widget.items.length} résultat${widget.items.length > 1 ? "s" : ""} — '
                       'Page ${_currentPage + 1} / $_totalPages',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const Spacer(),
@@ -406,11 +415,13 @@ class _EabTableState<T> extends State<EabTable<T>> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         '${_currentPage + 1}',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -454,8 +465,8 @@ class _EabTableState<T> extends State<EabTable<T>> {
               col.label,
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: Colors.grey[700],
-                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontSize: 13.5,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -467,7 +478,9 @@ class _EabTableState<T> extends State<EabTable<T>> {
                   ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
                   : Icons.unfold_more,
               size: 14,
-              color: isSorted ? theme.colorScheme.primary : Colors.grey[400],
+              color: isSorted
+                  ? theme.colorScheme.primary
+                  : AppColors.textTertiary,
             ),
           ],
         ],
@@ -483,7 +496,7 @@ class _EabTableState<T> extends State<EabTable<T>> {
   /// Construit une cellule de données.
   Widget _buildDataCell({required EabColumn<T> col, required T item}) {
     final child = DefaultTextStyle.merge(
-      style: const TextStyle(fontSize: 14, height: 1.4),
+      style: AppTextStyles.body.copyWith(fontSize: 14.5, height: 1.45),
       overflow: TextOverflow.ellipsis,
       maxLines: 2,
       child: Align(

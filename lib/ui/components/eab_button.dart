@@ -6,6 +6,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:eab/core/theme.dart';
+
 /// Variantes visuelles du bouton.
 enum EabButtonVariant { primary, secondary, outline, danger, ghost }
 
@@ -37,22 +39,46 @@ class EabButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final effectiveOnPressed = isLoading ? null : onPressed;
+    final disabled = effectiveOnPressed == null;
 
     final (bgColor, fgColor, borderColor) = switch (variant) {
-      EabButtonVariant.primary => (colors.primary, Colors.white, Colors.transparent),
-      EabButtonVariant.secondary => (colors.secondary, colors.onSecondary, Colors.transparent),
-      EabButtonVariant.outline => (Colors.transparent, colors.primary, colors.primary),
-      EabButtonVariant.danger => (colors.error, Colors.white, Colors.transparent),
-      EabButtonVariant.ghost => (Colors.transparent, colors.primary, Colors.transparent),
+      EabButtonVariant.primary => (
+        colors.primary,
+        Colors.white,
+        Colors.transparent,
+      ),
+      EabButtonVariant.secondary => (
+        colors.secondary,
+        colors.onSecondary,
+        Colors.transparent,
+      ),
+      EabButtonVariant.outline => (
+        Colors.transparent,
+        colors.primary,
+        colors.primary,
+      ),
+      EabButtonVariant.danger => (
+        colors.error,
+        Colors.white,
+        Colors.transparent,
+      ),
+      EabButtonVariant.ghost => (
+        Colors.transparent,
+        colors.primary,
+        Colors.transparent,
+      ),
     };
 
-    final (paddingH, paddingV, fontSize, iconSize) = switch (size) {
-      EabButtonSize.small => (12.0, 6.0, 13.0, 16.0),
-      EabButtonSize.medium => (16.0, 10.0, 14.0, 18.0),
-      EabButtonSize.large => (24.0, 14.0, 16.0, 20.0),
-    };
+    final effectiveBgColor = disabled ? AppColors.divider : bgColor;
+    final effectiveFgColor = disabled ? AppColors.textTertiary : fgColor;
+    final effectiveBorderColor = disabled ? AppColors.border : borderColor;
 
-    final effectiveOnPressed = isLoading ? null : onPressed;
+    final (paddingH, paddingV, fontSize, iconSize, minHeight) = switch (size) {
+      EabButtonSize.small => (12.0, 8.0, 14.0, 17.0, 44.0),
+      EabButtonSize.medium => (16.0, 11.0, 14.5, 19.0, 48.0),
+      EabButtonSize.large => (24.0, 14.0, 15.0, 21.0, 52.0),
+    };
 
     final buttonChild = Row(
       mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
@@ -64,20 +90,23 @@ class EabButton extends StatelessWidget {
             height: iconSize,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: fgColor,
+              color: effectiveFgColor,
             ),
           ),
           const SizedBox(width: 8),
         ] else if (icon != null) ...[
-          Icon(icon, size: iconSize, color: fgColor),
+          Icon(icon, size: iconSize, color: effectiveFgColor),
           const SizedBox(width: 8),
         ],
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            color: fgColor,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.buttonText.copyWith(
+              fontSize: fontSize,
+              color: effectiveFgColor,
+            ),
           ),
         ),
       ],
@@ -86,16 +115,20 @@ class EabButton extends StatelessWidget {
     return SizedBox(
       width: fullWidth ? double.infinity : null,
       child: Material(
-        color: bgColor,
+        color: effectiveBgColor,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: effectiveOnPressed,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: paddingH, vertical: paddingV),
+            padding: EdgeInsets.symmetric(
+              horizontal: paddingH,
+              vertical: paddingV,
+            ),
+            constraints: BoxConstraints(minHeight: minHeight),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor),
+              border: Border.all(color: effectiveBorderColor),
             ),
             child: buttonChild,
           ),

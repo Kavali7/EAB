@@ -6,6 +6,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:eab/core/theme.dart';
+
 import '../theme/app_spacing.dart';
 
 /// Champ de saisie texte réutilisable.
@@ -125,7 +128,15 @@ class EabNumberField extends StatelessWidget {
       suffixIcon: suffixText != null
           ? Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Text(suffixText!, style: const TextStyle(fontSize: 13)),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  suffixText!,
+                  style: AppTextStyles.label.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
             )
           : null,
       onChanged: onChanged,
