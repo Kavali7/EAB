@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eab/core/errors/error_handler.dart';
 import 'package:eab/core/errors/app_exceptions.dart';
+import 'package:eab/core/security/platform_owner_access.dart';
 import 'package:eab/core/theme.dart';
 import 'package:eab/features/church_units/application/church_unit_scope_utils.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
@@ -19,6 +20,7 @@ import 'package:eab/features/organization/data/picked_logo_file.dart';
 import 'package:eab/ui/ui.dart';
 import 'package:eab/widgets/app_shell.dart';
 import 'package:eab/widgets/section_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../application/organization_providers.dart';
 import '../data/organization_model.dart';
@@ -202,7 +204,10 @@ class _OrganizationSettingsScreenState
     _mobileAccessMode = org.mobileAccessPolicy.mode;
   }
 
-  Future<void> _save(Organization org) async {
+  Future<void> _save(
+    Organization org, {
+    required bool canManageMobileAccess,
+  }) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
@@ -210,10 +215,15 @@ class _OrganizationSettingsScreenState
         org.parametres,
         _fiscalProfileFromCurrentValues(),
       );
-      final updatedParams = OrganizationMobileAccessPolicy.mergeIntoParametres(
-        fiscalParams,
-        OrganizationMobileAccessPolicy(mode: _mobileAccessMode),
-      );
+      final updatedParams = canManageMobileAccess
+          ? OrganizationMobileAccessPolicy.mergeIntoParametres(
+              fiscalParams,
+              OrganizationMobileAccessPolicy(
+                mode: _mobileAccessMode,
+                allowedRoutes: org.mobileAccessPolicy.allowedRoutes,
+              ),
+            )
+          : fiscalParams;
       final updated = Organization(
         id: org.id,
         nom: _nomCtrl.text.trim(),
@@ -475,6 +485,9 @@ class _OrganizationSettingsScreenState
   Widget build(BuildContext context) {
     final orgAsync = ref.watch(currentOrganizationProvider);
     final churchUnitsAsync = ref.watch(churchUnitsProvider);
+    final canManageMobileAccess = PlatformOwnerAccess.isCurrentUserOwner(
+      Supabase.instance.client,
+    );
 
     return AppShell(
       title: 'Parametres organisation',
@@ -519,13 +532,20 @@ class _OrganizationSettingsScreenState
                           const SizedBox(height: AppSpacing.cardGap),
                           _themeSection(compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
-                          _mobileAccessSection(compact: compact),
+                          _mobileAccessSection(
+                            compact: compact,
+                            canManageMobileAccess: canManageMobileAccess,
+                          ),
                           const SizedBox(height: AppSpacing.cardGap),
                           _contactSection(),
                           const SizedBox(height: AppSpacing.cardGap),
                           _fiscalIdentitySection(compact: compact),
                           const SizedBox(height: AppSpacing.cardGap),
-                          _saveActions(org, compact: compact),
+                          _saveActions(
+                            org,
+                            compact: compact,
+                            canManageMobileAccess: canManageMobileAccess,
+                          ),
                           const SizedBox(height: AppSpacing.xl),
                           _inviteSection(
                             compact: compact,
@@ -794,7 +814,14 @@ class _OrganizationSettingsScreenState
     );
   }
 
-  Widget _mobileAccessSection({required bool compact}) {
+  Widget _mobileAccessSection({
+    required bool compact,
+    required bool canManageMobileAccess,
+  }) {
+    if (!canManageMobileAccess) {
+      return _lockedMobileAccessSection();
+    }
+
     return SectionCard(
       title: 'Acces mobile',
       child: Column(
@@ -834,6 +861,63 @@ class _OrganizationSettingsScreenState
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _lockedMobileAccessSection() {
+    final colors = Theme.of(context).colorScheme;
+    final currentMode =
+        _mobileAccessMode == OrganizationMobileAccessPolicy.modeRestricted
+        ? 'Mobile simplifie'
+        : 'Acces mobile complet';
+
+    return SectionCard(
+      title: 'Acces mobile',
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.28),
+          borderRadius: AppRadius.mdAll,
+          border: Border.all(color: colors.outlineVariant),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.1),
+                borderRadius: AppRadius.mdAll,
+              ),
+              child: Icon(
+                Icons.admin_panel_settings_outlined,
+                color: colors.primary,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reglage reserve au proprietaire plateforme',
+                    style: AppTextStyles.subtitle.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Mode actuel : $currentMode. Les responsables d eglise, meme au niveau superieur, ne peuvent pas modifier cette restriction depuis leur compte.',
+                    style: AppTextStyles.bodySmall.copyWith(height: 1.35),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1197,12 +1281,18 @@ class _OrganizationSettingsScreenState
     );
   }
 
-  Widget _saveActions(Organization org, {required bool compact}) {
+  Widget _saveActions(
+    Organization org, {
+    required bool compact,
+    required bool canManageMobileAccess,
+  }) {
     final button = EabButton(
       label: 'Enregistrer',
       variant: EabButtonVariant.primary,
       isLoading: _saving,
-      onPressed: _uploadingLogo ? null : () => _save(org),
+      onPressed: _uploadingLogo
+          ? null
+          : () => _save(org, canManageMobileAccess: canManageMobileAccess),
     );
     if (compact) return button;
     return Align(alignment: Alignment.centerRight, child: button);

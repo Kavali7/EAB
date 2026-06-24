@@ -9,8 +9,8 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-23
-- **Fichiers de migration** : `supabase/migrations/00001` -> `00038` + placeholder historique `202606160031`
+- **Derniere mise a jour** : 2026-06-24
+- **Fichiers de migration** : `supabase/migrations/00001` -> `00039` + placeholder historique `202606160031`
 
 ---
 
@@ -128,6 +128,7 @@
 - `mobile_access.mode = full` : aucun blocage mobile cote frontend.
 - `mobile_access.mode = restricted` : sur telephone, le menu masque les routes non listees dans `allowed_routes` et `AppShell` bloque les acces directs aux routes non autorisees.
 - Les restrictions mobile sont une simplification UX par organisation. Elles ne remplacent pas les politiques RLS ni les permissions hierarchiques PostgreSQL.
+- Depuis `00039`, la modification de `mobile_access` est reservee au proprietaire plateforme. Ce statut ne vient pas de `profiles.role` : il doit etre porte par `auth.users.raw_app_meta_data`, par exemple `{"platform_owner": true}` ou `{"role": "platform_owner"}`. Un `admin_national` d'eglise peut modifier les autres parametres de son organisation, mais pas cette politique mobile.
 
 ---
 
@@ -1275,6 +1276,11 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 
 ### Fonctions helper RLS
 
+`is_platform_owner()` est le helper transversal ajoute en `00039`. Il verifie
+le statut proprietaire plateforme depuis `auth.jwt().app_metadata` ou depuis
+un role SQL technique (`postgres`, `service_role`, `supabase_admin`). Ce statut
+est distinct de `role_utilisateur` et ne doit pas etre attribue via `profiles`.
+
 > Migration `00020` ajoute `user_has_church_unit_access(UUID)` pour verifier les perimetres `church_units`,
 > en tenant compte de `profiles.primary_church_unit_id`, de `church_unit_user_scopes`
 > et des descendants via `get_church_unit_descendants(UUID)`.
@@ -1349,6 +1355,13 @@ Toutes les tables ont `id UUID PRIMARY KEY DEFAULT uuid_generate_v4()`, sauf `pr
 ---
 
 ## 8. Fonctions PostgreSQL
+
+Depuis `00039`, `is_platform_owner()` et
+`prevent_mobile_access_update_without_platform_owner()` protegent la politique
+mobile par organisation. La premiere lit les metadonnees Auth du compte
+connecte ; la seconde est appelee par trigger et bloque uniquement les
+modifications de `organizations.parametres.mobile_access` lorsque le compte
+n'est pas proprietaire plateforme.
 
 | Fonction | Langage | Sécurité | Description |
 | ---------- | --------- | ---------- | ------------- |
@@ -1532,6 +1545,14 @@ Migration `00038` ajoute :
 
 Ces triggers rattachent chaque ligne de releve a l'organisation, au releve, a l'unite flexible, au compte financier et a l'ecriture comptable liee, puis maintiennent `updated_at`.
 
+Migration `00039` ajoute :
+
+- `protect_organization_mobile_access` sur `organizations`
+
+Ce trigger refuse toute modification de `organizations.parametres.mobile_access`
+si le compte courant n'est pas proprietaire plateforme. Il ne bloque pas les
+autres parametres de l'organisation.
+
 ### Triggers `updated_at` (BEFORE UPDATE)
 
 Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regions_eglise`, `districts_eglise`, `assemblees_locales`, `familles`, `membres`, `programmes`, `comptes_comptables`, `journaux_comptables`, `centres_analytiques`, `tiers`, `ecritures_comptables`, `lignes_ecritures`, `budgets_comptables`, `lignes_budgets`, `immobilisations_comptables`, `rapports_mensuels_eab`, `releves_bancaires`, `lignes_releves_bancaires`, `exercices_comptables`, `organization_user_invitations`, `church_unit_financial_accounts`, `church_permission_domains`, `church_permission_actions`, `campagnes_financieres`, `promesses_financieres`, `mouvements_financiers` (28 tables).
@@ -1541,6 +1562,7 @@ Appliquent `update_updated_at_column()` sur : `organizations`, `profiles`, `regi
 | Trigger | Table | Événement | Fonction |
 | --------- | ------- | ----------- | ---------- |
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` |
+| `protect_organization_mobile_access` | `organizations` | BEFORE UPDATE OF `parametres` | `prevent_mobile_access_update_without_platform_owner()` |
 | `check_ecriture_equilibree` | `lignes_ecritures` | AFTER INSERT/UPDATE/DELETE | `verify_ecriture_equilibree()` |
 | `protect_validated_ecritures` | `ecritures_comptables` | BEFORE UPDATE/DELETE | `prevent_modification_validated_ecriture()` |
 | `enforce_church_unit_financial_account_capability_trigger` | `church_unit_financial_accounts` | BEFORE INSERT/UPDATE | `enforce_church_unit_financial_account_capability()` |
@@ -1872,6 +1894,7 @@ supabase/migrations/00035_apply_hierarchy_permissions_fiscal_statements.sql
 supabase/migrations/00036_active_unit_financial_reports.sql
 supabase/migrations/00037_fiscal_dossier_exercice_dates.sql
 supabase/migrations/00038_bank_statement_lines.sql
+supabase/migrations/00039_platform_owner_mobile_access.sql
 supabase/migrations/202606160031_remote_hierarchy_matrix_history.sql
 ```
 
@@ -1926,12 +1949,13 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_accounting_scopes.sql` | 11 lignes avec `ok = true` |
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 | `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
+| `supabase/tests/test_platform_owner_mobile_access.sql` | 2 lignes avec `ok = true` |
 | Verification rapprochement bancaire `00038` | `lignes_releves_bancaires` retourne les lignes pointees/non pointees dans le perimetre de l'utilisateur |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal et `00038` pour les lignes de releves bancaires rapprocheables.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables et `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -1997,6 +2021,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les exports fiscaux Excel doivent utiliser des dates d'exercice valides issues de `exercices_comptables` ou des champs `fiscal_dossier_values` synchronises par `00037`; une periode inversee doit rester bloquee par le preflight applicatif.
 - Les exports PDF fiscaux officiels doivent etre produits depuis le classeur Excel final via `server/fiscal-pdf-converter` et `FISCAL_PDF_CONVERTER_URL`; le PDF applicatif historique ne doit pas etre utilise pour un depot fiscal.
 - Le rapprochement bancaire doit lire les operations depuis `lignes_releves_bancaires`; `releves_bancaires` reste l'entete et le solde du releve, pas le detail operationnel.
+- Les restrictions mobiles par organisation sont reservees au proprietaire plateforme. Pour marquer un compte, utiliser Supabase Auth `raw_app_meta_data` (`platform_owner=true`, `role=platform_owner` ou `app_role=platform_owner`) ; ne pas utiliser `profiles.role`, qui reste un role interne a l'eglise.
 
 ---
 
@@ -2004,6 +2029,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-06-24 | Agent IA | **Migration 00039** : verrouillage de `organizations.parametres.mobile_access` au statut proprietaire plateforme via `is_platform_owner()` et le trigger `protect_organization_mobile_access`, avec clarification que ce pouvoir ne vient pas du role d'eglise `admin_national`. |
 | 2026-06-23 | Agent IA | **UX mobile par organisation** : ajout de la convention `organizations.parametres.mobile_access` (`mode`, `allowed_routes`) pour permettre au frontend de simplifier ou bloquer certains modules sur telephone par organisation, sans remplacer les RLS ni les permissions hierarchiques. |
 | 2026-06-23 | Agent IA | **Preparation bases autonomes** : alignement de l'historique Supabase distant avec les migrations locales `00031` a `00038`, ajout du placeholder historique `202606160031_remote_hierarchy_matrix_history.sql` et renforcement de la procedure de reconstruction pour couvrir pre-requis, ordre SQL, branchement frontend, parametrages Supabase hors migrations et validations minimales avant livraison. |
 | 2026-06-23 | Agent IA | **Migration 00038** : Ajout de `lignes_releves_bancaires` pour stocker les operations de releves bancaires, avec rattachement organisation/unite/assemblee legacy, lien optionnel vers `church_unit_financial_accounts` et `ecritures_comptables`, indexes, triggers de synchronisation/`updated_at` et politiques RLS basees sur `user_can_access_bank_reconciliation_scope`. Le seed public de demonstration alimente des lignes pointees/non pointees pour rendre l'ecran Rapprochement testable. |
