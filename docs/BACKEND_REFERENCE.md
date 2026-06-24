@@ -130,7 +130,7 @@
 - Les restrictions mobile sont une simplification UX par organisation. Elles ne remplacent pas les politiques RLS ni les permissions hierarchiques PostgreSQL.
 - Depuis `00039`, la modification de `mobile_access` est reservee au proprietaire plateforme. Ce statut ne vient pas de `profiles.role` : il doit etre porte par `auth.users.raw_app_meta_data`, par exemple `{"platform_owner": true}` ou `{"role": "platform_owner"}`. Un `admin_national` d'eglise peut modifier les autres parametres de son organisation, mais pas cette politique mobile.
 - Depuis `00040`, la console proprietaire plateforme utilise les RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])`. Le frontend ne recoit pas de droit table large pour administrer cette fonctionnalite.
-- Un compte proprietaire plateforme ne doit pas recevoir de profil applicatif d'eglise par defaut. S'il n'a pas de ligne dans `profiles`, il ne voit aucune donnee metier par les politiques RLS ordinaires ; il utilise uniquement les RPC de console plateforme prevus a cet effet.
+- Depuis `00041`, un compte proprietaire plateforme ne peut pas recevoir de profil applicatif d'eglise ni de perimetre `church_unit_user_scopes`. S'il n'a pas de ligne dans `profiles`, il ne voit aucune donnee metier par les politiques RLS ordinaires ; il utilise uniquement les RPC de console plateforme prevus a cet effet.
 
 ---
 
@@ -1971,13 +1971,13 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 | `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
 | `supabase/tests/test_platform_owner_mobile_access.sql` | 2 lignes avec `ok = true` |
-| `supabase/tests/test_platform_owner_console.sql` | 4 lignes avec `ok = true` |
+| `supabase/tests/test_platform_owner_console.sql` | 6 lignes avec `ok = true` |
 | Verification rapprochement bancaire `00038` | `lignes_releves_bancaires` retourne les lignes pointees/non pointees dans le perimetre de l'utilisateur |
 
 ### Branchement du frontend
 
 1. Creer ou choisir le projet Supabase cible.
-2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables, `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme et `00040` pour la console proprietaire plateforme.
+2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables, `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme, `00040` pour la console proprietaire plateforme et `00041` pour empecher qu'un proprietaire plateforme soit rattache a une eglise cliente.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
 5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
@@ -2053,6 +2053,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
 | 2026-06-24 | Agent IA | **Migration 00040** : ajout des RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` pour la console proprietaire plateforme, avec verification JWT stricte `platform_owner_jwt_claim_grants_access()` afin de gerer les restrictions mobiles sans accorder de droits table larges au frontend. |
+| 2026-06-24 | Agent IA | **Migration 00041** : isolation stricte des proprietaires plateforme : interdiction de leur attribuer un profil d'eglise ou un perimetre `church_unit_user_scopes`, afin qu'ils administrent la plateforme via RPC sans voir les donnees metier d'une organisation cliente. |
 | 2026-06-24 | Agent IA | **Migration 00039** : verrouillage de `organizations.parametres.mobile_access` au statut proprietaire plateforme via `is_platform_owner()` et le trigger `protect_organization_mobile_access`, avec clarification que ce pouvoir ne vient pas du role d'eglise `admin_national`. |
 | 2026-06-23 | Agent IA | **UX mobile par organisation** : ajout de la convention `organizations.parametres.mobile_access` (`mode`, `allowed_routes`) pour permettre au frontend de simplifier ou bloquer certains modules sur telephone par organisation, sans remplacer les RLS ni les permissions hierarchiques. |
 | 2026-06-23 | Agent IA | **Preparation bases autonomes** : alignement de l'historique Supabase distant avec les migrations locales `00031` a `00038`, ajout du placeholder historique `202606160031_remote_hierarchy_matrix_history.sql` et renforcement de la procedure de reconstruction pour couvrir pre-requis, ordre SQL, branchement frontend, parametrages Supabase hors migrations et validations minimales avant livraison. |

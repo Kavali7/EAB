@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:eab/core/errors/error_handler.dart';
+import 'package:eab/core/security/platform_owner_access.dart';
 import 'package:eab/core/theme.dart';
 import 'package:eab/features/church_units/application/church_units_provider.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
+import 'package:eab/features/platform_admin/presentation/platform_admin_screen.dart';
 import 'package:eab/providers/church_structure_providers.dart';
 import 'package:eab/providers/user_profile_providers.dart';
 
@@ -42,6 +44,14 @@ class _OrganizationOnboardingScreenState
 
   Future<void> _createOrganization() async {
     if (!_formKey.currentState!.validate()) return;
+    if (PlatformOwnerAccess.isCurrentUserOwner(Supabase.instance.client)) {
+      context.showError(
+        StateError(
+          'Un proprietaire plateforme ne cree pas d eglise metier depuis ce formulaire.',
+        ),
+      );
+      return;
+    }
 
     setState(() => _saving = true);
     try {
@@ -84,6 +94,9 @@ class _OrganizationOnboardingScreenState
   Widget build(BuildContext context) {
     if (Supabase.instance.client.auth.currentSession == null) {
       return const _OnboardingAuthRequired();
+    }
+    if (PlatformOwnerAccess.isCurrentUserOwner(Supabase.instance.client)) {
+      return const PlatformAdminScreen();
     }
 
     final size = MediaQuery.of(context).size;

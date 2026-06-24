@@ -93,6 +93,111 @@ BEGIN
   );
 END $$;
 
+RESET ROLE;
+
+DO $$
+DECLARE
+  v_user_id UUID;
+  v_org_id UUID;
+  v_unit_id UUID;
+  v_original_app_meta JSONB;
+  v_profile_blocked BOOLEAN := FALSE;
+  v_scope_blocked BOOLEAN := FALSE;
+BEGIN
+  SELECT user_id, org_id
+  INTO v_user_id, v_org_id
+  FROM _platform_console_context
+  LIMIT 1;
+
+  SELECT coalesce(
+    p.primary_church_unit_id,
+    (
+      SELECT cu.id
+      FROM church_units cu
+      WHERE cu.organization_id = v_org_id
+      ORDER BY cu.created_at, cu.id
+      LIMIT 1
+    )
+  )
+  INTO v_unit_id
+  FROM profiles p
+  WHERE p.id = v_user_id;
+
+  SELECT raw_app_meta_data INTO v_original_app_meta
+  FROM auth.users
+  WHERE id = v_user_id;
+
+  UPDATE auth.users
+  SET raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+    || jsonb_build_object('platform_owner', TRUE, 'role', 'platform_owner')
+  WHERE id = v_user_id;
+
+  BEGIN
+    UPDATE profiles
+    SET full_name = full_name
+    WHERE id = v_user_id;
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_profile_blocked := TRUE;
+    WHEN OTHERS THEN
+      IF SQLSTATE = '42501' THEN
+        v_profile_blocked := TRUE;
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  BEGIN
+    INSERT INTO church_unit_user_scopes (
+      id,
+      organization_id,
+      user_id,
+      unit_id,
+      role,
+      can_manage_children
+    )
+    VALUES (
+      gen_random_uuid(),
+      v_org_id,
+      v_user_id,
+      v_unit_id,
+      'admin_national',
+      TRUE
+    );
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_scope_blocked := TRUE;
+    WHEN OTHERS THEN
+      IF SQLSTATE = '42501' THEN
+        v_scope_blocked := TRUE;
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  UPDATE auth.users
+  SET raw_app_meta_data = v_original_app_meta
+  WHERE id = v_user_id;
+
+  INSERT INTO _platform_console_test_result
+  VALUES (
+    3,
+    'profil_eglise_refuse_pour_proprietaire',
+    v_profile_blocked,
+    'blocked=' || v_profile_blocked
+  );
+
+  INSERT INTO _platform_console_test_result
+  VALUES (
+    4,
+    'perimetre_eglise_refuse_pour_proprietaire',
+    v_scope_blocked,
+    'blocked=' || v_scope_blocked
+  );
+END $$;
+
+SET LOCAL ROLE authenticated;
+
 SELECT set_config(
   'request.jwt.claims',
   jsonb_build_object(
@@ -164,7 +269,7 @@ BEGIN
 
   INSERT INTO _platform_console_test_result
   VALUES (
-    3,
+    5,
     'proprietaire_liste_organisations',
     v_count > 0,
     'org_count=' || v_count
@@ -193,7 +298,7 @@ BEGIN
 
   INSERT INTO _platform_console_test_result
   VALUES (
-    4,
+    6,
     'proprietaire_modifie_mobile_access',
     v_policy = v_stored
       AND v_stored ->> 'mode' = 'restricted'
