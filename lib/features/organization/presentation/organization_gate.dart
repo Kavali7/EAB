@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:eab/core/theme.dart';
+import 'package:eab/core/security/platform_owner_access.dart';
+import 'package:eab/features/platform_admin/presentation/platform_admin_screen.dart';
 import 'package:eab/features/organization/application/organization_providers.dart';
 import 'package:eab/features/organization/presentation/organization_onboarding_screen.dart';
 import 'package:eab/screens/auth/login_screen.dart';
@@ -24,6 +26,11 @@ class OrganizationGate extends ConsumerWidget {
     return organizationAsync.when(
       data: (organization) {
         if (organization == null) {
+          if (PlatformOwnerAccess.isCurrentUserOwner(
+            Supabase.instance.client,
+          )) {
+            return const PlatformAdminScreen();
+          }
           return const OrganizationOnboardingScreen();
         }
         final branding = OrganisationBranding.fromOrganization(organization);

@@ -5,7 +5,7 @@
 -- Clears tenant/business data so the public demo seeder can rebuild:
 -- - EAB multi-level demo for test1@gmail.com
 -- - single-church demo for test2@gmail.com
--- - technical admin profile if its Auth user exists
+-- - no church profile for the platform/technical owner account
 --
 -- Run only against the intended Supabase project.
 

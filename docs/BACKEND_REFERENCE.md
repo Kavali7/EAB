@@ -130,6 +130,7 @@
 - Les restrictions mobile sont une simplification UX par organisation. Elles ne remplacent pas les politiques RLS ni les permissions hierarchiques PostgreSQL.
 - Depuis `00039`, la modification de `mobile_access` est reservee au proprietaire plateforme. Ce statut ne vient pas de `profiles.role` : il doit etre porte par `auth.users.raw_app_meta_data`, par exemple `{"platform_owner": true}` ou `{"role": "platform_owner"}`. Un `admin_national` d'eglise peut modifier les autres parametres de son organisation, mais pas cette politique mobile.
 - Depuis `00040`, la console proprietaire plateforme utilise les RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])`. Le frontend ne recoit pas de droit table large pour administrer cette fonctionnalite.
+- Un compte proprietaire plateforme ne doit pas recevoir de profil applicatif d'eglise par defaut. S'il n'a pas de ligne dans `profiles`, il ne voit aucune donnee metier par les politiques RLS ordinaires ; il utilise uniquement les RPC de console plateforme prevus a cet effet.
 
 ---
 
@@ -1970,7 +1971,7 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 | `supabase/tests/test_hierarchy_permissions_fiscal_statements.sql` | 14 lignes avec `ok = true` |
 | `supabase/tests/test_active_unit_financial_reports.sql` | 6 lignes avec `ok = true` |
 | `supabase/tests/test_platform_owner_mobile_access.sql` | 2 lignes avec `ok = true` |
-| `supabase/tests/test_platform_owner_console.sql` | 3 lignes avec `ok = true` |
+| `supabase/tests/test_platform_owner_console.sql` | 4 lignes avec `ok = true` |
 | Verification rapprochement bancaire `00038` | `lignes_releves_bancaires` retourne les lignes pointees/non pointees dans le perimetre de l'utilisateur |
 
 ### Branchement du frontend
@@ -2043,6 +2044,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 - Les exports PDF fiscaux officiels doivent etre produits depuis le classeur Excel final via `server/fiscal-pdf-converter` et `FISCAL_PDF_CONVERTER_URL`; le PDF applicatif historique ne doit pas etre utilise pour un depot fiscal.
 - Le rapprochement bancaire doit lire les operations depuis `lignes_releves_bancaires`; `releves_bancaires` reste l'entete et le solde du releve, pas le detail operationnel.
 - Les restrictions mobiles par organisation sont reservees au proprietaire plateforme. Pour marquer un compte, utiliser Supabase Auth `raw_app_meta_data` (`platform_owner=true`, `role=platform_owner` ou `app_role=platform_owner`) ; ne pas utiliser `profiles.role`, qui reste un role interne a l'eglise.
+- Le compte technique/proprietaire plateforme doit rester hors des organisations clientes sauf decision explicite. Ne pas lui attribuer automatiquement `profiles.organization_id`, `profiles.role` ou `church_unit_user_scopes`; sinon il verrait les donnees de l'eglise rattachee comme un vrai utilisateur metier.
 
 ---
 

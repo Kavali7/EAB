@@ -110,13 +110,61 @@ FROM _platform_console_context;
 DO $$
 DECLARE
   v_count INTEGER := 0;
+  v_user_id UUID;
 BEGIN
+  PERFORM set_config(
+    'request.jwt.claim.sub',
+    '00000000-0000-0000-0000-000000099999',
+    TRUE
+  );
+  PERFORM set_config(
+    'request.jwt.claims',
+    jsonb_build_object(
+      'sub',
+      '00000000-0000-0000-0000-000000099999',
+      'role',
+      'authenticated',
+      'app_metadata',
+      jsonb_build_object('platform_owner', TRUE)
+    )::TEXT,
+    TRUE
+  );
+
+  SELECT COUNT(*) INTO v_count
+  FROM organizations;
+
+  INSERT INTO _platform_console_test_result
+  VALUES (
+    2,
+    'proprietaire_sans_profil_ne_lit_pas_organisations_directement',
+    v_count = 0,
+    'direct_org_count=' || v_count
+  );
+
+  SELECT user_id INTO v_user_id
+  FROM _platform_console_context
+  LIMIT 1;
+
+  PERFORM set_config('request.jwt.claim.sub', v_user_id::TEXT, TRUE);
+  PERFORM set_config(
+    'request.jwt.claims',
+    jsonb_build_object(
+      'sub',
+      v_user_id,
+      'role',
+      'authenticated',
+      'app_metadata',
+      jsonb_build_object('platform_owner', TRUE)
+    )::TEXT,
+    TRUE
+  );
+
   SELECT COUNT(*) INTO v_count
   FROM platform_list_organizations();
 
   INSERT INTO _platform_console_test_result
   VALUES (
-    2,
+    3,
     'proprietaire_liste_organisations',
     v_count > 0,
     'org_count=' || v_count
@@ -145,7 +193,7 @@ BEGIN
 
   INSERT INTO _platform_console_test_result
   VALUES (
-    3,
+    4,
     'proprietaire_modifie_mobile_access',
     v_policy = v_stored
       AND v_stored ->> 'mode' = 'restricted'

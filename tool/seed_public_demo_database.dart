@@ -37,8 +37,8 @@ Future<void> main(List<String> args) async {
   stdout.writeln('Compte technique cible: $technicalEmail');
   stdout.writeln(
     technicalUser == null
-        ? 'Compte technique introuvable dans Auth: il ne sera pas rattache.'
-        : 'Compte technique trouve: ${technicalUser.id}',
+        ? 'Compte technique introuvable dans Auth: aucun changement Auth.'
+        : 'Compte technique trouve: ${technicalUser.id} (non rattache aux organisations demo)',
   );
   stdout.writeln('Comptes publics a preparer: $_test1Email, $_test2Email');
 
@@ -59,7 +59,9 @@ Future<void> main(List<String> args) async {
     stdout.writeln(' - conserver Auth mais nettoyer les profils non demo;');
     stdout.writeln(' - creer EAB multiniveau pour $_test1Email;');
     stdout.writeln(' - creer une eglise unique pour $_test2Email;');
-    stdout.writeln(' - rattacher le compte technique a EAB si present.');
+    stdout.writeln(
+      ' - conserver le compte technique Auth sans profil applicatif demo.',
+    );
     return;
   }
 
@@ -73,11 +75,7 @@ Future<void> main(List<String> args) async {
     password: _password,
     fullName: 'Administrateur demo eglise unique',
   );
-  final keepProfileIds = {
-    test1.id,
-    test2.id,
-    if (technicalUser != null) technicalUser.id,
-  };
+  final keepProfileIds = {test1.id, test2.id};
 
   await client.deleteWhere('organizations', {'id': 'not.is.null'});
   if (keepProfileIds.isNotEmpty) {
@@ -87,10 +85,7 @@ Future<void> main(List<String> args) async {
   }
 
   await client.insert('organizations', _organizations());
-  final eabData = _DemoDataBuilder.eab(
-    testUserId: test1.id,
-    technicalUserId: technicalUser?.id,
-  ).build();
+  final eabData = _DemoDataBuilder.eab(testUserId: test1.id).build();
   final singleData = _DemoDataBuilder.single(testUserId: test2.id).build();
 
   for (final group in [eabData, singleData]) {
@@ -354,21 +349,16 @@ class _DemoDataBuilder {
     required this.sigle,
     required this.address,
     required this.adminUserId,
-    this.technicalUserId,
     required this.single,
   });
 
-  factory _DemoDataBuilder.eab({
-    required String testUserId,
-    required String? technicalUserId,
-  }) {
+  factory _DemoDataBuilder.eab({required String testUserId}) {
     return _DemoDataBuilder._(
       orgId: _eabOrgId,
       name: 'Église Apostolique du Bénin',
       sigle: 'EAB',
       address: 'Cotonou, Littoral, Benin',
       adminUserId: testUserId,
-      technicalUserId: technicalUserId,
       single: false,
     );
   }
@@ -389,7 +379,6 @@ class _DemoDataBuilder {
   final String sigle;
   final String address;
   final String adminUserId;
-  final String? technicalUserId;
   final bool single;
 
   _DemoData build() {
@@ -509,12 +498,6 @@ class _DemoDataBuilder {
       ),
     );
     scopes.add(_scope(adminUserId, rootId));
-    if (technicalUserId != null && !single) {
-      profiles.add(
-        _profile(technicalUserId!, 'Administrateur technique', rootId),
-      );
-      scopes.add(_scope(technicalUserId!, rootId));
-    }
 
     final localUnits = units
         .where((unit) => unit['type_id'] == (single ? rootTypeId : localTypeId))
