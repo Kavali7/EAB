@@ -22,6 +22,9 @@ CREATE TEMP TABLE _platform_console_context (
   original_parametres JSONB NOT NULL
 ) ON COMMIT DROP;
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON _platform_console_test_result TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON _platform_console_context TO authenticated;
+
 BEGIN;
 
 INSERT INTO _platform_console_context (
