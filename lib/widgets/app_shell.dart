@@ -151,7 +151,7 @@ class AppShell extends ConsumerWidget {
             children: [
               if (isWide)
                 SizedBox(
-                  width: 286,
+                  width: 324,
                   child: SideNavigation(currentRoute: currentRoute),
                 ),
               Expanded(
