@@ -9,7 +9,7 @@
 
 - **Projet** : EAB (Église Apostolique du Bénin)
 - **Backend** : Supabase (PostgreSQL)
-- **Derniere mise a jour** : 2026-06-24
+- **Derniere mise a jour** : 2026-07-21
 - **Fichiers de migration** : `supabase/migrations/00001` -> `00041` + placeholder historique `202606160031`
 
 ---
@@ -1994,7 +1994,7 @@ avertissement RLS ou operations destructives, utiliser `Run without RLS` :
 2. Appliquer toutes les migrations, y compris `00028` pour les buckets Storage, `00029` pour les capacites/moyens financiers configurables, `00030` pour les campagnes/promesses/mouvements operationnels, `00031` pour la matrice d'autorisations hierarchiques, `00032` pour l'application de cette matrice aux membres/familles/programmes, `00033` pour finances operationnelles/rapports mensuels, `00034` pour les perimetres comptables, `00035` pour les dossiers fiscaux, imports de balance, rapports financiers et exports, `00036` pour les rapports financiers filtres par unite active, `00037` pour la synchronisation des dates d'exercice fiscal, `00038` pour les lignes de releves bancaires rapprocheables, `00039` pour verrouiller les restrictions mobiles au proprietaire plateforme, `00040` pour la console proprietaire plateforme et `00041` pour empecher qu'un proprietaire plateforme soit rattache a une eglise cliente.
 3. Configurer Auth Email, SMTP personnalise et Rate Limits dans Supabase.
 4. Copier `Project URL` et `anon public key` depuis Supabase > Settings > API.
-5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart`.
+5. Mettre ces valeurs dans `lib/core/config/supabase_config.dart` ou les fournir au build avec `SUPABASE_URL` et `SUPABASE_ANON_KEY`.
 6. Construire le frontend avec `flutter build web --no-wasm-dry-run --pwa-strategy=none -O1`.
 7. Creer le premier utilisateur depuis l'app, puis creer l'eglise via l'ecran d'onboarding.
 
@@ -2003,8 +2003,16 @@ Pour un build deployable sans modifier le code source, passer les valeurs par
 
 ```powershell
 flutter build web --no-wasm-dry-run --pwa-strategy=none -O1 `
+  --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co `
+  --dart-define=SUPABASE_ANON_KEY=<anon-public-key> `
   --dart-define=FISCAL_PDF_CONVERTER_URL=https://<service-pdf>
 ```
+
+Pour la version Windows desktop, le script `scripts/build_windows_desktop.ps1`
+peut injecter ces valeurs via ses parametres `-SupabaseUrl` et
+`-SupabaseAnonKey`, ou via les variables dediees
+`GESTION_EGLISE_SUPABASE_URL` et `GESTION_EGLISE_SUPABASE_ANON_KEY`. Ne pas
+utiliser automatiquement des variables generiques d'un autre projet Supabase.
 
 Le frontend ne doit jamais utiliser la cle `service_role`. Cette cle est
 reservee aux outils serveur, scripts d'administration et services backend.
@@ -2066,6 +2074,7 @@ configurer un SMTP dedie dans Supabase Auth, puis ajuster
 
 | Date | Auteur | Description |
 | ------ | -------- | ------------- |
+| 2026-07-21 | Agent IA | **Branchement frontend Supabase** : `lib/core/config/supabase_config.dart` accepte maintenant `SUPABASE_URL` et `SUPABASE_ANON_KEY` via `--dart-define`, et `scripts/build_windows_desktop.ps1` peut injecter ces valeurs avec des parametres ou variables dediees pour eviter de compiler le desktop contre un ancien projet Supabase. Aucun changement schema/RLS. |
 | 2026-06-24 | Agent IA | **Donnees demo publiques** : enrichissement des deux comptes publics `test1@gmail.com` (EAB multi-niveau) et `test2@gmail.com` (eglise locale unique ALPN) avec membres, programmes, rapports mensuels, campagnes, promesses, mouvements, ecritures et lignes de rapprochement. Ajout du script idempotent `tool/enrich_public_demo_business_data.sql` pour completer une base demo sans toucher aux comptes proprietaires plateforme. |
 | 2026-06-24 | Agent IA | **Migration 00040** : ajout des RPC `platform_list_organizations()` et `platform_update_organization_mobile_access(UUID, TEXT, TEXT[])` pour la console proprietaire plateforme, avec verification JWT stricte `platform_owner_jwt_claim_grants_access()` afin de gerer les restrictions mobiles sans accorder de droits table larges au frontend. |
 | 2026-06-24 | Agent IA | **Migration 00041** : isolation stricte des proprietaires plateforme : interdiction de leur attribuer un profil d'eglise ou un perimetre `church_unit_user_scopes`, afin qu'ils administrent la plateforme via RPC sans voir les donnees metier d'une organisation cliente. |
