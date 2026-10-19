@@ -44,3 +44,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# AjoutÃ© avant sauvegarde
+build/
+dist/
+.next/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
